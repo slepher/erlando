@@ -125,7 +125,7 @@ all(doc) ->
     ["Describe the main purpose of this suite"].
 
 all() -> 
-    [test_cont_t, test_cont_t_callCC, test_cont_t_local].
+    [test_cont_t, test_cont_t_callCC, test_cont_t_local, test_cont_t_shift_reset, test_cont_t_shift_reset2].
 
 
 %%--------------------------------------------------------------------
@@ -197,7 +197,7 @@ test_cont_t_callCC(_Config) ->
                       ])
                end
            ]),
-    Value = MonadState:eval(Monad:run(M0, fun(X) -> MonadState:return(X) end), []),
+    Value = MonadState:eval(Monad:run_cont(M0, fun(X) -> MonadState:return(X) end), []),
     ?assertEqual(4, Value).
 
 test_cont_t_local(_Config) ->
@@ -217,8 +217,8 @@ test_cont_t_local(_Config) ->
                 Ref2 <- Monad:lift(MR:ask()),
                 return({Ref0, Ref1, Ref2})
             ]),
-    Reader = Monad:run(M2, fun(X) -> MR:return(X) end),
-    {R0, R1, R2}= MR:run(Reader, RefO),
+    Reader = Monad:run_cont(M2, fun(X) -> MR:return(X) end),
+    {R0, R1, R2}= MR:run_reader(Reader, RefO),
     ?assertEqual(RefO, R0),
     ?assertEqual(RefO, R2),
     ?assertEqual(Ref, R1).
@@ -230,3 +230,35 @@ cont_t_lifted_local(F, C) ->
       fun() -> MR:ask() end,
       fun(IF, X) -> MR:local(IF, X) end,
       F, C).                       
+
+test_cont_t_shift_reset(_Config) ->
+    MR = reader_t:new(identity_m),
+    MS = state_t:new(MR),
+    MC = cont_t:new(MS),
+    M = MC:reset(
+          do([MC || 
+                 R <- MC:lift(MS:lift(MR:ask())),
+                 S <- MC:lift(MS:get()),
+                 MC:lift(MS:put(hello)),
+                 MC:shift(fun(K) -> MC:return({R, S}) end),
+                 MC:lift(MS:put(world))
+             ])),
+    Result = MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10),
+    ?assertEqual({{10, 0}, hello}, Result).
+
+test_cont_t_shift_reset2(_Config) ->
+    MR = reader_t:new(identity_m),
+    MS = state_t:new(MR),
+    MC = cont_t:new(MS),
+    M = MC:reset(
+          do([MC || 
+                 R <- MC:lift(MS:lift(MR:ask())),
+                 S <- MC:lift(MS:get()),
+                 MC:lift(MS:put(hello)),
+                 Val <- MC:shift(fun(K) -> MC:lift(K({R, S})) end),
+                 MC:lift(MS:put(world)),
+                 MC:return({Val, 1})
+             ])),
+    Result = MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10),
+    ?assertEqual({{{10, 0}, 1}, world}, Result).
+
