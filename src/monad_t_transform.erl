@@ -17,7 +17,7 @@ parse_transform(Forms, Opts) ->
     C = parse_trans:initial_context(Forms, Opts),
     Module = parse_trans:do_inspect(fun inspect/4, undefined, Forms, C),
     Exports = Module:module_info(exports),
-    Exclues = [new, module_info, lift],
+    Exclues = [new, run, module_info, lift],
     GenFunctions = 
         lists:foldl(
           fun({FName, Arity}, Acc) ->
