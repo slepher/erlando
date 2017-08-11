@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(state_m).
 -behaviour(monad).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, monad_m}).
 -transformer(state_t).
 
 %%%===================================================================

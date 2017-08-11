@@ -4,3 +4,4 @@ ebin
 test/*.beam
 logs
 *.plt
+deps

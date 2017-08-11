@@ -17,33 +17,47 @@
 -module(error_t).
 -compile({parse_transform, do}).
 
--export_type([error_t/2]).
+-export_type([error_t/3, error_value/2]).
 
 -behaviour(monad_trans).
--export([new/1, '>>='/3, return/2, fail/2, run/2, lift/2]).
+-export([new/1, '>>='/3, return/2, fail/2, lift/2]).
+-export([run_error/2, map_error/3, with_error/3]).
+-export([run/2]).
 
--opaque error_t(M, A) :: monad:monadic(M, ok | {ok, A} | {error, any()}).
+-opaque error_t(E, M, A) :: {error_t, inner_error_t(E, M, A)}.
 
+-type inner_error_t(E, M, A) :: monad:monadic(M, error_value(E, A)).
 
--spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
+-type error_value(E, A) :: ok | {ok, A} | {error, E}.
+
+-type t(M) :: {error_t, M}.
+
+-spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
     {?MODULE, M}.
 
+error_t(Inner) ->
+    {?MODULE, Inner}.
 
--spec '>>='(error_t(M, A), fun( (A) -> error_t(M, B) ), M) -> error_t(M, B).
-'>>='(X, Fun, {?MODULE, M}) ->
-    do([M || R <- X,
-             case R of
-                 {error, _Err} = Error -> return(Error);
-                 {ok,  Result}         -> Fun(Result);
-                 ok                    -> Fun(ok)
-             end
-       ]).
+run_error_t({?MODULE, Inner}) ->
+    Inner;
+run_error_t(Other) ->
+    exit({invalid_error_t, Other}).
 
+-spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) ), t(M)) -> error_t(E, M, B).
+'>>='(X, Fun, {?MODULE, IM}) ->
+    error_t(
+      do([IM || R <- run_error_t(X),
+              case R of
+                  {error, _Err} = Error -> return(Error);
+                  {ok,  Result}         -> run_error_t(Fun(Result));
+                  ok                    -> run_error_t(Fun(ok))
+              end
+       ])).
 
--spec return(A, M) -> error_t(M, A).
-return(ok, {?MODULE, M}) -> M:return(ok);
-return(X , {?MODULE, M}) -> M:return({ok, X}).
+-spec return(A, t(M)) -> error_t(_E, M, A).
+return(ok, {?MODULE, IM}) -> error_t(IM:return(ok));
+return(X , {?MODULE, IM}) -> error_t(IM:return({ok, X})).
 
 %% This is the equivalent of
 %%     fail msg = ErrorT $ return (Left (strMsg msg))
@@ -54,16 +68,39 @@ return(X , {?MODULE, M}) -> M:return({ok, X}).
 %% I.e. note that calling fail on the outer monad is not a failure of
 %% the inner monad: it is success of the inner monad, but the failure
 %% is encapsulated.
--spec fail(any(), M) -> error_t(M, _A).
-fail(E, {?MODULE, M}) ->
-    M:return({error, E}).
+-spec fail(E, t(M)) -> error_t(E, M, _A).
+fail(E, {?MODULE, IM}) ->
+    error_t(IM:return({error, E})).
 
-
--spec run(error_t(M, A), M) -> monad:monadic(M, ok | {ok, A} | {error, any()}).
-run(EM, _M) -> EM.
-
-
--spec lift(monad:monadic(M, A), M) -> error_t(M, A).
+-spec lift(monad:monadic(M, A), M) -> error_t(_E, M, A).
 lift(X, {?MODULE, M}) ->
     do([M || A <- X,
              return({ok, A})]).
+
+-spec run_error(error_t(E, M, A), M) -> monad:monadic(M, error_value(E, A)).
+run_error(EM, {?MODULE, _IM}) -> 
+    run_error_t(EM).
+
+run(EM, ET) ->
+    run_error(EM, ET).
+
+-spec map_error(fun((monad:monadic(M, error_value(EA, A))) -> monad:monadic(N, error_value(EB, B))),
+                error_t(EA, M, A), t(M)) -> error_t(EB, N, B).
+map_error(F, X, {?MODULE, _IM}) ->
+    error_t(F(run_error_t(X))).
+
+-spec with_error(fun((EA) -> EB), error_t(EA, M, A), t(M)) -> error_t(EB, M, A).
+with_error(F, X, {?MODULE, IM} = ET) ->
+    map_error(
+      fun(MA) ->
+              do([IM || 
+                     Val <- MA,
+                     case Val of
+                         {error, Reason} ->
+                             return({error, F(Reason)});
+                         Val ->
+                             return(Val)
+                     end
+                 ])
+      end, X, ET).
+    

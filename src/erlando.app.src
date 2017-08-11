@@ -3,4 +3,4 @@
   {vsn, "%%VSN%%"},
   {modules, []},
   {registered, []},
-  {applications, []}]}.
+  {applications, [kernel, stdlib, syntax_tools]}]}.

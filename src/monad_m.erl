@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 25 Jul 2017 by Chen Slepher <slepher@issac.local>
 %%%-------------------------------------------------------------------
--module(monad_t_transform).
+-module(monad_m).
 
 %% API
 -export([parse_transform/2]).
@@ -17,7 +17,7 @@ parse_transform(Forms, Opts) ->
     C = parse_trans:initial_context(Forms, Opts),
     Module = parse_trans:do_inspect(fun inspect/4, undefined, Forms, C),
     Exports = Module:module_info(exports),
-    Exclues = [new, run, module_info, lift],
+    Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],
     GenFunctions = 
         lists:foldl(
           fun({FName, Arity}, Acc) ->

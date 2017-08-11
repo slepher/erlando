@@ -274,13 +274,14 @@ expr({named_fun, Line, Name, Cs0}, MonadStack) ->
 %%  do syntax detection:
 expr({call, Line, {atom, _Line1, do},
       [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]},
-     MonadStack) when AtomOrVar =:= atom orelse AtomOrVar =:= var ->
+     MonadStack) when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% 'do' calls of a particular form:
     %%  do([ MonadMod || Qualifiers ])
     {call, Line,
      {'fun', Line,
       {clauses,
        [{clause, Line, [], [], do_syntax(Qs, [Monad | MonadStack])}]}}, []};
+
 %%  'return' and 'fail' syntax detection and transformation:
 expr({call, Line, {atom, Line1, ReturnOrFail}, As0},
      [Monad|_Monads] = MonadStack) when ReturnOrFail =:= return orelse
@@ -291,8 +292,7 @@ expr({call, Line, {atom, Line1, ReturnOrFail}, As0},
     %%  fail(Arguments)
     %% Transformed to:
     %% "Monad:return(Args)" or "Monad:fail(Args)" in monadic context
-    {call, Line, {remote, Line1, Monad, {atom, Line1, ReturnOrFail}},
-     expr_list(As0, MonadStack)};
+    monad_call_expr(Line, Line1, Monad, ReturnOrFail, expr_list(As0, MonadStack));
 expr({call, Line, F0, As0}, MonadStack) ->
     %% N.B. If F an atom then call to local function or BIF,  if F a
     %% remote structure (see below) then call to other module,
@@ -405,31 +405,14 @@ do_syntax([], [{_AtomOrVar, MLine, _MonadModule} | _MonadStack]) ->
 do_syntax([{GenerateOrMatch, Line, _Pattern, _Expr}], _MonadStack)
   when GenerateOrMatch =:= generate orelse GenerateOrMatch =:= match ->
     transform_error("The last statement in a 'do' construct must be an expression", Line);
-do_syntax([{generate, Line, {var, _Line, _Var} = Pattern, Expr} | Exprs],
+do_syntax([{generate, Line,  Pattern, Expr} | Exprs],
           [Monad | _Monads] = MonadStack) ->
     %% "Pattern <- Expr, Tail" where Pattern is a simple variable
     %% is transformed to
     %% "Monad:'>>='(Expr, fun (Pattern) -> Tail')"
     %% without a fail to match clause
-    [{call, Line, {remote, Line, Monad, {atom, Line, '>>='}},
-      [expr(Expr, MonadStack),
-       {'fun', Line,
-        {clauses,
-         [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)}]}}]}];
-do_syntax([{generate, Line, Pattern, Expr} | Exprs],
-          [Monad | _Monads] = MonadStack) ->
-    %% "Pattern <- Expr, Tail" where Pattern is not a simple variable
-    %% is transformed to
-    %% "Monad:'>>='(Expr, fun (Pattern) -> Tail')"
-    %% with a fail clause if the function does not match
-    [{call, Line, {remote, Line, Monad, {atom, Line, '>>='}},
-      [expr(Expr, MonadStack),
-       {'fun', Line,
-        {clauses,
-         [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)},
-          {clause, Line, [{var, Line, '_'}], [],
-           [{call, Line, {remote, Line, Monad, {atom, Line, 'fail'}},
-             [{atom, Line, 'monad_badmatch'}]}]}]}}]}];
+    Args = [expr(Expr, MonadStack), {'fun', Line, {clauses, pattern_syntax(Line, Pattern, Exprs, MonadStack)}}],
+    [monad_call_expr(Line, Line, Monad, '>>=', Args)];
 do_syntax([Expr], MonadStack) ->
     [expr(Expr, MonadStack)]; %% Don't do '>>' chaining on the last elem
 do_syntax([{match, _Line, _Pattern, _Expr} = Expr | Exprs],
@@ -440,12 +423,27 @@ do_syntax([Expr | Exprs], [Monad | _Monads] = MonadStack) ->
     %% "Expr, Tail" is transformed to "Monad:'>>='(Expr, fun (_) -> Tail')"
     %% Line is always the 2nd element of Expr
     Line = element(2, Expr),
-    [{call, Line, {remote, Line, Monad, {atom, Line, '>>='}},
-      [expr(Expr, MonadStack),
-       {'fun', Line,
-        {clauses,
-         [{clause, Line,
-           [{var, Line, '_'}], [], do_syntax(Exprs, MonadStack)}]}}]}].
+    Args = [expr(Expr, MonadStack),
+            {'fun', Line,
+             {clauses,
+              [{clause, Line,
+                [{var, Line, '_'}], [], do_syntax(Exprs, MonadStack)}]}}],
+    [monad_call_expr(Line, Line, Monad, '>>=', Args)].
+
+pattern_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, MonadStack) ->
+    [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)}];
+pattern_syntax(Line, Pattern, Exprs, [Monad | _Monads] = MonadStack) ->
+    %% with a fail clause if the function does not match
+    [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)},
+     {clause, Line, [{var, Line, '_'}], [],
+      [monad_call_expr(Line, Line, Monad, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
+
+monad_call_expr(Line, Line1, {tuple, _Line2, [{atom, _Line3, _MonadModule} = Module|_T]} = Monad, Function, Args) ->
+    %% if Monad is a tuple which is a monad transformer 
+    %% call of {Monad, Function, Args} is transformed to {Module, Function, Args ++ [Monad]}
+    {call, Line, {remote, Line1, Module, {atom, Line1, Function}}, Args ++ [Monad]};
+monad_call_expr(Line, Line1, Monad, Function, Args) ->
+    {call, Line, {remote, Line1, Monad, {atom, Line1, Function}}, Args}.
 
 %% Use this function to report any parse_transform error. The
 %% resulting error message will be displayed as an ordinary

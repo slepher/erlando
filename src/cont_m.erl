@@ -9,7 +9,7 @@
 -module(cont_m).
 -behaviour(monad).
 -transformer(cont_t).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, monad_m}).
 
 %%%===================================================================
 %%% API

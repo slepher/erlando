@@ -9,7 +9,7 @@
 -module(reader_m).
 -behaviour(monad).
 -transformer(reader_t).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, monad_m}).
 
 %%%===================================================================
 %%% API

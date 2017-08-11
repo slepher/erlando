@@ -21,7 +21,7 @@
 
 -export_type([state_t/3]).
 
--export([new/1, t/1, run/1]).
+-export([new/1, state_t/1, run_state_t/1]).
 % impl of monad
 -export(['>>='/3, return/2, fail/2]).
 % impl of monad trans
@@ -32,87 +32,88 @@
 %% duplicate of eval_state/3, exec_state/3, run_state/3, state/2
 -export([eval/3, exec/3, run/3, modify_and_return/2]).
 
-
--opaque state_t(S, M, A) :: {state_t, fun( (S) -> monad:monadic(M, {A, S}) )}.
+-type state_t(S, M, A) :: {state_t, inner_state_t(S, M, A)}.
+-type inner_state_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(Inner) ->
     {?MODULE, Inner}.
 
--spec t(fun((S) -> monad:monadic(M, {A, S}) )) -> state_t(S, M, A).
-t(Inner) ->
+-spec state_t(inner_state_t(S, M, A)) -> state_t(S, M, A).
+state_t(Inner) ->
     {?MODULE, Inner}.
 
--spec run(state_t(S, M, A)) -> fun((S) -> monad:monadic(M, {A, S})). 
-run({?MODULE, Inner}) ->
+-spec run_state_t(state_t(S, M, A)) -> inner_state_t(S, M, A).
+run_state_t({?MODULE, Inner}) ->
     Inner;
-run(Other) ->
-    exit({invalid_monad, Other}).
+run_state_t(Other) ->
+    exit({invalid_state_t, Other}).
 
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B) ), M) -> state_t(S, M, B).
 '>>='(X, Fun, {?MODULE, IM} = ST) ->  
-    t(fun (S) ->
+    state_t(fun (S) ->
                 do([IM || 
-                       {A, NS} <- ST:run_state(X, S),
-                       ST:run_state(Fun(A), NS)
+                       {A, NS} <- run_state(X, S, ST),
+                       run_state(Fun(A), NS, ST)
                    ])
         end).
 
 -spec return(A, M) -> state_t(_S, M, A).
 return(A, {?MODULE, _IM} = ST) ->
-    ST:state(fun (S) -> {A, S} end).
+    state(fun (S) -> {A, S} end, ST).
 
 -spec fail(any(), M) -> state_t(_S, M, _A).
 fail(E, {?MODULE, IM}) ->
-    t(fun (_) -> IM:fail(E) end).
+    state_t(fun (_) -> IM:fail(E) end).
 
 -spec lift(monad:monadic(M, A), M) -> state_t(_S, M, A).
-lift(SM, {?MODULE, IM}) ->
-    t(fun (S) ->
-              do([IM || A <- SM,
-                        IM:return({A, S})])
-        end).
+lift(ISTM, {?MODULE, IM}) ->
+    state_t(
+      fun (S) ->
+              do([IM || A <- ISTM,
+                        return({A, S})])
+      end).
 
 -spec get(M) -> state_t(S, M, S).
 get({?MODULE, _M} = ST) ->
-    ST:state(fun (S) -> {S, S} end).
+    state(fun (S) -> {S, S} end, ST).
 
 -spec gets(fun((S) -> A), M) -> state_t(S, M, A).
 gets(F, {?MODULE, _IM} = ST) ->
-    ST:state(fun (S) -> {F(S), S} end).
+    state(fun (S) -> {F(S), S} end, ST).
 
 -spec put(S, M) -> state_t(S, M, ok).
 put(S, {?MODULE, _M} = ST) ->
-    ST:state(fun (_) -> {ok, S} end).
+    state(fun (_) -> {ok, S} end, ST).
 
 -spec modify(fun((S) -> S ), M) -> state_t(S, M, ok).
 modify(Fun, {?MODULE, _M} = ST) ->
-    ST:state(fun (S) -> {ok, Fun(S)} end).
+    state(fun (S) -> {ok, Fun(S)} end, ST).
 
 -spec state(fun((S) -> {A, S}), M) -> state_t(S, M, A).
 state(Fun, {?MODULE, IM}) ->
-    t(fun (S) -> IM:return(Fun(S)) end).
+    state_t(fun (S) -> IM:return(Fun(S)) end).
 
 -spec eval_state(state_t(S, M, A), S, M) -> monad:monadic(M, A).
 eval_state(SM, S, {?MODULE, IM} = ST) ->
-    do([IM || {A, _NS} <- ST:run_state(SM, S),
+    do([IM || {A, _NS} <- run_state(SM, S, ST),
               IM:return(A)]).
 
 -spec exec_state(state_t(S, M, _A), S, M) -> monad:monadic(M, S).
 exec_state(SM, S, {?MODULE, IM} = ST) ->
-    do([IM || {_A, NS} <- ST:run_state(SM, S),
-              IM:return(NS)]).
+    do([IM || {_A, NS} <- run_state(SM, S, ST),
+              return(NS)]).
 
 -spec run_state(state_t(S, M, A), S, M) -> monad:monadic(M, {A, S}).
-run_state(SM, S, {?MODULE, _IM} = _ST) -> (run(SM))(S).
+run_state(SM, S, {?MODULE, _IM} = _ST) -> (run_state_t(SM))(S).
 
 -spec map_state(fun((monad:monadic(M, {A, S})) -> monad:monadic(N, {B, S})), state_t(S, M, A), _TM) -> state_t(S, N, B).
 map_state(F, SM, {?MODULE, _IM} = ST) ->
-    t(fun (S) -> F(ST:run_state(SM, S)) end).
+    state_t(fun (S) -> F(run_state(SM, S, ST)) end).
 
 -spec with_state(fun((S) -> S), state_t(S, M, A), _TM) -> state_t(S, M, A).
 with_state(F, SM, {?MODULE, _IM} = ST) ->
-    t(fun (S) -> ST:run(SM, F(S)) end).
+    state_t(fun (S) -> run_state(SM, F(S), ST) end).
 
 eval(SM, S, M) ->
     eval_state(SM, S, M).

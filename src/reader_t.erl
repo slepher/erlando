@@ -21,68 +21,81 @@
 
 -export_type([reader_t/3]).
 
--export([new/1, '>>='/3, return/2, fail/2, lift/2]).
--export([ask/1, local/3, reader/2]).
--export([run/3]).
+-export([new/1, reader_t/1, run_reader_t/1]).
+% impl of monad
+-export(['>>='/3, return/2, fail/2]).
+% impl of monad trans
+-export([lift/2]).
+% impl of monad reader
+-export([ask/1, asks/2, local/3]).
+% monad reader functions
+-export([reader/2, run_reader/3, map_reader/3, with_reader/3]).
 
--opaque reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
+-opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
+-type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
 
--spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
+-type t(M) :: {reader_t, M}.
 
-
+-spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
     {?MODULE, M}.
 
+-spec reader_t(inner_reader_t(R, M, A)) -> reader_t(R, M, A).
+reader_t(Inner) ->
+    {?MODULE, Inner}.
 
--spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) ), M) -> reader_t(R, M, B).
-'>>='(X, Fun, {?MODULE, M}) ->
-    fun(R) ->
-            do([M || 
-                   A <- X(R),
-                   (Fun(A))(R)
+-spec run_reader_t(reader_t(R, M, A)) -> inner_reader_t(R, M, A).
+run_reader_t({?MODULE, Inner}) ->
+    Inner;
+run_reader_t(Other) ->
+    exit({invalid_reader_t, Other}).
+
+-spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) ), t(M)) -> reader_t(R, M, B).
+'>>='(X, Fun, {?MODULE, IM} = RT) ->
+    reader_t(
+      fun(R) ->
+              do([IM || 
+                     A <- run_reader(X, R, RT),
+                     run_reader(Fun(A), R, RT)
                ])
-    end.
+      end).
 
+-spec return(A, t(M)) -> reader_t(_R, M, A).
+return(A, {?MODULE, IM}) ->
+    reader_t(fun (_) -> IM:return(A) end).
 
--spec return(A, M) -> reader_t(_R, M, A).
-return(A, {?MODULE, M}) ->
-    fun (_) ->
-            M:return(A)
-    end.
-
--spec fail(any(), M) -> reader_t(_R, M, _A).
+-spec fail(any(), t(M)) -> reader_t(_R, M, _A).
 fail(E, {?MODULE, M}) ->
-    fun (_) ->
-            M:fail(E)
-    end.
+    reader_t(fun (_) -> M:fail(E) end).
 
--spec lift(monad:monadic(M, A), M) -> reader_t(_R, M, A).
+-spec lift(monad:monadic(M, A), t(M)) -> reader_t(_R, M, A).
 lift(X, {?MODULE, _M}) ->
-    fun(_) ->
-            X
-    end.
+    reader_t(fun(_) -> X end).
 
 -spec ask(M) -> reader_t(R, M, R).
-ask({?MODULE, M}) ->
-    fun(R) ->
-            M:return(R)
-    end.
+ask({?MODULE, IM}) ->
+    reader_t(fun(R) -> IM:return(R) end).
 
+-spec asks(fun((R) -> A), t(M)) -> reader_t(R, M, A).
+asks(F, {?MODULE, _IM} = RT) ->
+    reader(F, RT).
 
--spec local(fun( (R) -> R), reader_t(R, M, A), M) -> reader_t(R, M, A).
-local(F, RA, {?MODULE, _M}) ->
-    fun(R) ->
-            NR = F(R),
-            RA(NR)
-    end.
+-spec local(fun( (R) -> R), reader_t(R, M, A), t(M)) -> reader_t(R, M, A).
+local(F, RA, {?MODULE, _IM} = RT) ->
+    with_reader(F, RA, RT).
 
--spec reader(fun( (R) -> A), M) -> reader_t(R, M, A).
-reader(F, {?MODULE, M}) ->
-    fun(R) ->
-         M:return(F(R))
-    end.
+-spec reader(fun( (R) -> A), t(M)) -> reader_t(R, M, A).
+reader(F, {?MODULE, IM}) ->
+    reader_t(fun(R) -> IM:return(F(R)) end).
 
--spec run(reader_t(R, M, A), R, M) -> monad:monadic(M, A).
-run(MR, R, {?MODULE, _M}) ->
-    MR(R).
+-spec run_reader(reader_t(R, M, A), R, t(M)) -> monad:monadic(M, A).
+run_reader(MR, R, {?MODULE, _IM}) ->
+    (run_reader_t(MR))(R).
     
+-spec map_reader(fun((monad:monadic(M, R)) -> monad:monadic(N, R)), reader_t(R, M, A), t(M)) -> reader_t(R, N, A).
+map_reader(F, MR, {?MODULE, _IM} = RT) ->
+    reader_t(fun(R) -> F(run_reader(MR, R, RT)) end).
+
+-spec with_reader(fun((NR) -> R), reader_t(NR, M, A), t(M)) -> reader_t(R, M, A).
+with_reader(F, MR, {?MODULE, _IM} = RT) ->
+    reader_t(fun(R) -> run_reader(MR, F(R), RT) end).

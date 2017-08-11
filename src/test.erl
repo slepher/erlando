@@ -20,7 +20,7 @@
 
 test(Funs, Options) ->
     ErrorT = error_t:new(identity_m),
-    Result = ErrorT:run(test_funs(ErrorT, Funs)),
+    Result = error_t:run(test_funs(ErrorT, Funs), ErrorT),
     case proplists:get_bool(report, Options) of
         true ->
             Name = proplists:get_value(name, Options, anonymous),
@@ -41,19 +41,26 @@ test(Funs, Options) ->
 
 
 test_funs(ErrorT, []) ->
-    ErrorT:return(passed);
+    error_t:return(passed, ErrorT);
 
-test_funs(ErrorT, [{Module, {Label, FunName}}|Funs])
+test_funs({error_t, IM} = ErrorT, [{Module, {Label, FunName}}|Funs])
   when is_atom(Module) andalso is_atom(FunName) ->
-    do([ErrorT || hoist(ErrorT, Label, fun () -> Module:FunName() end),
-                  test_funs(ErrorT, Funs)]);
-
-test_funs(ErrorT, [{Module, FunName}|Funs])
-  when is_atom(Module) andalso is_atom(FunName)
-       andalso is_function({Module, FunName}, 0) ->
-    do([ErrorT || hoist(ErrorT, FunName, fun () -> Module:FunName() end),
-                  test_funs(ErrorT, Funs)]);
-
+    case erlang:function_exported(Module, FunName, 0) of
+        true ->
+            do([{error_t, IM} || hoist(ErrorT, Label, fun () -> Module:FunName() end),
+                                 test_funs(ErrorT, Funs)]);
+        false ->
+            error_t:fail({Label, Module, FunName, not_exported}, ErrorT)
+    end;
+test_funs({error_t, IM} = ErrorT, [{Module, FunName}|Funs])
+  when is_atom(Module) andalso is_atom(FunName) ->
+    case erlang:function_exported(Module, FunName, 0) of
+        true ->
+            do([{error_t, IM} || hoist(ErrorT, FunName, fun () -> Module:FunName() end),
+                                 test_funs(ErrorT, Funs)]);
+        false ->
+            error_t:fail({Module, FunName, not_exported}, ErrorT)
+    end;
 test_funs(ErrorT, [{_Module, []}|Funs]) ->
     test_funs(ErrorT, Funs);
 
@@ -61,17 +68,16 @@ test_funs(ErrorT, [{Module, [FunName|FunNames]}|Funs])
   when is_atom(Module) andalso is_atom(FunName) ->
     test_funs(ErrorT, [{Module, FunName}, {Module, FunNames} | Funs]);
 
-test_funs(ErrorT, [{Label, Fun}|Funs]) when is_function(Fun, 0) ->
-    do([ErrorT || hoist(ErrorT, Label, Fun),
-                  test_funs(ErrorT, Funs)]);
+test_funs({error_t, IM} = ErrorT, [{Label, Fun}|Funs]) when is_function(Fun, 0) ->
+    do([{error_t, IM} || hoist(ErrorT, Label, Fun),
+                         test_funs(ErrorT, Funs)]);
 
-test_funs(ErrorT, [Fun|Funs]) when is_function(Fun, 0) ->
-    do([ErrorT || hoist(ErrorT, anonymous_function, Fun),
-                  test_funs(ErrorT, Funs)]).
+test_funs({error_t, IM}, [Fun|Funs]) when is_function(Fun, 0) ->
+    do([{error_t, IM} || hoist({error_t, IM}, anonymous_function, Fun),
+                  test_funs({error_t, IM}, Funs)]).
 
-
-hoist(ErrorT, Label, PlainFun) ->
-    do([ErrorT ||
+hoist({error_t, IM}, Label, PlainFun) ->
+    do([{error_t, IM} ||
            try
                PlainFun(),
                return(passed)

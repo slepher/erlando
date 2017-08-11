@@ -166,7 +166,7 @@ test_cont_t(_Config) ->
                R2 <- M2,
                return(R1 + R2)]),
     CC = fun(X) -> {ok, X} end,
-    ?assertEqual({ok, 5}, (R)(CC)).
+    ?assertEqual({ok, 5}, Monad:run_cont(R, CC)).
 
 
 test_cont_t_callCC(_Config) ->
@@ -240,7 +240,7 @@ test_cont_t_shift_reset(_Config) ->
                  R <- MC:lift(MS:lift(MR:ask())),
                  S <- MC:lift(MS:get()),
                  MC:lift(MS:put(hello)),
-                 MC:shift(fun(K) -> MC:return({R, S}) end),
+                 MC:shift(fun(_K) -> MC:return({R, S}) end),
                  MC:lift(MS:put(world))
              ])),
     Result = MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10),
