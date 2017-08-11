@@ -29,12 +29,15 @@
 -module(omega_m).
 
 -behaviour(monad).
+-export([fmap/2]).
 -export(['>>='/2, return/1, fail/1]).
 -export([diagonal/1]).
 
 -behaviour(monad_plus).
 -export([mzero/0, mplus/2]).
 
+fmap(F, Xs) ->
+    [F(X) || X <- Xs].
 
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
 '>>='(X, Fun) ->

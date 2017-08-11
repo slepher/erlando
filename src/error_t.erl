@@ -20,7 +20,10 @@
 -export_type([error_t/3, error_value/2]).
 
 -behaviour(monad_trans).
--export([new/1, '>>='/3, return/2, fail/2, lift/2]).
+
+-export([new/1, error_t/1, run_error_t/1]).
+-export([fmap/3]).
+-export(['>>='/3, return/2, fail/2, lift/2]).
 -export([run_error/2, map_error/3, with_error/3]).
 -export([run/2]).
 
@@ -43,6 +46,18 @@ run_error_t({?MODULE, Inner}) ->
     Inner;
 run_error_t(Other) ->
     exit({invalid_error_t, Other}).
+
+fmap(F, X, {?MODULE, IM} = ET) ->
+    NF = 
+        fun({ok, Value}) ->
+                F(Value);
+           (Other) ->
+                Other
+        end,
+    map_error(
+      fun(SIM) ->
+              IM:fmap(NF, SIM)
+      end, X, ET).
 
 -spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) ), t(M)) -> error_t(E, M, B).
 '>>='(X, Fun, {?MODULE, IM}) ->

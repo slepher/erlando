@@ -22,6 +22,8 @@
 -export_type([cont_t/3]).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
+% impl of functor 
+-export([fmap/3]).
 % impl of monad
 -export(['>>='/3, return/2, fail/2]).
 % impl of monad transformer
@@ -53,6 +55,13 @@ run_cont_t({?MODULE, Inner}) ->
     Inner;
 run_cont_t(Other) ->
     exit({invalid_monad, Other}).
+
+-spec fmap(fun((A) -> B), cont_t(R, M, A), t(M)) -> cont_t(R, M, B).
+fmap(F, X, {?MODULE, _IM} = CT) ->
+    cont_t(
+      fun(CC) ->
+             run_cont(X, fun(A) -> CC(F(A)) end, CT)
+      end).
 
 -spec '>>='(cont_t(R, M, A), fun((A) -> cont_t(R, M, B)), t(M)) -> cont_t(R, M, B).
 '>>='(M, Fun, {?MODULE, _IM} = CT) ->

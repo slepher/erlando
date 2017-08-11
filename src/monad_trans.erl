@@ -11,6 +11,9 @@
 -module(monad_trans).
 -compile({parse_transform, do}).
 
+%% functor primitives
+-callback fmap(fun((A) -> B), monad:monadic(TM, A), TM) -> monad:monadic(TM, B) when TM :: monad:monad().
+
 %% Monad primitives
 -callback '>>='(monad:monadic(TM, A), fun( (A) -> monad:monadic(TM, B) ), TM) -> monad:monadic(TM, B) when TM :: monad:monad().
 -callback return(A, TM) -> monad:monadic(TM, A) when TM :: monad:monad().

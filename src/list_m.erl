@@ -19,11 +19,13 @@
 -module(list_m).
 
 -behaviour(monad).
--export(['>>='/2, return/1, fail/1]).
+-export([fmap/2, '>>='/2, return/1, fail/1]).
 
 -behaviour(monad_plus).
 -export([mzero/0, mplus/2]).
 
+fmap(F, Xs) ->
+    [F(X) || X <- Xs].
 
 %% Note that using a list comprehension is (obviously) cheating, but
 %% it's easier to read. The "real" implementation is also included for
@@ -31,7 +33,6 @@
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
 '>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).
-
 
 -spec return(A) -> [A].
 return(X) -> [X].

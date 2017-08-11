@@ -13,7 +13,6 @@
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
 
-
 -opaque list_t(M, A) :: {list_t, inner_list_t(M, A)}.
 -type inner_list_t(M, A) :: monad:monadic(M, [A]).
 
@@ -24,7 +23,7 @@
 -export(['>>='/3, return/2, fail/2, lift/2]).
 -export([run_list/2, map_list/3]).
 
--spec new(M) -> t(M) when M :: monad:monadic(M).
+-spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
     {?MODULE, M}.
 
@@ -41,6 +40,10 @@ run_list_t(Other) ->
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec fmap(fun((A) -> B), list_t(M, A), t(M)) -> list_t(M, B).
+fmap(F, X, {?MODULE, IM} = LT) ->
+    map_list(IM:fmap(lists:map(F, _), _), X, LT).
+
 '>>='(X, Fun, {?MODULE, IM}) ->
     list_t(
       do([IM || 
@@ -67,10 +70,6 @@ lift(X, {?MODULE, IM}) ->
              A <- X,
              return([A])
          ])).
-
--spec fmap(fun((A) -> B), list_t(M, A), t(M)) -> list_t(M, B).
-fmap(F, X, {?MODULE, IM} = LT) ->
-    map_list(IM:fmap(lists:map(F, _), _), X, LT).
 
 run_list(X, {?MODULE, _IM}) ->
     run_list_t(X).

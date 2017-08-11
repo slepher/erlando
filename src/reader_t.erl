@@ -22,6 +22,8 @@
 -export_type([reader_t/3]).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
+% impl of functor
+-export([fmap/3]).
 % impl of monad
 -export(['>>='/3, return/2, fail/2]).
 % impl of monad trans
@@ -49,6 +51,13 @@ run_reader_t({?MODULE, Inner}) ->
     Inner;
 run_reader_t(Other) ->
     exit({invalid_reader_t, Other}).
+
+-spec fmap(fun((A) -> B), reader_t(R, M, A), t(M)) -> reader_t(R, M, B).
+fmap(F, X, {?MODULE, IM} = RT) ->
+    map_reader(
+      fun(RIM) ->
+              IM:fmap(F, RIM)
+      end, X, RT).
 
 -spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) ), t(M)) -> reader_t(R, M, B).
 '>>='(X, Fun, {?MODULE, IM} = RT) ->

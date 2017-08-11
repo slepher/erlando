@@ -19,7 +19,7 @@
 -export_type([maybe/1]).
 
 -behaviour(monad).
--export(['>>='/2, return/1, fail/1]).
+-export([fmap/2, '>>='/2, return/1, fail/1]).
 
 -behaviour(monad_plus).
 -export([mzero/0, mplus/2]).
@@ -27,10 +27,14 @@
 -type maybe(A) :: {just, A} | nothing.
 
 
+fmap(F, {just, X}) ->
+    {just, F(X)};
+fmap(_F, nothing) ->
+    nothing.
+
 -spec '>>='(maybe(A), fun( (A) -> maybe(B) )) -> maybe(B).
 '>>='({just, X}, Fun) -> Fun(X);
 '>>='(nothing,  _Fun) -> nothing.
-
 
 -spec return(A) -> maybe(A).
 return(X) -> {just, X}.

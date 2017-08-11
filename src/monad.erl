@@ -24,6 +24,9 @@
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
 
+%% functor primitives
+-callback fmap(fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad:monad().
+
 %% Monad primitives
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback return(A) -> monadic(M, A) when M :: monad().

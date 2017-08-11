@@ -19,9 +19,13 @@
 
 -export_type([identity_m/1]).
 
+-export([fmap/2]).
 -export(['>>='/2, return/1, fail/1]).
 
 -type identity_m(A) :: A.
+
+fmap(F, X) ->
+    F(X).
 
 -spec '>>='(identity_m(A), fun( (A) -> identity_m(B) )) -> identity_m(B).
 '>>='(X, Fun) -> Fun(X).
