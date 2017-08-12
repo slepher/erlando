@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(reader_m).
 -behaviour(monad).
+-behaviour(monad_plus).
+-behaviour(monad_reader).
 -transformer(reader_t).
 -compile({parse_transform, monad_m}).
 

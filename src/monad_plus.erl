@@ -20,32 +20,35 @@
 
 -export_type([monad/0, monadic/2]).
 
+-export([mzero/1, mplus/3]).
 -export([guard/2, msum/2, mfilter/3]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
 
-
 %% MonadPlus primitives
 -callback mzero() -> monadic(_M, _A).
 -callback mplus(monadic(M, A), monadic(M, A)) -> monadic(M, A).
 
+mzero({Trans, _Inner} = M) ->
+    Trans:mzero(M);
+mzero(M) ->
+    M:mzero().
+
+mplus({Trans, _Inner} = M, MA, MB) ->
+    Trans:mplus(MA, MB, M);
+mplus(M, MA, MB) ->
+    M:mplus(MA, MB).
 
 %% Utility functions
--spec guard(M, boolean()) -> monadic(M, ok).
-guard(Monad, true)  -> Monad:return(ok);
-guard(Monad, false) -> Monad:fail("").
-
+-spec guard(M, boolean()) -> monad:monadic(M, _A).
+guard(M, true)  -> monad:return(M, ok);
+guard(M, false) -> mzero(M).
 
 -spec msum(M, [monadic(M, A)]) -> monadic(M, A).
-msum(Monad, List) ->
-    lists:foldr(Monad:mplus(_, _), Monad:mzero(), List).
-
+msum(M, List) ->
+    lists:foldr(mplus(M, _, _), mzero(M), List).
 
 -spec mfilter(M, fun( (A) -> boolean() ), monadic(M, A)) -> monadic(M, A).
-mfilter(Monad, Pred, X) ->
-    do([Monad || A <- X,
-                 case Pred(A) of
-                     true  -> return(A);
-                     false -> Monad:mzero()
-                 end]).
+mfilter(M, Pred, X) ->
+    do([M || A <- X, guard(M, Pred(A))]).

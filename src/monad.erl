@@ -20,6 +20,8 @@
 -export_type([monad/0, monadic/2]).
 
 -export([join/2, sequence/2]).
+-export([fmap/3]).
+-export(['>>='/3, return/2, fail/2]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
@@ -47,3 +49,28 @@ sequence(Monad, [], Acc) ->
 sequence(Monad, [X|Xs], Acc) ->
     do([Monad || E <- X,
                  sequence(Monad, Xs, [E|Acc])]).
+
+
+-spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
+fmap({T, _IM} = M, F, X) ->
+    T:fmap(F, X, M);
+fmap(M, F, X) ->
+    M:fmap(F, X).
+    
+-spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
+'>>='({T, _IM} = M, X, F) ->
+    T:'>>='(X, F, M);
+'>>='(M, X, F) ->
+    M:'>>='(X, F).
+
+-spec return(M, A) -> monad:monadic(M, A) when M :: monad().
+return({T, _IM} = M, A) ->
+    T:return(A, M);
+return(M, A) ->
+    M:return(A).
+
+-spec fail(M, _E) -> monad:monadic(M, _A) when M :: monad().
+fail({T, _IM} = M, E) ->
+    T:fail(E, M);
+fail(M, E) ->
+    M:fail(E).

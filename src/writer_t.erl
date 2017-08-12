@@ -24,8 +24,10 @@
 -type t(M) :: {writer_t, M}.
 
 -behaviour(monad_trans).
+-behaviour(monad_plus_trans).
 -export([new/1, writer_t/1, run_writer_t/1]).
 -export([fmap/3]).
+-export([mzero/1, mplus/3]).
 -export(['>>='/3, return/2, fail/2, lift/2]).
 -export([tell/2, listen/2, listens/3, pass/2, censor/3]).
 -export([exec_writer/2, map_writer/3]).
@@ -76,6 +78,17 @@ lift(X, {?MODULE, IM}) ->
            A <- X,
            return({A, []})
        ]).
+
+-spec mzero(t(M)) -> writer_t(_W, M, _A).
+mzero({?MODULE, IM}) ->
+    writer_t(monad_plus:mzero(IM)).
+
+-spec mplus(writer_t(W, M, A), writer_t(W, M, A), t(M)) -> writer_t(W, M, A).
+mplus(WA, WB, {?MODULE, IM}) ->
+    writer_t(
+      monad_plus:mplus(IM, run_writer_t(WA), run_writer_t(WB))
+     ).
+      
 
 -spec tell([W], t(M)) -> writer_t(W, M, ok).
 tell(X, {?MODULE, M}) ->

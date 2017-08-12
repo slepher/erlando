@@ -17,6 +17,7 @@
 -module(state_t).
 -compile({parse_transform, do}).
 -behaviour(monad_trans).
+-behaviour(monad_plus_trans).
 -behaviour(monad_state_trans).
 
 -export_type([state_t/3]).
@@ -28,6 +29,8 @@
 -export(['>>='/3, return/2, fail/2]).
 % impl of monad trans
 -export([lift/2]).
+% impl of monad plus
+-export([mzero/1, mplus/3]).
 % impl of monad state
 -export([get/1, gets/2, put/2, modify/2]).
 -export([state/2, eval_state/3, exec_state/3, run_state/3, map_state/3, with_state/3]).
@@ -86,6 +89,17 @@ lift(ISTM, {?MODULE, IM}) ->
       fun (S) ->
               do([IM || A <- ISTM,
                         return({A, S})])
+      end).
+
+-spec mzero(t(M)) -> state_t(_S, M, _A).
+mzero({?MODULE, IM}) ->
+    state_t(fun(_) -> monad_plus:mzero(IM) end).
+
+-spec mplus(state_t(S, M, A), state_t(S, M, A), t(M)) -> state_t(S, M, A).
+mplus(SA, SB, {?MODULE, IM} = ST) ->
+    state_t(
+      fun(S) ->
+              monad_plus:mplus(IM, run_state(SA, S, ST), run_state(SB, S, ST))
       end).
 
 -spec get(t(M)) -> state_t(S, M, S).

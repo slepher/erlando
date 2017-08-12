@@ -119,4 +119,3 @@ lift_local(Ask, Local, F, X, {?MODULE, IM} = CT) ->
                           Local(F, run_cont(X, fun(A) -> Local(fun(_) -> R end, CC(A)) end, CT))
                       ])
            end).
-

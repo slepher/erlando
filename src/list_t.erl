@@ -14,14 +14,17 @@
 -compile({parse_transform, cut}).
 
 -opaque list_t(M, A) :: {list_t, inner_list_t(M, A)}.
--type inner_list_t(M, A) :: monad:monadic(M, [A]).
+-type inner_list_t(M, A) :: monad:monadic(M, step(M, A)).
+-type step(M, A) :: [A|list_t(M, A)] | [].
 
--type t(IM) :: {?MODULE, IM}.
+-type t(IM) :: monad_trans:monad_trans(?MODULE, IM).
+
 %% API
 -export([new/1, list_t/1, run_list_t/1]).
 -export([fmap/3]).
+-export([mappend/3]).
 -export(['>>='/3, return/2, fail/2, lift/2]).
--export([run_list/2, map_list/3]).
+-export([run_list/2]).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -41,29 +44,53 @@ run_list_t(Other) ->
 %%% API
 %%%===================================================================
 -spec fmap(fun((A) -> B), list_t(M, A), t(M)) -> list_t(M, B).
-fmap(F, X, {?MODULE, IM} = LT) ->
-    map_list(IM:fmap(lists:map(F, _), _), X, LT).
+fmap(F, X, {?MODULE, IM} = AT) ->
+    list_t(
+      do([IM ||
+             V <- run_list_t(X),
+             case V of
+                 [] ->
+                     return([]);
+                 [H|T] ->
+                     return([F(H)|fmap(F, T, AT)])
+             end
+         ])).
 
-'>>='(X, Fun, {?MODULE, IM}) ->
+-spec mappend(list_t(M, A), list_t(M, A), t(M)) -> list_t(M, A).
+mappend(X1, X2, {?MODULE, IM} = LT) ->
+    list_t(
+      do([IM ||
+             V <- run_list_t(X1),
+             case V of
+                 [] ->
+                     run_list_t(X2);
+                 [H|T] ->
+                     return([H|mappend(T, X2, LT)])
+             end
+         ])).
+
+-spec '>>='(list_t(M, A), fun((A) -> list_t(M, B)), t(M)) -> list_t(M, B).
+'>>='(X, Fun, {?MODULE, IM} = LT) ->
     list_t(
       do([IM || 
              Values <- run_list_t(X),
-             lists:foldl(
-               fun(Value, IMAcc) ->
-                       do([IM || 
-                              Acc <- IMAcc,
-                              NValues <- run_list_t(Fun(Value)),
-                              return(NValues ++ Acc)
-                          ])
-               end, IM:return([]), Values)
+             case Values of
+                 [] ->
+                     return([]);
+                 [H|T] ->
+                     run_list_t(mappend(Fun(H), '>>='(T, Fun, LT), LT))
+             end
          ])).
            
+-spec return(A, t(M)) -> list_t(M, A).
 return(A, {?MODULE, IM}) ->
     list_t(IM:return([A])).
 
+-spec fail(_E, t(M)) -> list_t(M, _A).
 fail(E, {?MODULE, IM}) ->
     list_t(IM:fail(E)).
 
+-spec lift(monad:monadic(M, A), t(M)) -> monad:monaic(t(M), A).
 lift(X, {?MODULE, IM}) ->
     list_t(
       do([IM || 
@@ -71,14 +98,18 @@ lift(X, {?MODULE, IM}) ->
              return([A])
          ])).
 
-run_list(X, {?MODULE, _IM}) ->
-    run_list_t(X).
-
--spec map_list(fun((monad:monadic(M, [A])) -> monad:monadic(N, [B])), list_t(M, A), t(M)) -> list_t(N, B).
-map_list(F, X, {?MODULE, _IM}) ->
-    list_t(F(run_list_t(X))).
-
-
+-spec run_list(list_t(M, A), monad_trans:monad_trans(list_t, M)) ->
+                      monad:monadic(M, A) when M :: monad:monadic().
+run_list(X, {?MODULE, IM} = LT) ->
+    do([IM ||
+           V <- run_list_t(X),
+           case V of
+               [] ->
+                   return([]);
+               [H|MT] ->
+                   monad:fmap(IM, fun(T) -> [H|T] end, run_list(MT, LT))
+           end
+       ]).
            
 %%--------------------------------------------------------------------
 %% @doc

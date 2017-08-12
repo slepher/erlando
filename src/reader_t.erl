@@ -17,6 +17,7 @@
 -module(reader_t).
 -compile({parse_transform, do}).
 -behaviour(monad_trans).
+-behaviour(monad_plus_trans).
 -behaviour(monad_reader_trans).
 
 -export_type([reader_t/3]).
@@ -28,6 +29,8 @@
 -export(['>>='/3, return/2, fail/2]).
 % impl of monad trans
 -export([lift/2]).
+% impl of monad plus
+-export([mzero/1, mplus/3]).
 % impl of monad reader
 -export([ask/1, asks/2, local/3]).
 % monad reader functions
@@ -69,6 +72,17 @@ fmap(F, X, {?MODULE, IM} = RT) ->
                ])
       end).
 
+-spec mzero(t(M)) -> reader_t(_R, M, _A).
+mzero({?MODULE, IM} = RT) ->
+    lift(monad_plus:mzero(IM), RT).
+
+-spec mplus(reader_t(R, M, A), reader_t(R, M, A), t(M)) -> reader_t(R, M, A).
+mplus(RA, RB, {?MODULE, IM} = RT) ->
+    reader_t(
+      fun(R) ->
+              monad_plus:mplus(IM, run_reader(RA, R, RT), run_reader(RB, R, RT))
+      end).
+
 -spec return(A, t(M)) -> reader_t(_R, M, A).
 return(A, {?MODULE, IM}) ->
     reader_t(fun (_) -> IM:return(A) end).
@@ -79,7 +93,7 @@ fail(E, {?MODULE, M}) ->
 
 -spec lift(monad:monadic(M, A), t(M)) -> reader_t(_R, M, A).
 lift(X, {?MODULE, _M}) ->
-    reader_t(fun(_) -> X end).
+    reader_t(fun(_) -> X end).    
 
 -spec ask(M) -> reader_t(R, M, R).
 ask({?MODULE, IM}) ->
