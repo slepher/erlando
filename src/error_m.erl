@@ -21,36 +21,30 @@
 -behaviour(monad).
 -export([fmap/2]).
 -export(['>>='/2, return/1, fail/1]).
--export([run_error/1]).
 
 %% This is really instance (Error e) => Monad (Either e) with 'error'
 %% for Left and 'ok' for Right.
 -type error_m(E, A) :: ok | {ok, A} | {error, E}.
 
-
 -spec fmap(fun((A) -> B), error_m(E, A)) -> error_m(E, B).
 fmap(F, X) ->
-    EM = error_t:new(identity_m),
-    error_t:run_error_t(error_t:fmap(F, error_t:error_t(X), EM)).
+    case X of
+        {ok, V} ->
+            {ok, F(V)};
+        Other ->
+            Other
+    end.
 
 -spec '>>='(error_m(E, A), fun( (A) -> error_m(E, B) )) -> error_m(E, B).
-'>>='(X, Fun) ->
-    EM = error_t:new(identity_m),
-    error_t:run_error_t(
-      error_t:'>>='(
-        error_t:error_t(X),
-        fun(A) -> error_t:error_t(Fun(A)) end,
-        EM)).
+'>>='({error, _Err} = Error, _Fun) -> Error;
+'>>='({ok, Result},           Fun) -> Fun(Result);
+'>>='(ok,                     Fun) -> Fun(ok).
+
 
 -spec return(A) -> error_m(_E, A).
-return(A) -> 
-    EM = error_t:new(identity_m),
-    error_t:run_error_t(error_t:return(A, EM)).
+return(ok) -> ok;
+return(X ) -> {ok, X}.
 
 -spec fail(E) -> error_m(E, _A).
-fail(E) ->
-    EM = error_t:new(identity_m),
-    error_t:run_error_t(error_t:fail(E, EM)).
-
-run_error(E) ->
-    E.
+fail(X) ->
+    {error, X}.
