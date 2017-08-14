@@ -1,10 +1,10 @@
 %%%-------------------------------------------------------------------
-%%% @author Chen Slepher <slepher@issac.local>
+%%% @author Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2017, Chen Slepher
 %%% @doc
 %%%
 %%% @end
-%%% Created : 25 Jul 2017 by Chen Slepher <slepher@issac.local>
+%%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(cont_m).
 -behaviour(monad).

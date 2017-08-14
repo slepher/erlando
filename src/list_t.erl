@@ -1,10 +1,10 @@
 %%%-------------------------------------------------------------------
-%%% @author Chen Slepher <slepher@issac.local>
+%%% @author Chen Slepher <slepheric@gmail.local>
 %%% @copyright (C) 2017, Chen Slepher
 %%% @doc
 %%%
 %%% @end
-%%% Created : 11 Aug 2017 by Chen Slepher <slepher@issac.local>
+%%% Created : 11 Aug 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(list_t).
 
