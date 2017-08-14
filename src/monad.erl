@@ -50,7 +50,6 @@ sequence(Monad, [X|Xs], Acc) ->
     do([Monad || E <- X,
                  sequence(Monad, Xs, [E|Acc])]).
 
-
 -spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 fmap({T, _IM} = M, F, X) ->
     T:fmap(F, X, M);
