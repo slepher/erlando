@@ -22,7 +22,7 @@
 
 -opaque error_t(E, M, A) :: {error_t, inner_error_t(E, M, A)}.
 
--type inner_error_t(E, M, A) :: monad:monadic(M, error_m:error(E, A)).
+-type inner_error_t(E, M, A) :: monad:monadic(M, error_m:error_m(E, A)).
 
 -type t(M) :: {error_t, M}.
 

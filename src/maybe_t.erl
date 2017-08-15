@@ -15,7 +15,7 @@
 
 -opaque maybe_t(M, A) :: {maybe_t, inner_maybe_t(M, A)}.
 -type inner_maybe_t(M, A) :: monad:monadic(M, maybe_m:maybe(A)).
--type t(M) :: monad_trans:trans(M).
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 %% API
 -export([new/1, maybe_t/1, run_maybe_t/1]).
