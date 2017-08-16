@@ -24,7 +24,7 @@
 
 -type inner_error_t(E, M, A) :: monad:monadic(M, error_m:error_m(E, A)).
 
--type t(M) :: {error_t, M}.
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

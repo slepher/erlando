@@ -16,15 +16,19 @@
 
 -module(error_m).
 
--export_type([error_m/2]).
+-export_type([error_m/2, ok/1, error/1]).
 
 -behaviour(monad).
 -export([fmap/2]).
 -export(['>>='/2, return/1, fail/1]).
+-export([run_error/1]).
 
 %% This is really instance (Error e) => Monad (Either e) with 'error'
 %% for Left and 'ok' for Right.
--type error_m(E, A) :: ok | {ok, A} | {error, E}.
+-type error_m(E, A) :: ok(A) | error(E).
+
+-type ok(A) :: ok | {ok, A}.
+-type error(E) :: {error, E}.
 
 -spec fmap(fun((A) -> B), error_m(E, A)) -> error_m(E, B).
 fmap(F, X) ->
@@ -48,3 +52,6 @@ return(X ) -> {ok, X}.
 -spec fail(E) -> error_m(E, _A).
 fail(X) ->
     {error, X}.
+
+run_error(EM) ->
+    EM.
