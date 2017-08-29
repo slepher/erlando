@@ -9,7 +9,6 @@
 %% limitations under the License.
 
 -module(monad_trans).
--compile({parse_transform, do}).
 -export_type([monad_trans/2]).
 
 -type monad_trans(T, M) :: {T, M}.
