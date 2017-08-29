@@ -15,13 +15,13 @@
 %%
 
 -module(monad).
--compile({parse_transform, do}).
-
 -export_type([monad/0, monadic/2]).
 
--export([join/2, sequence/2]).
+-export([join/2, sequence/2, map_m/3, lift_m/3]).
 -export([fmap/3]).
--export(['>>='/3, return/2, fail/2]).
+-export(['>>='/3, '>>'/3, return/2, fail/2]).
+
+-include("monad.hrl").
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
@@ -34,21 +34,42 @@
 -callback return(A) -> monadic(M, A) when M :: monad().
 -callback fail(any()) -> monadic(M, _A) when M :: monad().
 
+
 %% Utility functions
 -spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
 join(Monad, X) ->
-    do([Monad || Y <- X,
-                 Y]).
+    '>>='(Monad, X,
+          fun(Y) -> Y end).
 
 -spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).
 sequence(Monad, Xs) ->
     sequence(Monad, Xs, []).
 
 sequence(Monad, [], Acc) ->
-    do([Monad || return(lists:reverse(Acc))]);
+    return(Monad, lists:reverse(Acc));
 sequence(Monad, [X|Xs], Acc) ->
-    do([Monad || E <- X,
-                 sequence(Monad, Xs, [E|Acc])]).
+    '>>='(Monad, X,
+          fun(E) ->
+                  sequence(Monad, Xs, [E|Acc])
+          end).
+
+map_m(Monad, F, [X|Xs]) ->
+    '>>='(Monad, X,
+          fun(A) ->
+                  '>>='(Monad, map_m(Monad, F, Xs),
+                        fun(As) ->
+                                return(Monad, [F(A)|As])
+                        end)
+          end);
+
+map_m(Monad, _F, []) ->
+    return(Monad, []).
+
+lift_m(Monad, F, X) ->
+    '>>='(Monad, X,
+          fun(A) ->
+                  return(Monad, F(A))
+          end).
 
 -spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 fmap({T, _IM} = M, F, X) ->
@@ -61,6 +82,9 @@ fmap(M, F, X) ->
     T:'>>='(X, F, M);
 '>>='(M, X, F) ->
     M:'>>='(X, F).
+
+'>>'(Monad, Xa, Xb) ->
+    '>>='(Monad, Xa, fun(_) -> Xb end).
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
 return({T, _IM} = M, A) ->
