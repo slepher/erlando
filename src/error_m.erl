@@ -44,7 +44,6 @@ fmap(F, X) ->
 '>>='({ok, Result},           Fun) -> Fun(Result);
 '>>='(ok,                     Fun) -> Fun(ok).
 
-
 -spec return(A) -> error_m(_E, A).
 return(ok) -> ok;
 return(X ) -> {ok, X}.
