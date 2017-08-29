@@ -21,8 +21,6 @@
 -export([fmap/3]).
 -export(['>>='/3, '>>'/3, return/2, fail/2]).
 
--include("monad.hrl").
-
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
 
@@ -33,7 +31,6 @@
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback return(A) -> monadic(M, A) when M :: monad().
 -callback fail(any()) -> monadic(M, _A) when M :: monad().
-
 
 %% Utility functions
 -spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
