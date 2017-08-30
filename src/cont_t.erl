@@ -7,7 +7,7 @@
 %%% Created : 19 June 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(cont_t).
--compile({parse_transform, do}).
+-compile({parse_transform, another_do}).
 -behaviour(monad_trans).
 -behaviour(monad_cont_trans).
 

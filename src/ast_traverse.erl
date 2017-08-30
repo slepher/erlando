@@ -25,7 +25,33 @@
 %% N.B. if this module is to be used as a basis for transforms then
 %% all the error cases must be handled otherwise this module just crashes!
 
--export([traverse/2, traverse/3]).
+-export([fold/3, map_acc/3, map_reduce/3, traverse/2, traverse/3]).
+
+fold(F, Init, Forms) ->
+    ST = state_t:new(identity_m),
+    STNode = ast_traverse:traverse(
+               ST, fun(Node) -> fold_state(F, Node, ST) end, Forms),
+    state_t:exec_state(STNode, Init, ST).
+
+fold_state(F, Node, ST) ->
+    state_t:state(
+      fun(State) -> {Node, F(Node, State)}
+      end, ST).
+
+map_acc(F, Init, Forms) ->
+    {AST, _State} = map_reduce(F, Init, Forms),
+    AST.
+
+map_reduce(F, Init, Forms) ->
+    ST = state_t:new(identity_m),
+    STNode = ast_traverse:traverse(
+               ST, fun(Node) -> walk_state(F, Node, ST) end, Forms),
+    state_t:run_state(STNode, Init, ST).
+
+walk_state(F, Node, ST) ->
+    state_t:state(
+      fun(State) -> F(Node, State)
+      end, ST).
 
 traverse(F, Forms) ->
     traverse(identity_m, F, Forms).
@@ -46,12 +72,12 @@ do_traverse(Monad, F, Node, ChildrenLens) ->
       Monad,F({pre, Node}),
       monad:'>>='(
         Monad,
-        fold_children(Monad, F, ChildrenLens, Node),
+        fold_children(Monad, F, Node, ChildrenLens),
         fun(NNode) ->
                 F(NNode)
         end)).
 
-fold_children(Monad, F, ChildrenLens, Node) ->
+fold_children(Monad, F, Node, ChildrenLens) ->
     lists:foldl( 
       fun({CChildrenLensVisitor, ChildLens}, MNode) ->
               monad:'>>='(Monad, MNode,

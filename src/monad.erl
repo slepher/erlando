@@ -19,6 +19,8 @@
 
 -export([join/2, sequence/2, map_m/3, lift_m/3]).
 -export([fmap/3]).
+%% bind is same as >>=, then is same as >> 
+-export([bind/3, then/3]).
 -export(['>>='/3, '>>'/3, return/2, fail/2]).
 
 -type monad()         :: module() | {module(), monad()}.
@@ -35,44 +37,46 @@
 %% Utility functions
 -spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
 join(Monad, X) ->
-    '>>='(Monad, X,
-          fun(Y) -> Y end).
+    bind(Monad, X, fun(Y) -> Y end). 
 
+%% traversable functions
 -spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).
 sequence(Monad, Xs) ->
-    sequence(Monad, Xs, []).
+    map_m(Monad, fun(X) -> X end, Xs).
 
-sequence(Monad, [], Acc) ->
-    return(Monad, lists:reverse(Acc));
-sequence(Monad, [X|Xs], Acc) ->
-    '>>='(Monad, X,
-          fun(E) ->
-                  sequence(Monad, Xs, [E|Acc])
-          end).
-
+-spec map_m(M, fun((A) -> monad:monadic(M, B)), [A]) -> monad:monadic(M, [B]).
 map_m(Monad, F, [X|Xs]) ->
-    '>>='(Monad, X,
-          fun(A) ->
-                  '>>='(Monad, map_m(Monad, F, Xs),
-                        fun(As) ->
-                                return(Monad, [F(A)|As])
-                        end)
-          end);
+    bind(Monad, X,
+         fun(A) ->
+                 bind(Monad, map_m(Monad, F, Xs),
+                      fun(As) ->
+                              return(Monad, [F(A)|As])
+                      end)
+         end);
 
 map_m(Monad, _F, []) ->
     return(Monad, []).
 
+-spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 lift_m(Monad, F, X) ->
-    '>>='(Monad, X,
-          fun(A) ->
-                  return(Monad, F(A))
-          end).
+    bind(Monad, X,
+         fun(A) ->
+                 return(Monad, F(A))
+         end).
 
 -spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 fmap({T, _IM} = M, F, X) ->
     T:fmap(F, X, M);
 fmap(M, F, X) ->
     M:fmap(F, X).
+
+-spec bind(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
+bind(Monad, X, F) ->
+    '>>='(Monad, X, F).
+
+-spec then(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+then(Monad, Xa, Xb) ->
+    '>>'(Monad, Xa, Xb).
     
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='({T, _IM} = M, X, F) ->
@@ -80,6 +84,7 @@ fmap(M, F, X) ->
 '>>='(M, X, F) ->
     M:'>>='(X, F).
 
+-spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 '>>'(Monad, Xa, Xb) ->
     '>>='(Monad, Xa, fun(_) -> Xb end).
 
