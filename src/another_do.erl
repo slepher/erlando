@@ -20,7 +20,8 @@
 -export([parse_transform/2, format_error/1]).
 
 parse_transform(Forms, _Options) ->
-    ast_traverse:map_acc(fun walk/2, [], Forms).
+    {ok, {AST, _State}} = ast_traverse:map_reduce(fun(Node, State) -> {ok, walk(Node, State)} end, [], Forms),
+    AST.
 
 walk({pre, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node},
      MonadStack)

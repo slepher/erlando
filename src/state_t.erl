@@ -19,8 +19,6 @@
 -behaviour(monad_plus_trans).
 -behaviour(monad_state_trans).
 
--include("monad.hrl").
-
 -export_type([state_t/3]).
 
 -export([new/1, state_t/1, run_state_t/1]).
@@ -70,9 +68,12 @@ fmap(F, X, {?MODULE, IM} = ST) ->
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B)), t(M)) -> state_t(S, M, B).
 '>>='(X, Fun, {?MODULE, IM} = ST) ->  
     state_t(fun (S) ->
-                    monad:'>>='(IM, run_state(X, S, ST),
-                                fun({A, NS}) ->
-                                        run_state(Fun(A), NS, ST)
+                    %% do([ IM || {A, NS} <- run_state(X, S, ST),
+                    %%            run_state(Fun(A), NS, ST)
+                    %%   ])
+                    monad:bind(IM, run_state(X, S, ST),
+                               fun({A, NS}) ->
+                                       run_state(Fun(A), NS, ST)
                                 end)
         end).
 
@@ -82,16 +83,19 @@ return(A, {?MODULE, _IM} = ST) ->
 
 -spec fail(any(), t(M)) -> state_t(_S, M, _A).
 fail(E, {?MODULE, IM}) ->
-    state_t(fun (_) -> IM:fail(E) end).
+    state_t(fun (_) -> monad:fail(IM, E) end).
 
 -spec lift(monad:monadic(M, A), t(M)) -> state_t(_S, M, A).
 lift(ISTM, {?MODULE, IM}) ->
     state_t(
       fun (S) ->
-              monad:'>>='(IM, ISTM,
-                          fun(A) ->
-                                  monad:return(IM, {A, S})
-                          end)
+              %% do([IM || A <- ISTM,
+              %%           return({A, S}) 
+              %%   ])
+              monad:bind(IM, ISTM,
+                         fun(A) ->
+                                 monad:return(IM, {A, S})
+                         end)
       end).
 
 -spec mzero(t(M)) -> state_t(_S, M, _A).
@@ -127,17 +131,23 @@ state(Fun, {?MODULE, IM}) ->
 
 -spec eval_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, A).
 eval_state(SM, S, {?MODULE, IM} = ST) ->
-    monad:'>>='(IM, run_state(SM, S, ST),
-                fun({A, _NS}) ->
-                        monad:return(IM, A)
-                end).
+    %% do([ IM || {A, _NS} <- run_state(SM, S, ST),
+    %%            return(A)
+    %%   ])
+    monad:bind(IM, run_state(SM, S, ST),
+               fun({A, _NS}) ->
+                       monad:return(IM, A)
+               end).
 
 -spec exec_state(state_t(S, M, _A), S, t(M)) -> monad:monadic(M, S).
 exec_state(SM, S, {?MODULE, IM} = ST) ->
-    monad:'>>='(IM, run_state(SM, S, ST),
-                fun({_A, NS}) ->
-                        monad:return(IM, NS)
-                end).
+    %% do([ IM || {_A, NS} <- run_state(SM, S, ST),
+    %%            return(NS)
+    %%   ])
+    monad:bind(IM, run_state(SM, S, ST),
+               fun({_A, NS}) ->
+                       monad:return(IM, NS)
+               end).
 
 -spec run_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, {A, S}).
 run_state(SM, S, {?MODULE, _IM} = _ST) -> (run_state_t(SM))(S).
