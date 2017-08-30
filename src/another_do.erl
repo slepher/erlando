@@ -54,7 +54,7 @@ walk(Form, MonadStack) ->
     {Form, MonadStack}.
 
 %%  'do' syntax transformation:
-do_syntax([], [{_AtomOrVar, MLine, _MonadModule}]) ->
+do_syntax([], {_AtomOrVar, MLine, _MonadModule}) ->
     transform_error("A 'do' construct cannot be empty", MLine);
 do_syntax([{GenerateOrMatch, Line, _Pattern, _Expr}], _Monad)
   when GenerateOrMatch =:= generate orelse GenerateOrMatch =:= match ->

@@ -27,7 +27,8 @@
 
 -export([map_reduce/3, traverse/2, traverse/3]).
 
--spec map_reduce(fun((Node) -> error_m:error_m(any(), {Node, State})), State, Form) -> error_m:error_m(any(), {Form, State}).
+-spec map_reduce(fun((Node, State) -> error_m:error_m(any(), {Node, State})), State, Form) ->
+                        error_m:error_m(any(), {Form, State}).
 map_reduce(F, Init, Forms) ->
     ST = state_t:new(error_m),
     STNode = ast_traverse:traverse(
