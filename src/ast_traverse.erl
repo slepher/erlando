@@ -27,27 +27,25 @@
 
 -export([map_reduce/3, traverse/2, traverse/3]).
 
--spec map_reduce(fun((Node, State) -> error_m:error_m(any(), {Node, State})), State, Form) ->
+-spec map_reduce(fun((_Type, Node, State) -> error_m:error_m(any(), {Node, State})), State, Form) ->
                         error_m:error_m(any(), {Form, State}).
 map_reduce(F, Init, Forms) ->
     ST = state_t:new(error_m),
     STNode = ast_traverse:traverse(
-               ST, fun(Node) -> state_t:state_t(fun(State) -> F(Node, State) end) end, Forms),
+               ST, fun(Type, Node) -> state_t:state_t(fun(State) -> F(Type, Node, State) end) end, Forms),
     state_t:run_state(STNode, Init, ST).
 
--spec traverse(fun((Node) -> Node), Form) -> Form.
+-spec traverse(fun((Node, _Type) -> Node), Form) -> Form.
 traverse(F, Forms) ->
     traverse(identity_m, F, Forms).
 
--spec traverse(M, fun((Node) -> monad:monadic(M, Node)), Form) -> monad:monadic(M, Form) when M :: monad:monad().
+-spec traverse(M, fun((_Type, Node) -> monad:monadic(M, Node)), Form) -> monad:monadic(M, Form) when M :: monad:monad().
 traverse(Monad, F, Forms) ->
     do_traverse(Monad, F, Forms, ast_lens:forms(Forms)).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_traverse(_Monad, F, Node, []) ->
-    F(Node);
 do_traverse(Monad, F, Node, ChildrenLens) ->
     %% do form
     %% do([Monad ||
@@ -55,14 +53,16 @@ do_traverse(Monad, F, Node, ChildrenLens) ->
     %%           NNode <- fold_children(Monad, F, Node, ChildrenLens),
     %%           F(NNode)
     %%    ]).
-    monad:then(
-      Monad,F({pre, Node}),
-      monad:bind(
-        Monad,
-        fold_children(Monad, F, Node, ChildrenLens),
-        fun(NNode) ->
-                F(NNode)
-        end)).
+    monad:bind(
+      Monad,F(pre, Node),
+      fun(NNode) ->
+              monad:bind(
+                Monad,
+                fold_children(Monad, F, NNode, ChildrenLens),
+                fun(NNNode) ->
+                        F(post, NNNode)
+                end)
+      end).
 
 fold_children(Monad, F, Node, ChildrenLens) ->
     lists:foldl( 

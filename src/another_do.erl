@@ -20,17 +20,17 @@
 -export([parse_transform/2, format_error/1]).
 
 parse_transform(Forms, _Options) ->
-    {ok, {AST, _State}} = ast_traverse:map_reduce(fun(Node, State) -> {ok, walk(Node, State)} end, [], Forms),
+    {ok, {AST, _State}} = ast_traverse:map_reduce(fun(Type, Node, State) -> {ok, walk(Type, Node, State)} end, [], Forms),
     AST.
 
-walk({pre, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node},
+walk(pre, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node,
      MonadStack)
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% push monad into monad stack when pre parse do block
     {Node, [Monad|MonadStack]};
 
-walk({call, Line, {atom, _Line1, do},
-          [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]}, [Monad|MonadStack]) 
+walk(post, {call, Line, {atom, _Line1, do},
+            [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]}, [Monad|MonadStack]) 
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% transform do block to monad:bind form and pop monad from monad stack when parse do block
     %% 'do' calls of a particular form:
@@ -41,7 +41,7 @@ walk({call, Line, {atom, _Line1, do},
         [{clause, Line, [], [], do_syntax(Qs, Monad)}]}}, []}, MonadStack};
 
 %%  'return' and 'fail' syntax detection and transformation:
-walk({call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
+walk(post, {call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
   when ReturnOrFail =:= return orelse ReturnOrFail =:= fail ->
     %% 'return' calls of a particular form:
     %%  return(Arguments), and
@@ -50,7 +50,7 @@ walk({call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
     %% Transformed to:
     %% "monad:return(Monad, Args)" or "monad:fail(Monad, Args)" in monadic context
     {monad_call_expr(Line, Line1, Monad, ReturnOrFail, As0), MonadStack};
-walk(Form, MonadStack) ->
+walk(_Type, Form, MonadStack) ->
     {Form, MonadStack}.
 
 %%  'do' syntax transformation:

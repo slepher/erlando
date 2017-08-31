@@ -15,7 +15,7 @@
 %%% API
 %%%===================================================================
 forms(Forms) when is_list(Forms) ->
-    children(fun form/1, Forms).
+    children(fun forms/1, fun form/1, Forms).
 
 modify(Monad, {Get, Put} = _Lens, F) ->
     fun(X) ->
@@ -38,6 +38,10 @@ lens_l(N) ->
     {fun(R) -> lists:nth(N, R) end,
      fun(A, R) -> setnth(N, R, A) end}.
 
+lens_lh() ->
+    {fun([H|_T]) -> H end,
+     fun(A, [_H|T]) -> [A|T] end}.
+
 lens_lt() ->
     {fun([_H|T]) -> T end,
      fun(A, [H|_T]) -> [H|A] end}.
@@ -53,8 +57,10 @@ c({LG, LP}, {KG, KP}) ->
 setnth(1, [_|Rest], New) -> [New|Rest];
 setnth(I, [E|Rest], New) -> [E|setnth(I-1, Rest, New)].
 
-children(Type, List) ->
-    lists:map(fun(N) -> {Type, lens_l(N)} end, lists:seq(1, length(List))).
+children(_Type, _ChildType, []) ->
+    [];
+children(Type, ChildType, [_H|_T]) ->
+    [{ChildType, lens_lh()}, {Type, lens_lt()}].
 
 %% forms(Fs) -> lists:map(fun (F) -> form(F) end, Fs).
 
@@ -107,7 +113,7 @@ form({eof,_Line}) ->
 %% -type farity_list([Farity]) -> [Farity] when Farity <= {atom(),integer()}.
 
 farity_list(FairyList) ->
-    children(fun farity/1, FairyList).
+    children(fun farity_list/1, fun farity/1, FairyList).
 
 farity({_Name, _Arity}) ->
     [].
@@ -115,7 +121,7 @@ farity({_Name, _Arity}) ->
 %% -type variable_list([Var]) -> [Var]
 
 variable_list(List) ->
-    children(fun variable/1, List).
+    children(fun variable_list/1, fun variable/1, List).
 
 variable({var, _Line, _Var}) ->
     [].
@@ -125,7 +131,7 @@ variable({var, _Line, _Var}) ->
 %%  by the *parser*!
 
 record_defs(Defs) ->
-    children(fun record_def/1, Defs).
+    children(fun record_defs/1, fun record_def/1, Defs).
 
 record_def({record_field,_Line,{atom,_La,_A},_Val0}) ->
     [{fun expr/1, lens_r(4)}];
@@ -139,7 +145,7 @@ record_def({typed_record_field,{record_field,_Line,{atom,_La,_A}},_Type}) ->
 %% -type clauses([Clause]) -> [Clause].
 
 clauses(Cs) ->
-    children(fun clause/1, Cs).
+    children(fun clauses/1, fun clause/1, Cs).
 
 %% -type clause(Clause) -> Clause.
 
@@ -155,7 +161,7 @@ head(_Ps) -> [{fun patterns/1, lens_id()}].
 %%  definition etc.
 
 patterns(Patterns) ->
-    children(fun pattern/1, Patterns).
+    children(fun patterns/1, fun pattern/1, Patterns).
 
 %% -type pattern(Pattern) -> Pattern.
 %%  N.B. Only valid patterns are included here.
@@ -194,7 +200,7 @@ pattern({op,_Line,_Op,_L,_R}) ->
     [{fun expr/1, lens_r(4)}, {fun pattern/1, lens_r(5)}].
 
 pattern_grps(Grps) ->
-    children(fun pattern_grp/1, Grps).
+    children(fun pattern_grps/1, fun pattern_grp/1, Grps).
 
 pattern_grp({bin_element,_L1,_E1,_S1,_T1}) ->
     [{fun default_or_expr/1, lens_r(4)}, {fun default_or_bit_types/1, lens_r(5)}].
@@ -210,7 +216,7 @@ default_or_bit_types(Types) ->
     bit_types(Types).
 
 bit_types(BitTypes) ->
-    children(fun bit_type/1, BitTypes).
+    children(fun bit_types/1, fun bit_type/1, BitTypes).
 
 bit_type(Atom) when is_atom(Atom) ->
     [];
@@ -222,7 +228,7 @@ bit_type({Atom, Integer}) when is_atom(Atom), is_integer(Integer) ->
 %%  by the *linter*!.
 
 pattern_fields(Fields) ->
-    children(fun pattern_field/1, Fields).
+    children(fun pattern_fields/1, fun pattern_field/1, Fields).
 
 pattern_field({record_field,_Lf,{atom,_La,_F},_P0}) ->
     [{fun pattern/1, lens_r(4)}];
@@ -232,10 +238,10 @@ pattern_field({record_field,_Lf,{var,_La,'_'},_P0}) ->
 %% -type guard([GuardTest]) -> [GuardTest].
 
 guard(Guards) when is_list(Guards) ->
-    children(fun guard0/1, Guards).
+    children(fun guard/1, fun guard0/1, Guards).
 
 guard0(Guards) when is_list(Guards) ->
-    children(fun guard_test/1, Guards).
+    children(fun guard0/1, fun guard_test/1, Guards).
 
 guard_test({call,_Line,{atom,_La,F},As0}) ->
     case erl_internal:type_test(F, length(As0)) of
@@ -315,10 +321,10 @@ gexpr({op,_Line,Op,_L0,_R0}) ->
 %%  definition etc.
 
 gexpr_list(GExprList) when is_list(GExprList) ->
-    children(fun gexpr/1, GExprList).
+    children(fun gexpr_list/1, fun gexpr/1, GExprList).
 
 grecord_inits(Inits) when is_list(Inits) ->
-    children(fun grecord_init/1, Inits).
+    children(fun grecord_inits/1, fun grecord_init/1, Inits).
 
 grecord_init({record_field,_Lf,{atom,_La,_F},_Val0}) ->
     [{fun gexpr/1, lens_r(4)}];
@@ -330,7 +336,7 @@ grecord_init({record_field,_Lf,{var,_La,'_'},_Val0}) ->
 %%  definition etc.
 
 exprs(Exprs) when is_list(Exprs) ->
-    children(fun expr/1, Exprs).
+    children(fun exprs/1, fun expr/1, Exprs).
 %% -type expr(Expression) -> Expression.
 
 expr({var,_Line,_V}) -> [];
@@ -419,14 +425,14 @@ function_body({function,_M0,_F0,_A0}) ->
 %%  definition etc.
 
 expr_list(ExprList) when is_list(ExprList) ->
-    children(fun expr/1, ExprList).
+    children(fun expr_list/1, fun expr/1, ExprList).
 
 %% -type record_inits([RecordInit]) -> [RecordInit].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
 record_inits(Inits) when is_list(Inits) ->
-    children(fun record_init/1, Inits).
+    children(fun record_inits/1, fun record_init/1, Inits).
 
 record_init({record_field,_Lf,{atom,_La,_F},_Val0}) ->
     [{fun expr/1, lens_r(4)}];
@@ -438,7 +444,7 @@ record_init({record_field,_Lf,{var,_La,'_'},_Val0}) ->
 %%  by the *linter*!.
 
 record_updates(Updates) when is_list(Updates) ->
-    children(fun record_update/1, Updates).
+    children(fun record_updates/1, fun record_update/1, Updates).
 
 record_update({record_field,_Lf,{atom,_La,_F},_Val0}) ->
     [{fun expr/1, lens_r(4)}].
@@ -446,10 +452,10 @@ record_update({record_field,_Lf,{atom,_La,_F},_Val0}) ->
 %% -type icr_clauses([Clause]) -> [Clause].
 
 icr_clauses(Clauses) when is_list(Clauses) ->
-    children(fun clause/1, Clauses).
+    children(fun icr_clauses/1, fun clause/1, Clauses).
 
 lc_bc_quals(Quals) when is_list(Quals) ->
-    children(fun lc_bc_qual/1, Quals).
+    children(fun lc_bc_quals/1, fun lc_bc_qual/1, Quals).
 
 %% -type lc_bc_quals([Qualifier]) -> [Qualifier].
 %%  Allow filters to be both guard tests and general expressions.
@@ -464,10 +470,10 @@ lc_bc_qual(_Quals) ->
 %% -type fun_clauses([Clause]) -> [Clause].
 
 fun_clauses(Clauses) when is_list(Clauses) ->
-    children(fun clause/1, Clauses).
+    children(fun fun_clauses/1, fun clause/1, Clauses).
 
 function_type_list(List) when is_list(List) ->
-    children(fun function_type/1, List).
+    children(fun function_type_list/1, fun function_type/1, List).
 
 function_type({type,_Line,bounded_fun,[_Ft,_Fc]}) ->
     [{Type, c(lens_r(4), lens_l(N))} || {Type, N} <- [{fun function_type/1, 1}, {fun function_constraint/1, 2}]];
@@ -478,7 +484,7 @@ function_type1({type,_Line,'fun',[{type,_Lt,product,_As},_B]}) ->
     [{fun type_list/1, c(lens_r(4), c(lens_l(1), lens_r(4)))}, {fun type/1, c(lens_r(4), lens_l(2))}].
 
 function_constraint(Constraints) when is_list(Constraints) ->
-    children(fun constraint/1, Constraints).
+    children(fun function_constraint/1, fun constraint/1, Constraints).
 
 constraint({type,_Line, constraint,[{atom,_L,_A},[_V,_T]]}) ->
     [{fun type/1, c(lens_r(4), c(lens_l(2), lens_l(N)))} || N <- [1, 2]].
@@ -523,7 +529,7 @@ type({type,_Line,_N,_As}) ->
     [{fun type_list/1, lens_r(4)}].
 
 map_pair_types(Types) when is_list(Types) ->
-    children(fun map_pair_type/1, Types).
+    children(fun map_pair_types/1, fun map_pair_type/1, Types).
 
 map_pair_type({type,_Line,map_field_assoc,[_K,_V]}) ->
     [{fun type/1, c(lens_r(4), lens_l(N))} || N <- [1,2]];
@@ -531,10 +537,10 @@ map_pair_type({type,_Line,map_field_exact,[_K,_V]}) ->
     [{fun type/1, c(lens_r(4), lens_l(N))} || N <- [1,2]].
 
 field_types(Types) when is_list(Types) ->
-    children(fun field_type/1, Types).
+    children(fun field_types/1, fun field_type/1, Types).
 
 field_type({type,_Line,field_type,[{atom,_La,_A},_T]}) ->
     [{fun type/1, c(lens_r(4), lens_l(2))}].
 
 type_list(Types) when is_list(Types) ->
-    children(fun type/1, Types).
+    children(fun type_list/1, fun type/1, Types).

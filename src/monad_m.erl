@@ -14,7 +14,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    case ast_traverse:map_reduce(fun transformer/2, ok, Forms) of
+    case ast_traverse:map_reduce(fun transformer/3, ok, Forms) of
         {error, Module} ->
             Exports = Module:module_info(exports),
             Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],
@@ -60,9 +60,9 @@ insert_functions(Functions, [{eof, _Line} = EOF|T], Acc) ->
 insert_functions(Functions, [Form|Forms], Acc) ->
     insert_functions(Functions, Forms, [Form|Acc]).
 
-transformer({attribute,_Line,transformer, Transformer}, _Acc) ->
+transformer(_Type, {attribute,_Line, transformer, Transformer}, _Acc) ->
     {error, Transformer};
-transformer(Other, Acc) ->
+transformer(_Type, Other, Acc) ->
     {ok, {Other, Acc}}.
 
 gen_function(Module, FName, Arity, Line) ->
