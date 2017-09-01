@@ -25,7 +25,15 @@
 %% N.B. if this module is to be used as a basis for transforms then
 %% all the error cases must be handled otherwise this module just crashes!
 
--export([map_reduce/3, traverse/2, traverse/3]).
+-export([attributes/2, map_reduce/3, traverse/2, traverse/3]).
+
+attributes(Attribute, Forms) ->
+    lists:foldl(
+      fun({attribute, _Line, Attr, Values}, Acc) when Attr == Attribute ->
+              [Values|Acc];
+         (_Other, Acc) ->
+              Acc
+      end, [], Forms).
 
 -spec map_reduce(fun((_Type, Node, State) -> error_m:error_m(any(), {Node, State})), State, Form) ->
                         error_m:error_m(any(), {Form, State}).
