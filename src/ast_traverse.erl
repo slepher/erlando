@@ -57,9 +57,9 @@ traverse(Monad, F, Forms) ->
 do_traverse(Monad, F, Node, ChildrenLens) ->
     %% do form
     %% do([Monad ||
-    %%           F({pre, Node}),
-    %%           NNode <- fold_children(Monad, F, Node, ChildrenLens),
-    %%           F(NNode)
+    %%           F(pre, Node),
+    %%           NNode <- fold_children(Monad, F, NNode, ChildrenLens),
+    %%           F(post, NNode)
     %%    ]).
     monad:bind(
       Monad,F(pre, Node),
