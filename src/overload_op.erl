@@ -33,8 +33,8 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 
 parse_ops(Forms) ->
-    OverLoads = ast_traverse:attributes(overloads, Forms),
-    lists:flatten(OverLoads).
+    Overloads = ast_traverse:attributes(overloads, Forms),
+    lists:flatten(Overloads).
 
 walk(post, {op, Line ,'/', {op, _Line1,'/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
     case lists:member(Op, Ops) of
