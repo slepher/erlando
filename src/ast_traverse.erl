@@ -49,12 +49,12 @@ traverse(F, Forms) ->
 
 -spec traverse(M, fun((_Type, Node) -> monad:monadic(M, Node)), Form) -> monad:monadic(M, Form) when M :: monad:monad().
 traverse(Monad, F, Forms) ->
-    do_traverse(Monad, F, Forms, ast_lens:forms(Forms)).
+    do_traverse(Monad, F, Forms, fun ast_lens:forms/1).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_traverse(Monad, F, Node, ChildrenLens) ->
+do_traverse(Monad, F, XNode, Visitor) ->
     %% do form
     %% do([Monad ||
     %%           F(pre, Node),
@@ -62,25 +62,25 @@ do_traverse(Monad, F, Node, ChildrenLens) ->
     %%           F(post, NNode)
     %%    ]).
     monad:bind(
-      Monad,F(pre, Node),
-      fun(NNode) ->
+      Monad,F(pre, XNode),
+      fun(YNode) ->
               monad:bind(
                 Monad,
-                fold_children(Monad, F, NNode, ChildrenLens),
-                fun(NNNode) ->
-                        F(post, NNNode)
+                fold_children(Monad, F, YNode, Visitor(YNode)),
+                fun(ZNode) ->
+                        F(post, ZNode)
                 end)
       end).
 
 fold_children(Monad, F, Node, ChildrenLens) ->
     lists:foldl( 
-      fun({CChildrenLensVisitor, ChildLens}, MNode) ->
-              monad:bind(Monad, MNode,
-                          fun(NodeAcc) ->
-                                  (ast_lens:modify(Monad, ChildLens, 
-                                                   fun(Child) ->
-                                                           CChildrenLens = CChildrenLensVisitor(Child),
-                                                           do_traverse(Monad, F, Child, CChildrenLens)
-                                                   end))(NodeAcc)
+      fun({Visitor, ChildLens}, MNode) ->
+              monad:bind(
+                Monad, MNode,
+                fun(NodeAcc) ->
+                        (ast_lens:modify(Monad, ChildLens, 
+                                         fun(Child) ->
+                                                 do_traverse(Monad, F, Child, Visitor)
+                                         end))(NodeAcc)
                           end)
       end, monad:return(Monad, Node), ChildrenLens).
