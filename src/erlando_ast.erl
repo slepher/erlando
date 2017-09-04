@@ -16,7 +16,7 @@
 %% 
 %%     $Id$
 %%
--module(ast_traverse).
+-module(erlando_ast).
 
 %% An identity transformer of Erlang abstract syntax.
 
@@ -25,7 +25,27 @@
 %% N.B. if this module is to be used as a basis for transforms then
 %% all the error cases must be handled otherwise this module just crashes!
 
--export([attributes/2, map_reduce/3, traverse/2, traverse/3]).
+-export([read/1, attributes/2, map_reduce/3, traverse/2, traverse/3]).
+
+-spec read(atom() | iolist()) -> [erl_parse:abstract_form()].
+read(Module) when is_atom(Module) ->
+    case beam_lib:chunks(code:which(Module), [abstract_code]) of
+        {ok, {Module, [{abstract_code, {raw_abstract_v1, Forms}}]}} ->
+            Forms;
+        {ok, {no_debug_info, _}} ->
+            throw({forms_not_found, Module});
+        {error, beam_lib, {file_error, _, enoent}} ->
+            throw({module_not_found, Module})
+    end;
+read(File) ->
+    case epp:parse_file(File, []) of
+        {ok, Forms} ->
+            Forms;
+        {ok, Forms, _Extra} ->
+            Forms;
+        {error, enoent} ->
+            throw({file_not_found, File})
+    end.
 
 attributes(Attribute, Forms) ->
     lists:foldl(
@@ -39,7 +59,7 @@ attributes(Attribute, Forms) ->
                         error_m:error_m(any(), {Form, State}).
 map_reduce(F, Init, Forms) ->
     ST = state_t:new(error_m),
-    STNode = ast_traverse:traverse(
+    STNode = traverse(
                ST, fun(Type, Node) -> state_t:state_t(fun(State) -> F(Type, Node, State) end) end, Forms),
     state_t:run_state(STNode, Init, ST).
 
@@ -49,7 +69,7 @@ traverse(F, Forms) ->
 
 -spec traverse(M, fun((_Type, Node) -> monad:monadic(M, Node)), Form) -> monad:monadic(M, Form) when M :: monad:monad().
 traverse(Monad, F, Forms) ->
-    do_traverse(Monad, F, Forms, fun ast_lens:forms/1).
+    do_traverse(Monad, F, Forms, fun erlando_ast_lens:forms/1).
 
 %%%===================================================================
 %%% Internal functions
@@ -78,7 +98,7 @@ fold_children(Monad, F, Node, ChildrenLens) ->
               monad:bind(
                 Monad, MNode,
                 fun(NodeAcc) ->
-                        (ast_lens:modify(Monad, ChildLens, 
+                        (erlando_ast_lens:modify(Monad, ChildLens, 
                                          fun(Child) ->
                                                  do_traverse(Monad, F, Child, Visitor)
                                          end))(NodeAcc)

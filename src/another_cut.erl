@@ -16,7 +16,7 @@
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
     {ok, {NForms, _State}} = 
-        ast_traverse:map_reduce(
+        erlando_ast:map_reduce(
           fun(Type, Node, State) -> {ok, {walk(Type, Node), State}} end, ok, Forms),
     NForms.
 

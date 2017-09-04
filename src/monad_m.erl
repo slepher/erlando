@@ -14,7 +14,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    case ast_traverse:map_reduce(fun transformer/3, ok, Forms) of
+    case erlando_ast:map_reduce(fun transformer/3, ok, Forms) of
         {error, Module} ->
             Exports = Module:module_info(exports),
             Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],

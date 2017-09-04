@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 30 Aug 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(ast_lens).
+-module(erlando_ast_lens).
 
 %% API
 -export([forms/1, modify/3]).
