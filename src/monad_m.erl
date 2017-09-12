@@ -37,8 +37,10 @@ parse_transform(Forms, _Opts) ->
                   end, lists:seq(1, length(GenFunctions))),
             NForms = insert_exports(GenFunctionExports, Forms, []),
             insert_functions(GenFunctionForms, NForms, []);
-        _Other ->
-            Forms
+        [] ->
+            exit(no_transformers_defeind);
+        Other ->
+            exit({invalid_transformers, Other})
     end.
 %%--------------------------------------------------------------------
 %% @doc

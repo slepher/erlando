@@ -17,10 +17,7 @@
 
 parse_transform(Forms, _Opts) ->
     ParseOps = parse_ops(Forms),
-    {NForms, _State} = 
-        erlando_ast:map_reduce(
-          fun(Type, Node, State) -> {walk(Type, Node, ParseOps), State} end, ok, Forms),
-    NForms.
+    erlando_ast:map(fun(Type, Node) -> walk(Type, Node, ParseOps) end, Forms).
 
 %%--------------------------------------------------------------------
 %% @doc
