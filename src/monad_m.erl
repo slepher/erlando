@@ -14,8 +14,8 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    case erlando_ast:map_reduce(fun transformer/3, ok, Forms) of
-        {error, Module} ->
+    case erlando_ast:attributes(transformer, Forms) of
+        [Module] ->
             Exports = Module:module_info(exports),
             Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],
             GenFunctions = 
@@ -37,7 +37,7 @@ parse_transform(Forms, _Opts) ->
                   end, lists:seq(1, length(GenFunctions))),
             NForms = insert_exports(GenFunctionExports, Forms, []),
             insert_functions(GenFunctionForms, NForms, []);
-        {ok, _} ->
+        _Other ->
             Forms
     end.
 %%--------------------------------------------------------------------
@@ -59,11 +59,6 @@ insert_functions(Functions, [{eof, _Line} = EOF|T], Acc) ->
     lists:reverse(Acc) ++ Functions ++ [EOF|T];
 insert_functions(Functions, [Form|Forms], Acc) ->
     insert_functions(Functions, Forms, [Form|Acc]).
-
-transformer(_Type, {attribute,_Line, transformer, Transformer}, _Acc) ->
-    {error, Transformer};
-transformer(_Type, Other, Acc) ->
-    {ok, {Other, Acc}}.
 
 gen_function(Module, FName, Arity, Line) ->
     {function, Line, FName, Arity, 

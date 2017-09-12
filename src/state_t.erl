@@ -19,6 +19,7 @@
 -behaviour(monad_plus_trans).
 -behaviour(monad_state_trans).
 
+-compile({parse_transform, do}).
 -export_type([state_t/3]).
 
 -export([new/1, state_t/1, run_state_t/1]).
@@ -68,13 +69,9 @@ fmap(F, X, {?MODULE, IM} = ST) ->
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B)), t(M)) -> state_t(S, M, B).
 '>>='(X, Fun, {?MODULE, IM} = ST) ->  
     state_t(fun (S) ->
-                    %% do([ IM || {A, NS} <- run_state(X, S, ST),
-                    %%            run_state(Fun(A), NS, ST)
-                    %%   ])
-                    monad:bind(IM, run_state(X, S, ST),
-                               fun({A, NS}) ->
-                                       run_state(Fun(A), NS, ST)
-                                end)
+                    do([ IM || {A, NS} <- run_state(X, S, ST),
+                               run_state(Fun(A), NS, ST)
+                       ])
         end).
 
 -spec return(A, t(M)) -> state_t(_S, M, A).
@@ -89,13 +86,9 @@ fail(E, {?MODULE, IM}) ->
 lift(ISTM, {?MODULE, IM}) ->
     state_t(
       fun (S) ->
-              %% do([IM || A <- ISTM,
-              %%           return({A, S}) 
-              %%   ])
-              monad:bind(IM, ISTM,
-                         fun(A) ->
-                                 monad:return(IM, {A, S})
-                         end)
+              do([IM || A <- ISTM,
+                        return({A, S}) 
+                 ])
       end).
 
 -spec mzero(t(M)) -> state_t(_S, M, _A).
@@ -131,23 +124,15 @@ state(Fun, {?MODULE, IM}) ->
 
 -spec eval_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, A).
 eval_state(SM, S, {?MODULE, IM} = ST) ->
-    %% do([ IM || {A, _NS} <- run_state(SM, S, ST),
-    %%            return(A)
-    %%   ])
-    monad:bind(IM, run_state(SM, S, ST),
-               fun({A, _NS}) ->
-                       monad:return(IM, A)
-               end).
+     do([ IM || {A, _NS} <- run_state(SM, S, ST),
+                return(A)
+       ]).
 
 -spec exec_state(state_t(S, M, _A), S, t(M)) -> monad:monadic(M, S).
 exec_state(SM, S, {?MODULE, IM} = ST) ->
-    %% do([ IM || {_A, NS} <- run_state(SM, S, ST),
-    %%            return(NS)
-    %%   ])
-    monad:bind(IM, run_state(SM, S, ST),
-               fun({_A, NS}) ->
-                       monad:return(IM, NS)
-               end).
+     do([ IM || {_A, NS} <- run_state(SM, S, ST),
+                return(NS)
+        ]).
 
 -spec run_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, {A, S}).
 run_state(SM, S, {?MODULE, _IM} = _ST) -> (run_state_t(SM))(S).

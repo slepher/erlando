@@ -15,6 +15,7 @@
 %%
 
 -module(monad).
+-compile({parse_transform, do}).
 -export_type([monad/0, monadic/2]).
 
 -export([join/2, sequence/2, map_m/3, lift_m/3]).
@@ -46,23 +47,20 @@ sequence(Monad, Xs) ->
 
 -spec map_m(M, fun((A) -> monad:monadic(M, B)), [A]) -> monad:monadic(M, [B]).
 map_m(Monad, F, [X|Xs]) ->
-    bind(Monad, X,
-         fun(A) ->
-                 bind(Monad, map_m(Monad, F, Xs),
-                      fun(As) ->
-                              return(Monad, [F(A)|As])
-                      end)
-         end);
-
+    do([Monad ||
+           A <- X,
+           As <- map_m(Monad, F, Xs),
+           return([F(A)|As])
+       ]);
 map_m(Monad, _F, []) ->
     return(Monad, []).
 
 -spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 lift_m(Monad, F, X) ->
-    bind(Monad, X,
-         fun(A) ->
-                 return(Monad, F(A))
-         end).
+    do([Monad || 
+           A <- X,
+           return(F(A))
+       ]).
 
 -spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
 fmap({T, _IM} = M, F, X) ->
