@@ -15,9 +15,9 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    {ok, {NForms, _State}} = 
+    {NForms, _State} = 
         erlando_ast:map_reduce(
-          fun(Type, Node, State) -> {ok, {walk(Type, Node), State}} end, ok, Forms),
+          fun(Type, Node, State) -> {walk(Type, Node), State} end, ok, Forms),
     NForms.
 
 %%--------------------------------------------------------------------

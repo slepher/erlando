@@ -17,9 +17,9 @@
 
 parse_transform(Forms, _Opts) ->
     ParseOps = parse_ops(Forms),
-    {ok, {NForms, _State}} = 
+    {NForms, _State} = 
         erlando_ast:map_reduce(
-          fun(Type, Node, State) -> {ok, {walk(Type, Node, ParseOps), State}} end, ok, Forms),
+          fun(Type, Node, State) -> {walk(Type, Node, ParseOps), State} end, ok, Forms),
     NForms.
 
 %%--------------------------------------------------------------------
@@ -33,13 +33,13 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 
 parse_ops(Forms) ->
-    Overloads = ast_traverse:attributes(overloads, Forms),
+    Overloads = erlando_ast:attributes(overloads, Forms),
     lists:flatten(Overloads).
 
-walk(pre, {op, Line ,'/', {op, _Line1,'/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
+walk(pre, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
     case lists:member(Op, Ops) of
         true ->
-            {call,  Line, OpFun, [A, B]};
+            {call, Line, OpFun, [A, B]};
         false ->
             Node
     end;
