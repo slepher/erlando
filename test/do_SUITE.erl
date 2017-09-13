@@ -158,7 +158,7 @@ test_do(suite) ->
     [];
 
 test_do(Config) when is_list(Config) -> 
-    Forms = erlando_ast:read("../../src/reader_t.erl"),
+    Forms = ast_traverse:read("../../src/reader_t.erl"),
     FormsDo = do:parse_transform(Forms, []),
     FormsAnotherDo = another_do:parse_transform(Forms, []),
     ?assertEqual(FormsDo, FormsAnotherDo),
