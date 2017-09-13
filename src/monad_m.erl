@@ -14,7 +14,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    case erlando_ast:attributes(transformer, Forms) of
+    case ast_traverse:attributes(transformer, Forms) of
         [Module] ->
             Exports = Module:module_info(exports),
             Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],

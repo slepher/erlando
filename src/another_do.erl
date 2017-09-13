@@ -20,7 +20,7 @@
 -export([parse_transform/2, format_error/1]).
 
 parse_transform(Forms, _Options) ->
-    erlando_ast:map_with_state(fun(Type, Node, State) -> walk(Type, Node, State) end, [], Forms).
+    ast_traverse:map_with_state(fun(Type, Node, State) -> walk(Type, Node, State) end, [], Forms).
 
 walk(pre, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node,
      MonadStack)

@@ -15,7 +15,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    erlando_ast:map(fun walk/2, Forms).
+    ast_traverse:map(fun walk/2, Forms).
 
 %%--------------------------------------------------------------------
 %% @doc
