@@ -22,13 +22,13 @@
 parse_transform(Forms, _Options) ->
     ast_traverse:map_with_state(fun walk/4, [], Forms).
 
-walk(pre, expr, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node,
+walk(pre, expression, {call, _Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, _Qs}]} = Node,
      MonadStack)
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% push monad into monad stack when pre parse do block
     {Node, [Monad|MonadStack]};
 
-walk(post, expr, {call, Line, {atom, _Line1, do},
+walk(post, expression, {call, Line, {atom, _Line1, do},
             [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]}, [Monad|MonadStack]) 
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% transform do block to monad:bind form and pop monad from monad stack when parse do block
@@ -40,7 +40,7 @@ walk(post, expr, {call, Line, {atom, _Line1, do},
         [{clause, Line, [], [], do_syntax(Qs, Monad)}]}}, []}, MonadStack};
 
 %%  'return' and 'fail' syntax detection and transformation:
-walk(post, expr, {call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
+walk(post, expression, {call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
   when ReturnOrFail =:= return orelse ReturnOrFail =:= fail ->
     %% 'return' calls of a particular form:
     %%  return(Arguments), and

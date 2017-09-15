@@ -33,8 +33,7 @@ parse_ops(Forms) ->
     Overloads = ast_traverse:attributes(overloads, Forms),
     lists:flatten(Overloads).
 
-walk(pre, NodeType, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) 
-  when NodeType == pattern; NodeType == expr ->
+walk(pre, expression, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
     case lists:member(Op, Ops) of
         true ->
             {call, Line, OpFun, [A, B]};
