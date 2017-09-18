@@ -15,7 +15,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    ast_traverse:map(fun(Type, Node) -> walk(Type, Node) end, Forms).
+    ast_traverse:map(fun walk/2, Forms).
 
 %%--------------------------------------------------------------------
 %% @doc
