@@ -17,7 +17,7 @@
 
 parse_transform(Forms, _Opts) ->
     ParseOps = parse_ops(Forms),
-    ast_traverse:map(fun(Type, NodeType, Node) -> walk(Type, NodeType, Node, ParseOps) end, Forms).
+    ast_traverse:map(fun(Type, Node) -> walk(Type, Node, ParseOps) end, Forms).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -30,15 +30,15 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 
 parse_ops(Forms) ->
-    Overloads = ast_traverse:attributes(overloads, Forms),
+    Overloads = erlando_ast:attributes(overloads, Forms),
     lists:flatten(Overloads).
 
-walk(pre, expression, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
+walk(pre, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->
     case lists:member(Op, Ops) of
         true ->
             {call, Line, OpFun, [A, B]};
         false ->
             Node
     end;
-walk(_Type, _NodeType, Node, _Ops) ->
+walk(_Type, Node, _Ops) ->
     Node.

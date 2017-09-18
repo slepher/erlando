@@ -48,9 +48,9 @@ sequence(Monad, Xs) ->
 -spec map_m(M, fun((A) -> monad:monadic(M, B)), [A]) -> monad:monadic(M, [B]).
 map_m(Monad, F, [X|Xs]) ->
     do([Monad ||
-           A <- X,
+           A <- F(X),
            As <- map_m(Monad, F, Xs),
-           return([F(A)|As])
+           return([A|As])
        ]);
 map_m(Monad, _F, []) ->
     return(Monad, []).
