@@ -13,24 +13,17 @@
 
 -type monad_trans(T, M) :: {T, M}.
 
+-export([lift/1]).
 -export([lift/2]).
-
-%% functor primitives
--callback fmap(fun((A) -> B), monad:monadic(TM, A), TM) -> monad:monadic(TM, B) when TM :: monad:monad().
-
-%% Monad primitives
--callback '>>='(monad:monadic(M, A), fun( (A) -> monad:monadic(M, B) ), M) ->
- monad:monadic(M, B) when M :: monad:monad().
--callback return(A, M) -> monad:monadic(M, A) when M :: monad:monad().
--callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %% Lift a computation form the argument monad to the constructed
 %% monad.
--callback lift(monad:monadic(M, A), M) ->
-    monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
+-callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
--spec lift(monad_trans(T, M), monad:monadic(M, A)) -> 
-                  monad:monadic(monad_trans(T, M), A) 
-                      when M :: monad:monad(), T :: module().
-lift({T, _IM} = M, X) ->
+-spec lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
+lift(X) ->
+    undetermined:lift(fun(TM) -> TM:lift(X) end).
+
+-spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
+lift(X, {T, _IM} = M) ->
     T:lift(X, M).

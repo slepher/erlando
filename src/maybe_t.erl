@@ -8,7 +8,15 @@
 %%%-------------------------------------------------------------------
 -module(maybe_t).
 -compile({parse_transform, do}).
+
+-define(MAYBE_T_MONAD, {?MODULE, monad}).
+
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_fail).
 -behaviour(monad_trans).
+
 -behaviour(monad_plus_trans).
 
 -export_type([maybe_t/2]).
@@ -16,6 +24,13 @@
 -opaque maybe_t(M, A) :: {maybe_t, inner_maybe_t(M, A)}.
 -type inner_maybe_t(M, A) :: monad:monadic(M, maybe_m:maybe(A)).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
+
+-export([fmap/2]).
+-export(['<*>'/2, pure/1]).
+-export(['>>='/2, return/1]).
+-export([fail/1]).
+-export([lift/1]).
 
 %% API
 -export([new/1, maybe_t/1, run_maybe_t/1]).
@@ -29,6 +44,46 @@
 -export([mzero/1, mplus/3]).
 -export([run_maybe/2, map_maybe/3]).
 
+fmap(F, MTA) ->
+    map_maybe(
+      fun(IA) ->
+              functor:fmap(F, IA)
+      end, MTA).
+
+'<*>'(MTF, MTA) ->
+    maybe_t(
+      do([monad ||
+             AF <- run_maybe_t(MTF),
+             case AF of
+                 {just, NAF} ->
+                     do([monad ||
+                            AA <- run_maybe_t(MTA),
+                            case AA of
+                                {just, NAA} ->
+                                    return({just, applicative:'<*>'(NAF, NAA)});
+                                nothing ->
+                                    return(nothing)
+                            end
+                        ]);
+                 nothing ->
+                     return(nothing)
+             end
+         ])).
+
+pure(A) ->
+    return(A).
+
+'>>='(MTA, K) ->
+    '>>='(MTA, K, ?MAYBE_T_MONAD).
+
+return(A) ->
+    return(A, ?MAYBE_T_MONAD).
+
+fail(E) ->
+    fail(E, ?MAYBE_T_MONAD).
+
+lift(X) ->
+    maybe_t(functor:fmap(fun(A) -> {just, A} end, X)).
 
 -spec new(M) -> t(M).
 new(IM) ->
@@ -104,13 +159,19 @@ mplus(MA, MB, {?MODULE, IM}) ->
              end
        ])).
 
+
+
 -spec run_maybe(maybe_t(M, A), t(M)) -> inner_maybe_t(M, A).
 run_maybe(X, {?MODULE, _IM}) ->
     run_maybe_t(X).
 
+-spec map_maybe(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A)) -> maybe_t(N, B).
+map_maybe(F, X) ->
+    maybe_t(F(run_maybe_t(X))).
+
 -spec map_maybe(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A), t(M)) -> maybe_t(N, B).
 map_maybe(F, X, {?MODULE, _IM}) ->
-    maybe_t(F(run_maybe_t(X))).
+    map_maybe(F, X).
 %%%===================================================================
 %%% API
 %%%===================================================================

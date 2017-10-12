@@ -8,10 +8,28 @@
 %%%-------------------------------------------------------------------
 -module(cont_t).
 -compile({parse_transform, do}).
+
+-define(CONT_T_MONAD, {?MODULE, monad}).
+
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_fail).
 -behaviour(monad_trans).
--behaviour(monad_cont_trans).
+-behaviour(monad_cont).
 
 -export_type([cont_t/3]).
+
+-export([fmap/2]).
+-export(['<*>'/2, pure/1]).
+-export(['>>='/2, return/1]).
+-export([fail/1]).
+-export([lift/1]).
+-export([callCC/1]).
+
+-export([shift/1, reset/1]).
+-export([run_cont/2, eval_cont/1, map_cont/2, with_cont/2]).
+-export([lift_local/4]).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
 % impl of functor 
@@ -28,11 +46,80 @@
 -export([lift_local/5]).
 
 
+
+
 -opaque cont_t(R, M, A) :: {cont_t, inner_cont_t(R, M, A)}.
 
 -type inner_cont_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
 
 -type t(M) :: {cont_t, M}.
+
+
+-spec fmap(fun((A) -> B), cont_t(R, M, A)) -> cont_t(R, M, B).
+fmap(F, CTA) ->
+    cont_t(
+      fun(CC) ->
+              run_cont(CTA, fun(A) -> CC(F(A)) end)
+      end).
+
+'<*>'(CTF, CTA) ->
+    cont_t(
+      fun(CC) ->
+              run_cont(CTF, fun(F) -> run_cont(CTA, fun(A) -> CC(F(A)) end) end)
+      end).
+
+pure(A) ->
+    return(A).
+
+'>>='(CTA, Fun) ->
+    cont_t(
+      fun (K) -> 
+              run_cont(CTA, 
+                       fun (A) -> 
+                               run_cont(Fun(A), K) 
+                       end) 
+      end).
+
+return(A) ->
+    return(A, ?CONT_T_MONAD).
+
+fail(E) ->
+    fail(E, ?CONT_T_MONAD).
+
+lift(X) ->
+    lift(X, ?CONT_T_MONAD).
+
+-spec callCC(fun((fun( (A) -> cont_t(R, M, _B) ))-> cont_t(R, M, A))) -> cont_t(R, M, A).
+callCC(F) ->
+    cont_t(fun (CC) -> run_cont(F(fun(A) -> cont_t(fun(_) -> CC(A) end) end), CC) end).
+
+-spec reset(cont_t(R, M, R)) -> cont_t(_NR, M, R).
+reset(X) ->
+    lift(eval_cont(X)).
+
+-spec shift(fun((fun((A) -> monad:monadic(M, R))) -> cont_t(R, M, R))) -> cont_t(R, M, A).
+shift(F) ->
+    cont_t(fun (CC) -> eval_cont(F(CC)) end).
+
+-spec run_cont(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
+run_cont(X, CC) ->
+    (run_cont_t(X))(CC).
+
+-spec eval_cont(cont_t(R, M, R)) -> monad:monadic(M, R).
+eval_cont(X) ->
+    eval_cont(X, ?CONT_T_MONAD).
+
+-spec map_cont(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
+map_cont(F, X) ->
+    cont_t(fun(CC) -> F(run_cont(X, CC)) end).
+
+-spec with_cont(fun((fun((B) -> monad:monadic(M, R))) -> fun((A) -> monad:monadic(M, R))), 
+                cont_t(R, M, A)) -> cont_t(R, M, B).
+with_cont(F, X) ->
+    cont_t(fun (CC) -> run_cont(X, F(CC)) end).
+
+lift_local(Ask, Local, F, X) ->    
+    lift_local(Ask, Local, F, X, ?CONT_T_MONAD).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(IM) ->
@@ -56,8 +143,8 @@ fmap(F, X, {?MODULE, _IM} = CT) ->
       end).
 
 -spec '>>='(cont_t(R, M, A), fun((A) -> cont_t(R, M, B)), t(M)) -> cont_t(R, M, B).
-'>>='(M, Fun, {?MODULE, _IM} = CT) ->
-    cont_t(fun (K) -> run_cont(M, fun (A) -> run_cont(Fun(A), K, CT) end, CT) end).
+'>>='(M, Fun, {?MODULE, _IM}) ->
+    '>>='(M, Fun).
 
 -spec return(A, t(M)) -> cont_t(_R, M, A).
 return(A, {?MODULE, _IM}) ->
@@ -72,8 +159,8 @@ lift(X, {?MODULE, IM}) ->
     cont_t(fun (F) -> IM:'>>='(X, F) end).
 
 -spec callCC(fun((fun( (A) -> cont_t(R, M, _B) ))-> cont_t(R, M, A)), t(M)) -> cont_t(R, M, A).
-callCC(F, {?MODULE, _IM} = CT) ->
-    cont_t(fun (CC) -> run_cont(F(fun(A) -> cont_t(fun(_) -> CC(A) end) end), CC, CT) end).
+callCC(F, {?MODULE, _IM}) ->
+    callCC(F).
 
 -spec reset(cont_t(R, M, R), t(M)) -> cont_t(_NR, M, R).
 reset(X, {?MODULE, _IM} = CT) ->
@@ -85,20 +172,20 @@ shift(F, {?MODULE, _IM} = CT) ->
 
 -spec run_cont(cont_t(R, M, A), fun((A) -> monad:monadic(M, R)), t(M)) -> monad:monadic(M, R).
 run_cont(X, CC, {?MODULE, _IM}) ->
-    (run_cont_t(X))(CC).
+    run_cont(X, CC).
 
 -spec eval_cont(cont_t(R, M, R), t(M)) -> monad:monadic(M, R).
 eval_cont(X, {?MODULE, IM} = CT) ->
-    run_cont(X, fun (A) -> IM:return(A) end, CT).
+    run_cont(X, fun (A) -> monad:return(A, IM) end, CT).
 
 -spec map_cont(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A), t(M)) -> cont_t(R, M, A).
-map_cont(F, X, {?MODULE, _IM} = CT) ->
-    cont_t(fun(CC) -> F(run_cont(X, CC, CT)) end).
+map_cont(F, X, {?MODULE, _IM}) ->
+    map_cont(F, X).
 
 -spec with_cont(fun((fun((B) -> monad:monadic(M, R))) -> fun((A) -> monad:monadic(M, R))), 
                 cont_t(R, M, A), t(M)) -> cont_t(R, M, B).
-with_cont(F, X, {?MODULE, _IM} = CT) ->
-    cont_t(fun (CC) -> run_cont(X, F(CC), CT) end).
+with_cont(F, X, {?MODULE, _IM}) ->
+    with_cont(F, X).
 
 -spec lift_local(fun(() -> monad:monadic(M, R)), 
                  fun((fun((R) -> R), monad:monadic(M, R)) -> monad:monadic(M, R)),

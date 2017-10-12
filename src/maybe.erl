@@ -14,7 +14,7 @@
 %% Copyright (c) 2011-2013 VMware, Inc.  All rights reserved.
 %%
 
--module(maybe_m).
+-module(maybe).
 
 -export_type([maybe/1]).
 
@@ -23,6 +23,7 @@
 
 %% impl of functor
 -export([fmap/2]).
+-export(['<*>'/2, pure/1]).
 %% impl of monad
 -export(['>>='/2, return/1, fail/1]).
 %% impl of monad plus
@@ -34,6 +35,16 @@ fmap(F, {just, X}) ->
     {just, F(X)};
 fmap(_F, nothing) ->
     nothing.
+
+'<*>'(nothing, _) ->
+    nothing;
+'<*>'(_, nothing) ->
+    nothing;
+'<*>'({just, F}, {just, A}) ->
+    {just, F(A)}.
+
+pure(A) ->
+    {just, A}.
 
 -spec '>>='(maybe(A), fun( (A) -> maybe(B) )) -> maybe(B).
 '>>='({just, X}, Fun) -> Fun(X);

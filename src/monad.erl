@@ -19,21 +19,20 @@
 -export_type([monad/0, monadic/2]).
 
 -export([join/2, sequence/2, map_m/3, lift_m/3]).
--export([fmap/3]).
 %% bind is same as >>=, then is same as >> 
 -export([bind/3, then/3]).
--export(['>>='/3, '>>'/3, return/2, fail/2]).
+-export([bind/2, then/2]).
+-export(['>>='/2, '>>'/2, return/1]).
+-export(['>>='/3, '>>'/3, return/2]).
+-export([fail/1, fail/2]).
+-export([id/1]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
 
-%% functor primitives
--callback fmap(fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad:monad().
-
 %% Monad primitives
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
--callback return(A) -> monadic(M, A) when M :: monad().
--callback fail(any()) -> monadic(M, _A) when M :: monad().
+-callback return(A) -> monadic(M, A) when M :: monad(). 
 
 %% Utility functions
 -spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
@@ -62,11 +61,11 @@ lift_m(Monad, F, X) ->
            return(F(A))
        ]).
 
--spec fmap(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
-fmap({T, _IM} = M, F, X) ->
-    T:fmap(F, X, M);
-fmap(M, F, X) ->
-    M:fmap(F, X).
+bind(X, F) ->
+    '>>='(X, F).
+
+then(X, F) ->
+    '>>'(X, F).
 
 -spec bind(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(Monad, X, F) ->
@@ -75,25 +74,39 @@ bind(Monad, X, F) ->
 -spec then(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 then(Monad, Xa, Xb) ->
     '>>'(Monad, Xa, Xb).
+
+'>>='(X, F) ->
+    undetermined:unwrap(undetermined:'>>='(undetermined:wrap(X), fun(A) -> undetermined:wrap(F(A)) end)).
     
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-'>>='({T, _IM} = M, X, F) ->
+'>>='(X, F, {T, _IM} = M) ->
     T:'>>='(X, F, M);
-'>>='(M, X, F) ->
+'>>='(X, F, M) ->
     M:'>>='(X, F).
 
--spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-'>>'(Monad, Xa, Xb) ->
-    '>>='(Monad, Xa, fun(_) -> Xb end).
+-spec return(A) -> monad:monadic(M, A) when M :: monad().
+return(A) ->
+    undetermined:return(A).
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
-return({T, _IM} = M, A) ->
-    T:return(A, M);
-return(M, A) ->
+return(A, {T, IM}) when is_atom(T) ->
+    T:lift(return(A, IM), {T, IM});
+return(A, M) when is_atom(M) ->
     M:return(A).
 
--spec fail(M, _E) -> monad:monadic(M, _A) when M :: monad().
-fail({T, _IM} = M, E) ->
-    T:fail(E, M);
-fail(M, E) ->
-    M:fail(E).
+fail(E) ->
+    monad_fail:fail(E).
+
+fail(E, IM) ->
+    monad_fail:fail(E, IM).
+
+-spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+'>>'(Xa, Xb) ->
+    '>>='(Xa, fun(_) -> Xb end).
+
+-spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+'>>'(Xa, Xb, Monad) ->
+    '>>='(Monad, Xa, fun(_) -> Xb end).
+
+id(Monad) ->
+    return(fun(A) -> A end, Monad).

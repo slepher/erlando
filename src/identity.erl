@@ -14,25 +14,36 @@
 %% Copyright (c) 2011-2013 VMware, Inc.  All rights reserved.
 %%
 
--module(identity_m).
+-module(identity).
+-behaviour(functor).
+-behaviour(applicative).
 -behaviour(monad).
 
--export_type([identity_m/1]).
+-export_type([identity/1]).
 
 -export([fmap/2]).
--export(['>>='/2, return/1, fail/1]).
+-export(['<*>'/2, pure/1]).
+-export(['>>='/2, return/1]).
+-export([run_identity/1]).
 
--type identity_m(A) :: A.
+-type identity(A) :: {identity, A}.
 
+-spec fmap(fun((A) -> B), identity(A)) -> identity(B).
 fmap(F, X) ->
-    F(X).
+    two_tuple:fmap(identity, F, X).
 
--spec '>>='(identity_m(A), fun( (A) -> identity_m(B) )) -> identity_m(B).
-'>>='(X, Fun) -> Fun(X).
+-spec '<*>'(identity(fun((A) -> B)), identity(A)) -> identity(B).
+'<*>'(F, A) ->
+    two_tuple:ap(identity, F, A).
 
--spec return(A) -> identity_m(A).
-return(X) -> X.
+-spec '>>='(identity(A), fun( (A) -> identity(B) )) -> identity(B).
+'>>='(X, Fun) -> 
+    two_tuple:bind(identity, X, Fun).
 
--spec fail(any()) -> identity_m(_A).
-fail(E) ->
-    exit({error, E}).
+-spec pure(A) -> identity(A).
+pure(A) -> return(A).
+
+return(A) -> two_tuple:return(identity, A).
+
+run_identity(I) ->
+    two_tuple:run(identity, I).

@@ -4,17 +4,26 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  9 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(state_m).
--behaviour(monad).
--compile({parse_transform, monad_m}).
--transformer(state_t).
+-module(functor).
 
+%% API
+-export([fmap/2, '<$>'/2]).
+
+-type functor(_F, _A) :: any().
+
+-callback fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+fmap(F, FA) ->
+    FModule = typeclass:module(functor, FA),
+    FModule:fmap(F, FA).
+
+'<$>'(F, FA) ->
+    fmap(F, FA).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

@@ -11,3 +11,8 @@
 -module(monad_cont).
 
 -callback callCC(fun((fun( (A) -> monad:monadic(M, _B) ))-> monad:monadic(M, A))) -> monad:monadic(M, A) when M :: monad:monad().
+
+-export([callCC/1]).
+
+callCC(F) ->
+    undetermined:lift(fun(M) -> M:callCC(F) end).

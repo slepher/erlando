@@ -4,19 +4,28 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  9 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(reader_m).
--behaviour(monad).
--behaviour(monad_plus).
--behaviour(monad_reader).
--transformer(reader_t).
--compile({parse_transform, monad_m}).
+-module(monad_fail).
+
+%% API
+-export([fail/1, fail/2]).
+
+-callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+fail(E) ->
+    undetermined:lift(fun(M) -> fail(E, M) end).
+
+-spec fail(M, _E) -> monad:monadic(M, _A) when M :: monad:monad().
+fail(E, {T, _IM} = M) ->
+    T:fail(E, M);
+fail(E, M) ->
+    M:fail(E).
+    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

@@ -152,13 +152,13 @@ test_reader_t_ask() ->
     [{doc, "Test reader_t"}].
 
 test_reader_t_ask(_Config) ->
-    Monad = reader_t:new(identity_m),
+    Monad = reader_t:new(identity),
     M0 = 
         do([Monad ||
                Local <- Monad:ask(),
                return({Local, world})
            ]),
-    ?assertEqual({hello, world}, Monad:run_reader(M0, hello)).
+    ?assertEqual({hello, world}, identity:run_identity(Monad:run_reader(M0, hello))).
 
 
 test_monad_laws(_Config) ->
@@ -248,11 +248,11 @@ test_local(_Config) ->
 
 test_reader(_Config) ->
     Monad = reader_t:new(error_m),
-    Monad0 = reader_t:new(identity_m),
+    Monad0 = reader_t:new(identity),
     M0 = do([Monad0 ||
                 Value <- Monad0:ask(),
                 return(length(Value))
             ]),
-    M1 = Monad:reader(reader_t:run_reader_t(M0)),
+    M1 = Monad:reader(fun(R) -> identity:run_identity(reader_t:run_reader(M0, R, Monad0)) end),
 
     ?assertEqual({ok, 3}, error_m:run_error(Monad:run_reader(M1, [1,2,3]))).

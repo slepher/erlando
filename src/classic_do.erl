@@ -443,7 +443,7 @@ monad_call_expr(Line, Line1, {tuple, _Line2, [{atom, _Line3, _MonadModule} = Mod
     %% call of {Monad, Function, Args} is transformed to {Module, Function, Args ++ [Monad]}
     {call, Line, {remote, Line1, Module, {atom, Line1, Function}}, Args ++ [Monad]};
 monad_call_expr(Line, Line1, Monad, Function, Args) ->
-    {call, Line, {remote, Line1, {atom, Line1, monad}, {atom, Line1, Function}}, [Monad|Args]}.
+    {call, Line, {remote, Line1, {atom, Line1, monad}, {atom, Line1, Function}}, Args ++ [Monad]}.
 
 %% Use this function to report any parse_transform error. The
 %% resulting error message will be displayed as an ordinary

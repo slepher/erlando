@@ -157,20 +157,36 @@ test_cont_t() ->
 
 test_cont_t(_Config) ->
 
+
     Monad = cont_t:new(error_m),
 
     M1 = Monad:return(2),
     M2 = Monad:return(3),
+
+
+    RX = (fun() -> 
+                 monad:'>>='(M1,
+                             fun(R1) ->
+                                     monad:'>>='(M2,
+                                                 fun(R2) ->
+                                                         monad:return(R1 + R2, Monad)
+                                                 end, Monad)
+                             end, Monad) 
+          end)(),
+
     R = do([Monad || 
                R1 <- M1,
                R2 <- M2,
                return(R1 + R2)]),
+    {cont_t, _} = R,
     CC = fun(X) -> {ok, X} end,
-    ?assertEqual({ok, 5}, Monad:run_cont(R, CC)).
+    ?assertEqual({ok, 5}, cont_t:run_cont(RX, CC)),
+    %?assertEqual({ok, 5}, cont_t:run_cont(R, CC)),
+    ok.
 
 
 test_cont_t_callCC(_Config) ->
-    MonadState = state_t:new(identity_m),
+    MonadState = state_t:new(identity),
     Monad = cont_t:new(MonadState),
     
     M0 = 
@@ -197,11 +213,11 @@ test_cont_t_callCC(_Config) ->
                       ])
                end
            ]),
-    Value = MonadState:eval(Monad:run_cont(M0, fun(X) -> MonadState:return(X) end), []),
+    Value = identity:run_identity(MonadState:eval(Monad:run_cont(M0, fun(X) -> MonadState:return(X) end), [])),
     ?assertEqual(4, Value).
 
 test_cont_t_local(_Config) ->
-    MR = reader_t:new(identity_m),
+    MR = reader_t:new(identity),
     Monad = cont_t:new(MR),
     RefO = make_ref(),
     Ref = make_ref(),
@@ -218,13 +234,13 @@ test_cont_t_local(_Config) ->
                 return({Ref0, Ref1, Ref2})
             ]),
     Reader = Monad:run_cont(M2, fun(X) -> MR:return(X) end),
-    {R0, R1, R2}= MR:run_reader(Reader, RefO),
+    {R0, R1, R2}= identity:run_identity(MR:run_reader(Reader, RefO)),
     ?assertEqual(RefO, R0),
     ?assertEqual(RefO, R2),
     ?assertEqual(Ref, R1).
 
 cont_t_lifted_local(F, C) ->
-    MR = reader_t:new(identity_m),
+    MR = reader_t:new(identity),
     Monad = cont_t:new(MR),
     Monad:lift_local(
       fun() -> MR:ask() end,
@@ -232,7 +248,7 @@ cont_t_lifted_local(F, C) ->
       F, C).                       
 
 test_cont_t_shift_reset(_Config) ->
-    MR = reader_t:new(identity_m),
+    MR = reader_t:new(identity),
     MS = state_t:new(MR),
     MC = cont_t:new(MS),
     M = MC:reset(
@@ -243,11 +259,11 @@ test_cont_t_shift_reset(_Config) ->
                  MC:shift(fun(_K) -> MC:return({R, S}) end),
                  MC:lift(MS:put(world))
              ])),
-    Result = MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10),
+    Result = identity:run_identity(MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10)),
     ?assertEqual({{10, 0}, hello}, Result).
 
 test_cont_t_shift_reset2(_Config) ->
-    MR = reader_t:new(identity_m),
+    MR = reader_t:new(identity),
     MS = state_t:new(MR),
     MC = cont_t:new(MS),
     M = MC:reset(
@@ -259,6 +275,6 @@ test_cont_t_shift_reset2(_Config) ->
                  MC:lift(MS:put(world)),
                  MC:return({Val, 1})
              ])),
-    Result = MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10),
+    Result = identity:run_identity(MR:run_reader(MS:run_state(MC:run_cont(M, fun(A) -> MS:return(A) end), 0), 10)),
     ?assertEqual({{{10, 0}, 1}, world}, Result).
 

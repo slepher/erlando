@@ -16,13 +16,25 @@
 
 %% List Monad. Mainly just for fun! As normal, this is depth first.
 
--module(list_m).
+-module(list_instance).
 
+-behaviour(functor).
 -behaviour(monad).
--export([fmap/2, '>>='/2, return/1, fail/1]).
-
+-behaviour(traversable).
 -behaviour(monad_plus).
+
+-export([fmap/2, '>>='/2, return/1, fail/1]).
+-export([traverse/2]).
+
 -export([mzero/0, mplus/2]).
+
+
+traverse(A_FB, [H|T]) ->
+    applicative:ap(functor:fmap(fun(A, B) -> [A|B] end, A_FB(H)), traverse(A_FB, T)),
+    [A_FB(H) | traverse(A_FB, T)];
+traverse(_A_FB, []) ->
+    applicative:pure([]).
+
 
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
@@ -30,6 +42,8 @@ fmap(F, Xs) ->
 %% Note that using a list comprehension is (obviously) cheating, but
 %% it's easier to read. The "real" implementation is also included for
 %% completeness.
+
+
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
 '>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).

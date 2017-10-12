@@ -10,6 +10,26 @@
 
 -module(monad_reader).
 
+-compile({parse_transform, do}).
+
+-export([ask/0, reader/1, local/2, asks/1]).
+
 -callback ask() -> monad:monadic(M, _R) when M :: monad:monad().
 -callback local(fun((R) -> R), monad:monadic(M, R)) -> monad:monadic(M, R) when M :: monad:monad().
 -callback reader(fun((_R) -> A)) -> monad:monadic(M, A) when M :: monad:monad().
+
+
+ask() ->
+    undetermined:ask().
+
+reader(F) ->
+    undetermined:reader(F).
+
+local(F, M) ->
+    undetermined:unwrap(undetermined:local(F, undetermined:wrap(M))).
+
+asks(F) ->
+    do([monad || 
+           A <- ask(),
+           return(F(A))
+       ]).
