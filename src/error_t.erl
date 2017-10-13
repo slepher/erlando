@@ -34,6 +34,7 @@
 %% depricated below
 %%
 %% ---------------------------------------------------------------------------------------
+-export([fmap/3]).
 -export(['>>='/3, return/2, fail/2, lift/2]).
 -export([run_error/2, map_error/3, with_error/3]).
 -export([run/2]).
@@ -64,7 +65,7 @@ run_error_t(Other) ->
 fmap(F, ETA) ->
     map_error(
       fun(MA) ->
-              functor:fmap(fun(A) -> error_m:fmap(F, A) end, MA)
+              functor:fmap(fun(A) -> error_instance:fmap(F, A) end, MA)
       end, ETA).
 
 -spec '<*>'(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
@@ -72,8 +73,7 @@ fmap(F, ETA) ->
     error_t(
       do([monad || 
              EF <- run_error_t(ETF),
-             EA <- run_error_t(ETA),
-             return(error_m:'<*>'(EF, EA))
+             error_instance:'>>='(EF, fun(F) -> functor:fmap(error_instance:fmap(F, _), run_error_t(ETA)) end)
          ])).
 
 -spec pure(A) -> error_t(_E, _M, A).
@@ -87,17 +87,16 @@ pure(A) ->
               case R of
                   {error, _Err} = Error -> return(Error);
                   {ok,  Result}         -> run_error_t(Fun(Result));
-
                   ok                    -> run_error_t(Fun(ok))
               end
        ])).
 
 -spec return(A) -> error_t(_E, _M, A).
-return(A) -> error_t(monad:return(error_m:return(A))).
+return(A) -> error_t(monad:return(error_instance:return(A))).
 
 -spec lift(monad:monadic(M, A)) -> error_t(_E, M, A).
 lift(X) ->
-    error_t(functor:fmap(error_m:return(_), X)).
+    error_t(functor:fmap(error_instance:return(_), X)).
 
 -spec fail(E) -> error_t(E, _M, _A).
 fail(E) ->
@@ -148,9 +147,17 @@ with_error(F, X) ->
 
 %% ---------------------------------------------------------------------------------------
 %%
-%% depricated below
+%% old transform funcitons below
 %%
 %% ---------------------------------------------------------------------------------------
+fmap(F, X, {?MODULE, IM}) ->
+    map_error(
+      fun(EIM) ->
+              do([IM ||
+                     A <- EIM,
+                     return(error_instance:fmap(F, A))
+                 ])
+      end, X).
 
 -spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) ), t(M)) -> error_t(E, M, B).
 '>>='(X, Fun, {?MODULE, IM}) ->
@@ -164,7 +171,7 @@ with_error(F, X) ->
        ])).
 
 -spec return(A, t(M)) -> error_t(_E, M, A).
-return(A, {?MODULE, IM}) -> error_t(monad:return(IM, error_instance:return(A))).
+return(A, {?MODULE, IM}) -> error_t(runtime_do:return(error_instance:return(A), IM)).
 
 %% This is the equivalent of
 %%     fail msg = ErrorT $ return (Left (strMsg msg))
@@ -177,29 +184,33 @@ return(A, {?MODULE, IM}) -> error_t(monad:return(IM, error_instance:return(A))).
 %% is encapsulated.
 -spec fail(E, t(M)) -> error_t(E, M, _A).
 fail(E, {?MODULE, IM}) ->
-    error_t(monad:return(IM, {error, E})).
+    error_t(runtime_do:return(error_instance:fail(E), IM)).
 
 -spec lift(monad:monadic(M, A), M) -> error_t(_E, M, A).
-lift(X, {?MODULE, _IM}) ->
-    error_t(functor:fmap(error_instance:return(_), X)).
+lift(X, {?MODULE, IM}) ->
+    error_t(
+      do([ IM ||
+             A <- X,
+             return(error_instance:return(A))
+         ])).
 
--spec run_error(error_t(E, M, A), t(M)) -> monad:monadic(M, error_instance:error_instance(E, A)).
-run_error(EM, {?MODULE, _IM}) -> 
-    run_error_t(EM).
+-spec run_error(error_t(E, M, A), M) -> monad:monadic(M, error_m:error_m(E, A)).
+run_error(EM, {?MODULE, _IM}) ->
+    run_error(EM).
 
 run(EM, ET) ->
     run_error(EM, ET).
 
--spec map_error(fun((monad:monadic(M, error_instance:error_instance(EA, A))) -> monad:monadic(N, error_instance:error_instance(EB, B))),
+-spec map_error(fun((monad:monadic(M, error_m:error_m(EA, A))) -> monad:monadic(N, error_m:error_m(EB, B))),
                 error_t(EA, M, A), t(M)) -> error_t(EB, N, B).
-map_error(F, X, {?MODULE, _IM}) ->
-    error_t(F(run_error_t(X))).
+map_error(F, ETA, {?MODULE, _IM}) ->
+    map_error(F, ETA).
 
 -spec with_error(fun((EA) -> EB), error_t(EA, M, A), t(M)) -> error_t(EB, M, A).
-with_error(F, X, {?MODULE, IM} = ET) ->
+with_error(F, X, {?MODULE, IM}) ->
     map_error(
       fun(MA) ->
-              do([IM || 
+              do([IM ||
                      Val <- MA,
                      case Val of
                          {error, Reason} ->
@@ -208,5 +219,4 @@ with_error(F, X, {?MODULE, IM} = ET) ->
                              return(Val)
                      end
                  ])
-      end, X, ET).
-    
+      end, X).

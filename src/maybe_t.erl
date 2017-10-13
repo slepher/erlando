@@ -17,6 +17,8 @@
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_fail).
+-behaviour(monad_reader).
+-behaviour(monad_state).
 
 -export_type([maybe_t/2]).
 
@@ -24,30 +26,33 @@
 -type inner_maybe_t(M, A) :: monad:monadic(M, maybe:maybe(A)).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
-
 %% API
--export([new/1, maybe_t/1, run_maybe_t/1]).
+-export([maybe_t/1, run_maybe_t/1]).
+% impl of functor.
 -export([fmap/2]).
+% impl of applicative.
 -export(['<*>'/2, pure/1]).
+% impl of monad.
 -export(['>>='/2, return/1]).
--export([fail/1]).
+% impl of monad_trans.
 -export([lift/1]).
+% impl of monad_fail.
+-export([fail/1]).
+% impl of monad_reader.
 -export([ask/0, reader/1, local/2]).
+% impl of monad_state.
 -export([get/0, put/1, state/1]).
+% maybe_t functions.
+-export([run_maybe/1, map_maybe/2]).
 
-%% impl of functor
+%% old monad trans functions
+-export([new/1]).
 -export([fmap/3]).
-%% impl of monad
 -export(['>>='/3, return/2, fail/2]).
-%% impl of monad transformer
 -export([lift/2]).
-%% impl of monad plus
 -export([mzero/1, mplus/3]).
 -export([run_maybe/2, map_maybe/3]).
 
--spec new(M) -> t(M).
-new(IM) ->
-    {?MODULE, IM}.
 
 -spec maybe_t(inner_maybe_t(M, A)) -> maybe_t(M, A).
 maybe_t(Inner) ->
@@ -61,12 +66,14 @@ run_maybe_t({undetermined, _} = U) ->
 run_maybe_t(Other) ->
     exit({invalid_maybe_t, Other}).
 
+-spec fmap(fun((A) -> B), maybe_t(M, A)) -> maybe_t(M, B).
 fmap(F, MTA) ->
     map_maybe(
       fun(IA) ->
               functor:fmap(F, IA)
       end, MTA).
 
+-spec '<*>'(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
 '<*>'(MTF, MTA) ->
     maybe_t(
       do([monad ||
@@ -74,20 +81,34 @@ fmap(F, MTA) ->
              maybe:'>>='(MF, fun(F) -> functor:fmap(maybe:fmap(F, _), run_maybe_t(MTA)) end)
          ])).
 
+-spec pure(A) -> maybe_t(_M, A).
 pure(A) ->
     return(A).
 
-'>>='(MTA, K) ->
-    '>>='(MTA, K, ?MAYBE_T_MONAD).
+-spec '>>='(maybe_t(M, A), fun((A) -> maybe_t(M, B))) -> maybe_t(M, B).
+'>>='(MTA, KMTB) ->
+    maybe_t(
+      do([monad ||
+             M <- run_maybe_t(MTA),
+             case M of
+                 nothing ->
+                     return(nothing);
+                 {just, V} ->
+                     run_maybe_t(KMTB(V))
+             end
+         ])).
 
+-spec return(A) -> maybe_t(_M, A).
 return(A) ->
-    return(A, ?MAYBE_T_MONAD).
+    maybe_t(monad:return(maybe:return(A))).
 
+-spec fail(_E) -> maybe_t(_M, _A).
 fail(E) ->
-    fail(E, ?MAYBE_T_MONAD).
+    maybe_t(monad:return(maybe:fail(E))).
 
+-spec lift(monad:monadic(M, A)) -> maybe_t(M, A).
 lift(X) ->
-    maybe_t(functor:fmap(fun(A) -> {just, A} end, X)).
+    maybe_t(functor:fmap(maybe:return(_), X)).
 
 -spec ask() -> maybe_t(_M, _A).
 ask() ->
@@ -116,15 +137,23 @@ put(S) ->
 state(F) ->
     lift(monad_state:state(F)).
 
+-spec run_maybe(maybe_t(M, A)) -> inner_maybe_t(M, A).
+run_maybe(X) ->
+    run_maybe_t(X).
+
 -spec map_maybe(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A)) -> maybe_t(N, B).
 map_maybe(F, X) ->
     maybe_t(F(run_maybe_t(X))).
 
 %% ---------------------------------------------------------------------------------------
 %%
-%% depricated below
+%% old monad trans functions below
 %%
 %% ---------------------------------------------------------------------------------------
+-spec new(M) -> t(M).
+new(IM) ->
+    {?MODULE, IM}.
+
 -spec fmap(fun((A) -> B), maybe_t(M, A), t(M)) -> maybe_t(M, B).
 fmap(F, X, {?MODULE, IM}) ->
     maybe_t(
@@ -134,62 +163,60 @@ fmap(F, X, {?MODULE, IM}) ->
          ])).
 
 -spec '>>='(maybe_t(M, A), fun((A) -> maybe_t(M, B)), t(M)) -> maybe_t(M, B).
-'>>='(X, Fun, {?MODULE, IM}) ->
+'>>='(MTA, KMTB, {?MODULE, IM}) ->
     maybe_t(
       do([IM ||
-             M <- X,
-             case M of
+             MA <- run_maybe_t(MTA),
+             case MA of
                  nothing ->
                      return(nothing);
-                 {just, V} ->
-                     run_maybe_t(Fun(V))
+                 {just, A} ->
+                     run_maybe_t(KMTB(A))
              end
          ])).
 
 -spec return(A, t(M)) -> maybe_t(M, A).
 return(A, {?MODULE, IM}) ->
-    maybe_t(monad:return(IM, maybe:return(A))).
+    maybe_t(runtime_do:return(maybe:return(A), IM)).
 
 -spec fail(_E, t(M)) -> maybe_t(M, _A).
 fail(E, {?MODULE, IM}) ->
-    maybe_t(monad:return(IM, maybe:fail(E))).
+    maybe_t(runtime_do:return(maybe:fail(E), IM)).
 
 -spec lift(monad:monadic(M, A), t(M)) -> maybe_t(M, A).
-lift(X, {?MODULE, IM}) ->
+lift(MA, {?MODULE, IM}) ->
     maybe_t(
       do([IM ||
-             M <- X,
-             return(maybe:return(M))
+             A <- MA,
+             return(maybe:return(A))
          ])).
 
 -spec mzero(t(M)) -> maybe_t(M, _A).
 mzero({?MODULE, IM}) ->
-    maybe_t(monad:return(IM, maybe:mzero())).
+    maybe_t(runtime_do:return(maybe:mzero(), IM)).
 
 -spec mplus(maybe_t(M, A), maybe_t(M, A), t(M)) -> maybe_t(M, A).
-mplus(MA, MB, {?MODULE, IM}) ->
+mplus(MTA, MTB, {?MODULE, IM}) ->
     maybe_t(
       do([IM ||
-             A <- run_maybe_t(MA),
-             %% could be 
+             MA <- run_maybe_t(MTA),
+             %% could be
              %% A <- run_maybe_t(MA),
              %% B <- run_maybe_t(MB)
              %% return(maybe_m:mplus(A, B))
              %% but erlang is not lazy as haskell
              %% I have to expand it
-             case A of
+             case MA of
                  nothing ->
-                     run_maybe_t(MB);
+                     run_maybe_t(MTB);
                  {just, _V} ->
-                     return(A)
+                     return(MA)
              end
        ])).
 
-
-
 -spec run_maybe(maybe_t(M, A), t(M)) -> inner_maybe_t(M, A).
 run_maybe(X, {?MODULE, _IM}) ->
-    run_maybe_t(X).
+    run_maybe(X).
 
 -spec map_maybe(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A), t(M)) -> maybe_t(N, B).
 map_maybe(F, X, {?MODULE, _IM}) ->

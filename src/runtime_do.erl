@@ -14,18 +14,22 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-'>>='(X, K, {T, _M}) ->
-    T:'>>='(X, K);
+'>>='(X, K, monad) ->
+    monad:'>>='(X, K);
+'>>='({undetermined, _} = UX, K, Monad) ->
+    '>>='(undetermined:run(UX, Monad), fun(A) -> undetermined:run(K(A), Monad) end, Monad);
+'>>='(X, K, {T, M}) ->
+    T:'>>='(X, K, {T, M});
 '>>='(X, K, M) ->
     M:'>>='(X, K).
 
-return(A, {T, _M}) ->
-    T:return(A);
+return(A, {T, M}) ->
+    T:return(A, {T, M});
 return(A, M) ->
     M:return(A).
 
-fail(E, {T, _M}) ->
-    T:fail(E);
+fail(E, {T, M}) ->
+    T:fail(E, {T, M});
 fail(E, monad) ->
     monad_fail:fail(E);
 fail(E, M) ->

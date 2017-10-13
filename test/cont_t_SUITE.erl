@@ -212,25 +212,29 @@ test_cont_t_callCC(_Config) ->
 test_cont_t_local(_Config) ->
     MR = reader_t:new(identity),
     Monad = cont_t:new(MR),
-    RefO = make_ref(),
-    Ref = make_ref(),
+
+    RefX = make_ref(),
+    RefY = make_ref(),
     
     M0 = do([Monad ||
                 Ref0 <- Monad:lift(MR:ask()),
                 return(Ref0)
             ]),
-    M1 = cont_t_lifted_local(fun(_) -> Ref end, M0),
+
+    ?assertEqual(RefX, identity:run_identity(MR:run_reader(Monad:eval_cont(M0), RefX))),
+
+    M1 = cont_t_lifted_local(fun(_) -> RefY end, M0),
     M2 = do([Monad ||
                 Ref0 <- M0,
                 Ref1 <- M1,
                 Ref2 <- Monad:lift(MR:ask()),
                 return({Ref0, Ref1, Ref2})
             ]),
-    Reader = Monad:run_cont(M2, fun(X) -> MR:return(X) end),
-    {R0, R1, R2}= identity:run_identity(MR:run_reader(Reader, RefO)),
-    ?assertEqual(RefO, R0),
-    ?assertEqual(RefO, R2),
-    ?assertEqual(Ref, R1).
+    Reader = Monad:run_cont(M2, fun(X) -> runtime_do:return(X, MR) end),
+    {R0, R1, R2}= identity:run_identity(MR:run_reader(Reader, RefX)),
+    ?assertEqual(RefX, R0),
+    ?assertEqual(RefX, R2),
+    ?assertEqual(RefY, R1).
 
 cont_t_lifted_local(F, C) ->
     MR = reader_t:new(identity),
@@ -291,18 +295,17 @@ test_cont_t_shift_reset2(_Config) ->
 test_cont_t_shift_reset3(_Config) ->
     MR = reader_t:new(identity),
     MC = cont_t:new(MR),
-    M = cont_t:reset(
-          do([monad || 
+    M = MC:reset(
+          do([MC || 
                  R <- cont_t:lift(reader_t:ask()),
                  cont_t:shift(fun(_K) -> cont_t:return(R) end),
                  cont_t:lift(reader_t:lift(return(0)))
              ])),
-    NM = monad:run(M, MC),
 
     Result = identity:run_identity(
                reader_t:run_reader(
                  cont_t:run_cont(
-                   NM, fun(A) -> reader_t:return(A) end), 0)),
+                    M, fun(A) -> reader_t:return(A) end), 0)),
     ?assertEqual(0, Result).
 
 test_cont_t_shift_reset4(_Config) ->
