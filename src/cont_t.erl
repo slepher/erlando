@@ -17,6 +17,8 @@
 -behaviour(monad_fail).
 -behaviour(monad_trans).
 -behaviour(monad_cont).
+-behaviour(monad_state).
+-behaviour(monad_reader).
 
 -export_type([cont_t/3]).
 
@@ -26,8 +28,10 @@
 -export([fail/1]).
 -export([lift/1]).
 -export([callCC/1]).
-
 -export([shift/1, reset/1]).
+-export([get/0, put/1, state/1]).
+-export([ask/0, reader/1, local/2]).
+
 -export([run_cont/2, eval_cont/1, map_cont/2, with_cont/2]).
 -export([lift_local/4]).
 
@@ -81,13 +85,13 @@ pure(A) ->
       end).
 
 return(A) ->
-    return(A, ?CONT_T_MONAD).
+    cont_t(fun (K) -> K(A) end).
 
 fail(E) ->
     fail(E, ?CONT_T_MONAD).
 
 lift(X) ->
-    lift(X, ?CONT_T_MONAD).
+    cont_t(fun (F) -> monad:'>>='(X, F) end).
 
 -spec callCC(fun((fun( (A) -> cont_t(R, M, _B) ))-> cont_t(R, M, A))) -> cont_t(R, M, A).
 callCC(F) ->
@@ -101,13 +105,22 @@ reset(X) ->
 shift(F) ->
     cont_t(fun (CC) -> eval_cont(F(CC)) end).
 
+get() ->
+    lift(monad_state:get()).
+
+put(S) ->
+    lift(monad_state:put(S)).
+
+state(F) ->
+    lift(monad_state:state(F)).
+
 -spec run_cont(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
 run_cont(X, CC) ->
     (run_cont_t(X))(CC).
 
 -spec eval_cont(cont_t(R, M, R)) -> monad:monadic(M, R).
 eval_cont(X) ->
-    eval_cont(X, ?CONT_T_MONAD).
+    run_cont(X, fun (A) -> monad:return(A) end).
 
 -spec map_cont(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
 map_cont(F, X) ->
@@ -117,6 +130,22 @@ map_cont(F, X) ->
                 cont_t(R, M, A)) -> cont_t(R, M, B).
 with_cont(F, X) ->
     cont_t(fun (CC) -> run_cont(X, F(CC)) end).
+
+ask() ->
+    lift(monad_reader:ask()).
+
+reader(F) ->
+    lift(monad_reader:reader(F)).
+
+local(F, X) ->
+    cont_t(fun (CC) ->
+                   do([monad || 
+                          R <- monad_reader:ask(),
+                          monad_reader:local(F, run_cont(X, fun(A) -> monad_reader:local(fun(_) -> R end, CC(A)) end))
+                      ])
+           end).
+
+           
 
 lift_local(Ask, Local, F, X) ->    
     lift_local(Ask, Local, F, X, ?CONT_T_MONAD).
@@ -132,6 +161,8 @@ cont_t(Inner) ->
 -spec run_cont_t(cont_t(R, M, A)) -> inner_cont_t(R, M, A).
 run_cont_t({?MODULE, Inner}) ->
     Inner;
+run_cont_t({undetermined, _} = U) ->
+    run_cont_t(undetermined:run(U, cont_t));
 run_cont_t(Other) ->
     exit({invalid_monad, Other}).
 
@@ -148,7 +179,7 @@ fmap(F, X, {?MODULE, _IM} = CT) ->
 
 -spec return(A, t(M)) -> cont_t(_R, M, A).
 return(A, {?MODULE, _IM}) ->
-    cont_t(fun (K) -> K(A) end).
+    return(A).
 
 -spec fail(any(), t(M)) -> cont_t(_R, M, _A).
 fail(E, {?MODULE, IM}) ->
@@ -156,7 +187,7 @@ fail(E, {?MODULE, IM}) ->
 
 -spec lift(monad:monadic(M, A), t(M)) -> cont_t(_R, M, A).
 lift(X, {?MODULE, IM}) ->
-    cont_t(fun (F) -> IM:'>>='(X, F) end).
+    cont_t(fun (F) -> monad:'>>='(X, F, IM) end).
 
 -spec callCC(fun((fun( (A) -> cont_t(R, M, _B) ))-> cont_t(R, M, A)), t(M)) -> cont_t(R, M, A).
 callCC(F, {?MODULE, _IM}) ->

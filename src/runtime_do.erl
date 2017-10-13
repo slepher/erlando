@@ -4,17 +4,32 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 13 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(cont_m).
--behaviour(monad).
--transformer(cont_t).
--compile({parse_transform, monad_m}).
+-module(runtime_do).
+
+%% API
+-export(['>>='/3, return/2, fail/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+'>>='(X, K, {T, _M}) ->
+    T:'>>='(X, K);
+'>>='(X, K, M) ->
+    M:'>>='(X, K).
 
+return(A, {T, _M}) ->
+    T:return(A);
+return(A, M) ->
+    M:return(A).
+
+fail(E, {T, _M}) ->
+    T:fail(E);
+fail(E, monad) ->
+    monad_fail:fail(E);
+fail(E, M) ->
+    M:fail(E).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

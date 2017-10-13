@@ -27,3 +27,5 @@ lift(X) ->
 -spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
 lift(X, {T, _IM} = M) ->
     T:lift(X, M).
+
+

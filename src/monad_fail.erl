@@ -9,7 +9,7 @@
 -module(monad_fail).
 
 %% API
--export([fail/1, fail/2]).
+-export([fail/1]).
 
 -callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
 
@@ -18,14 +18,8 @@
 %%%===================================================================
 
 fail(E) ->
-    undetermined:lift(fun(M) -> fail(E, M) end).
+    undetermined:fail(E).
 
--spec fail(M, _E) -> monad:monadic(M, _A) when M :: monad:monad().
-fail(E, {T, _IM} = M) ->
-    T:fail(E, M);
-fail(E, M) ->
-    M:fail(E).
-    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

@@ -18,14 +18,17 @@
 -compile({parse_transform, do}).
 -export_type([monad/0, monadic/2]).
 
--export([join/2, sequence/2, map_m/3, lift_m/3]).
-%% bind is same as >>=, then is same as >> 
--export([bind/3, then/3]).
--export([bind/2, then/2]).
 -export(['>>='/2, '>>'/2, return/1]).
+%% bind is same as >>=, then is same as >> 
+-export([bind/2, then/2]).
+%% utility function join
+-export([join/1]).
+-export([as/2, empty/1, run/2, id/1]).
+
+% depricated functions
+-export([join/2, sequence/2, map_m/3, lift_m/3]).
+-export([bind/3, then/3]).
 -export(['>>='/3, '>>'/3, return/2]).
--export([fail/1, fail/2]).
--export([id/1]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
@@ -33,6 +36,42 @@
 %% Monad primitives
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback return(A) -> monadic(M, A) when M :: monad(). 
+
+'>>='(X, F) ->
+    undetermined:unwrap(undetermined:'>>='(undetermined:wrap(X), fun(A) -> undetermined:wrap(F(A)) end)).
+
+-spec return(A) -> monad:monadic(M, A) when M :: monad().
+return(A) ->
+    undetermined:return(A).
+
+bind(X, F) ->
+    '>>='(X, F).
+
+-spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+'>>'(Xa, Xb) ->
+    '>>='(Xa, fun(_) -> Xb end).
+
+then(X, F) ->
+    '>>'(X, F).
+
+join(MMA) ->
+    bind(MMA, fun(MA) -> MA end).
+
+as(A, {T, IM}) when is_atom(T) ->
+    T:lift(as(A, IM));
+as(A, M) when is_atom(M) ->
+    M:return(A).
+
+empty(M) ->
+    as({}, M).
+
+run(M, Monad) ->
+    applicative:ap(id(Monad), M).
+
+id(Monad) ->
+    as(fun(A) -> A end, Monad).
+
+%% depricated functions
 
 %% Utility functions
 -spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
@@ -60,12 +99,22 @@ lift_m(Monad, F, X) ->
            A <- X,
            return(F(A))
        ]).
+    
+-spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
+'>>='(X, F, {T, _IM} = M) ->
+    T:'>>='(undetermined:run(X, T), F, M);
+'>>='(X, F, M) ->
+    M:'>>='(undetermined:run(X, M), F).
 
-bind(X, F) ->
-    '>>='(X, F).
+-spec return(M, A) -> monad:monadic(M, A) when M :: monad().
+return(A, {T, IM}) when is_atom(T) ->
+    T:lift(return(A, IM), {T, IM});
+return(A, M) when is_atom(M) ->
+    M:return(A).
 
-then(X, F) ->
-    '>>'(X, F).
+-spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+'>>'(Xa, Xb, Monad) ->
+    '>>='(Monad, Xa, fun(_) -> Xb end).
 
 -spec bind(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(Monad, X, F) ->
@@ -74,39 +123,3 @@ bind(Monad, X, F) ->
 -spec then(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 then(Monad, Xa, Xb) ->
     '>>'(Monad, Xa, Xb).
-
-'>>='(X, F) ->
-    undetermined:unwrap(undetermined:'>>='(undetermined:wrap(X), fun(A) -> undetermined:wrap(F(A)) end)).
-    
--spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-'>>='(X, F, {T, _IM} = M) ->
-    T:'>>='(X, F, M);
-'>>='(X, F, M) ->
-    M:'>>='(X, F).
-
--spec return(A) -> monad:monadic(M, A) when M :: monad().
-return(A) ->
-    undetermined:return(A).
-
--spec return(M, A) -> monad:monadic(M, A) when M :: monad().
-return(A, {T, IM}) when is_atom(T) ->
-    T:lift(return(A, IM), {T, IM});
-return(A, M) when is_atom(M) ->
-    M:return(A).
-
-fail(E) ->
-    monad_fail:fail(E).
-
-fail(E, IM) ->
-    monad_fail:fail(E, IM).
-
--spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-'>>'(Xa, Xb) ->
-    '>>='(Xa, fun(_) -> Xb end).
-
--spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-'>>'(Xa, Xb, Monad) ->
-    '>>='(Monad, Xa, fun(_) -> Xb end).
-
-id(Monad) ->
-    return(fun(A) -> A end, Monad).

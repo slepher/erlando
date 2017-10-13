@@ -33,7 +33,6 @@ walk(post, {call, Line, {atom, _Line1, do},
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% transform do block to monad:bind form and pop monad from monad stack when parse do block
     %% 'do' calls of a particular form:
-    %%  do([ MonadMod || Qualifiers ])
     {{call, Line,
       {'fun', Line,
        {clauses,
@@ -49,6 +48,7 @@ walk(post, {call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadSta
     %% Transformed to:
     %% "monad:return(Monad, Args)" or "monad:fail(Monad, Args)" in monadic context
     {monad_call_expr(Line, Line1, Monad, ReturnOrFail, As0), MonadStack};
+
 walk(_Type, Form, MonadStack) ->
     {Form, MonadStack}.
 
@@ -66,7 +66,8 @@ do_syntax([{generate, Line,  Pattern, Expr} | Exprs], Monad) ->
     Args = [Expr, {'fun', Line, {clauses, pattern_syntax(Line, Pattern, Exprs, Monad)}}],
     [monad_call_expr(Line, Line, Monad, '>>=', Args)];
 do_syntax([Expr], _Monad) ->
-    [Expr]; %% Don't do '>>' chaining on the last elem
+    %% Don't do '>>' chaining on the last elem
+    [Expr]; 
 do_syntax([{match, _Line, _Pattern, _Expr} = Expr | Exprs],
           Monad) ->
     %% Handles 'let binding' in do expression a-la Haskell
@@ -88,14 +89,10 @@ pattern_syntax(Line, Pattern, Exprs, Monad) ->
     %% with a fail clause if the function does not match
     [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)},
      {clause, Line, [{var, Line, '_'}], [],
-      [monad_call_expr(Line, Line, Monad, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
+      [monad_call_expr(Line, Line, {atom, Line, monad_fail}, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
 
-monad_call_expr(Line, Line1, {tuple, _Line2, [{atom, _Line3, _MonadModule} = Module|_T]} = Monad, Function, Args) ->
-    %% if Monad is a tuple which is a monad transformer 
-    %% call of {Monad, Function, Args} is transformed to {Module, Function, Args ++ [Monad]}
-    {call, Line, {remote, Line1, Module, {atom, Line1, Function}}, Args ++ [Monad]};
 monad_call_expr(Line, Line1, Monad, Function, Args) ->
-    {call, Line, {remote, Line1, {atom, Line1, monad}, {atom, Line1, Function}}, Args ++ [Monad]}.
+    {call, Line, {remote, Line1, {atom, Line1, runtime_do}, {atom, Line1, Function}}, Args ++ [Monad]}.
 
 %% Use this function to report any parse_transform error. The
 %% resulting error message will be displayed as an ordinary

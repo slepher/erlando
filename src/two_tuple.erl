@@ -47,6 +47,8 @@ bind_trans(T, {T, MA}, K) ->
 return(T, A) ->
     {T, A}.
 
+run(T, {undetermined, _} = A) ->
+    run(T, undetermined:run(A, T));
 run(T, {T, A}) ->
     A.
 %%--------------------------------------------------------------------

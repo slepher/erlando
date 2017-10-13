@@ -12,6 +12,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_trans).
+-behaviour(monad_fail).
 -behaviour(monad_reader).
 -behaviour(monad_state).
 
@@ -22,7 +23,7 @@
 -export(['<*>'/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
-
+-export([fail/1]).
 -export([ask/0, reader/1, local/2]).
 -export([get/0, put/1, state/1]).
 
@@ -33,10 +34,13 @@
 undetermined(Inner) ->
     {?MODULE, Inner}.
 
+
 run({?MODULE, {identity, R}}, _TypeModule) ->
     R;
 run({?MODULE, R}, TypeModule) ->
-    R(TypeModule).
+    R(TypeModule);
+run(A, _TypeModule) ->
+    A.
 
 wrap({?MODULE, _} = Undetermined) ->
     Undetermined;
@@ -76,6 +80,9 @@ pure(A) ->
 
 return(A) ->
     undetermined(fun(Module) -> Module:return(A) end).
+
+fail(E) ->
+    undetermined(fun(Module) -> Module:fail(E) end).
 
 lift(M) ->
     undetermined(fun(Module) -> Module:lift(M) end).

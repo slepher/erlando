@@ -43,6 +43,7 @@ fmap(F, X) ->
 -spec pure(A) -> identity(A).
 pure(A) -> return(A).
 
+-spec return(A) -> identity(A).
 return(A) -> two_tuple:return(identity, A).
 
 run_identity(I) ->

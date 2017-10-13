@@ -19,11 +19,11 @@ module(_TypeClass, L) when is_list(L) ->
 module(_TypeClass, F) when is_function(F, 1) ->
     function_instance;
 module(_TypeClass, {ok, _}) ->
-    error_m;
+    error_instance;
 module(_TypeClass, ok) ->
-    error_m;
+    error_instance;
 module(_TypeClass, {error, _}) ->
-    error_m;
+    error_instance;
 module(_TypeClass, {just, _}) ->
     maybe;
 module(_TypeClass, nothing) ->
