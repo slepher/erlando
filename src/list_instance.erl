@@ -33,7 +33,7 @@
 -export(['>>='/2, return/1]).
 -export([fail/1]).
 -export([fold_map/2]).
--export([traverse/2]).
+-export([traverse/2, sequence_a/1]).
 
 -export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
@@ -74,6 +74,9 @@ traverse(A_FB, [H|T]) ->
     applicative:ap(functor:fmap(fun(A, B) -> [A|B] end, A_FB(H)), traverse(A_FB, T));
 traverse(_A_FB, []) ->
     applicative:pure([]).
+
+sequence_a(TFA) ->
+    traversable:default_sequence_a(TFA).
 
 empty() ->
     mzero().
