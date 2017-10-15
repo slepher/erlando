@@ -230,7 +230,7 @@ test_cont_t_local(_Config) ->
                 Ref2 <- Monad:lift(MR:ask()),
                 return({Ref0, Ref1, Ref2})
             ]),
-    Reader = Monad:run_cont(M2, fun(X) -> runtime_do:return(X, MR) end),
+    Reader = Monad:run_cont(M2, fun(X) -> monad:return(X, MR) end),
     {R0, R1, R2}= identity:run_identity(MR:run_reader(Reader, RefX)),
     ?assertEqual(RefX, R0),
     ?assertEqual(RefX, R2),

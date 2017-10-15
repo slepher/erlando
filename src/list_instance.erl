@@ -19,25 +19,35 @@
 -module(list_instance).
 
 -behaviour(functor).
+-behaviour(applicative).
 -behaviour(monad).
+-behaviour(monad_fail).
+-behaviour(foldable).
 -behaviour(traversable).
+-behaviour(alternative).
 -behaviour(monad_plus).
+-behaviour(monoid).
 
--export([fmap/2, '>>='/2, return/1, fail/1]).
+-export([fmap/2]).
+-export(['<*>'/2, pure/1]).
+-export(['>>='/2, return/1]).
+-export([fail/1]).
+-export([fold_map/2]).
 -export([traverse/2]).
 
+-export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
-
-
-traverse(A_FB, [H|T]) ->
-    applicative:ap(functor:fmap(fun(A, B) -> [A|B] end, A_FB(H)), traverse(A_FB, T)),
-    [A_FB(H) | traverse(A_FB, T)];
-traverse(_A_FB, []) ->
-    applicative:pure([]).
-
+-export([mempty/0, mappend/2]).
 
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
+
+-spec '<*>'([fun((A) -> B)], [A]) -> [B].
+'<*>'(LF, LA) ->
+    [F(A) || F <- LF, A <- LA].
+
+pure(A) ->
+    return(A).
 
 %% Note that using a list comprehension is (obviously) cheating, but
 %% it's easier to read. The "real" implementation is also included for
@@ -51,15 +61,33 @@ fmap(F, Xs) ->
 -spec return(A) -> [A].
 return(X) -> [X].
 
-
 -spec fail(any()) -> [_A].
 fail(_E) -> [].
 
+fold_map(F, As) ->
+    lists:foldr(
+      fun(A, Acc) ->
+              monoid:mappend(Acc, F(A))
+      end, monoid:mempty(), As).
+
+traverse(A_FB, [H|T]) ->
+    applicative:ap(functor:fmap(fun(A, B) -> [A|B] end, A_FB(H)), traverse(A_FB, T));
+traverse(_A_FB, []) ->
+    applicative:pure([]).
+
+empty() ->
+    mzero().
+
+'<|>'(LA, LB) ->
+    mplus(LA, LB).
 
 -spec mzero() -> [_A].
 mzero() -> [].
 
-
 -spec mplus([A], [A]) -> [A].
 mplus(X, Y) ->
     lists:append(X, Y).
+
+mempty() -> [].
+
+mappend(X, Y) -> mplus(X, Y).

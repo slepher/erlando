@@ -196,7 +196,7 @@ return(A, {?MODULE, _IM} = ST) ->
 
 -spec fail(any(), t(M)) -> state_t(_S, M, _A).
 fail(E, {?MODULE, IM}) ->
-    state_t(fun (_) -> runtime_do:fail(IM, E) end).
+    state_t(fun (_) -> monad:fail(IM, E) end).
 
 -spec lift(monad:monadic(M, A), t(M)) -> state_t(_S, M, A).
 lift(ISTM, {?MODULE, IM}) ->
@@ -236,7 +236,7 @@ modify(Fun, {?MODULE, _M} = ST) ->
 
 -spec state(fun((S) -> {A, S}), t(M)) -> state_t(S, M, A).
 state(Fun, {?MODULE, IM}) ->
-    state_t(fun (S) -> runtime_do:return(Fun(S), IM) end).
+    state_t(fun (S) -> monad:return(Fun(S), IM) end).
 
 -spec eval_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, A).
 eval_state(SM, S, {?MODULE, IM} = ST) ->

@@ -20,6 +20,8 @@
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_fail).
+-behaviour(alternative).
+-behaviour(monad_plus).
 
 -export([writer_t/1, run_writer_t/1]).
 
@@ -29,6 +31,8 @@
 -export([lift/1]).
 -export([fail/1]).
 -export([tell/1, listen/1, listens/2, pass/1, censor/2]).
+-export([empty/0, '<|>'/2]).
+-export([mzero/0, mplus/2]).
 -export([exec_writer/1, map_writer/2]).
 -export([run_writer/1]).
 
@@ -61,12 +65,13 @@ fmap(F, WTA) ->
 
 -spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 '<*>'(WTF, WTA) ->
-    writer_t(
-      do([monad ||
-             {F, W1} <- run_writer_t(WTF),
-             {A, W2} <- run_writer_t(WTA),
-             return({F(A), W1 ++ W2})
-         ])).
+      AF = 
+          fun({F, W1}) ->
+                  fun({A, W2}) ->
+                          {F(A), W1 ++ W2}
+                  end
+          end,
+    writer_t(functor:fmap(applicative:'<*>'(AF, run_writer_t(WTF)),  run_writer_t(WTA))).
 
 -spec pure(A) -> writer_t(_W, _M, A).
 pure(A) ->
@@ -121,6 +126,22 @@ censor(F, WTA) ->
               functor:fmap(fun({A, Ws}) -> {A, F(Ws)} end, MA)
       end, WTA).
 
+empty() ->
+    mzero().
+
+'<|>'(WTA, WTB) ->
+    mplus(WTA, WTB).
+
+-spec mzero() -> writer_t(_W, _M, _A).
+mzero() ->
+    writer_t(monad_plus:mzero()).
+
+-spec mplus(writer_t(W, M, A), writer_t(W, M, A)) -> writer_t(W, M, A).
+mplus(WTA, WTB) ->
+    writer_t(
+      monad_plus:mplus(run_writer_t(WTA), run_writer_t(WTB))
+     ).
+
 -spec exec_writer(writer_t(W, M, _A)) -> monad:monadic(M, [W]).
 exec_writer(WTA) ->
     do([monad || 
@@ -169,11 +190,11 @@ fmap(F, WTA, {?MODULE, IM}) ->
 
 -spec return(A, M) -> writer_t(_W, M, A).
 return(A, {?MODULE, IM}) ->
-    writer_t(runtime_do:return({A, []}, IM)).
+    writer_t(monad:return({A, []}, IM)).
 
 -spec fail(any(), M) -> writer_t(_W, M, _A).
 fail(E, {?MODULE, IM}) ->
-    writer_t(runtime_do:fail(E, IM)).
+    writer_t(monad:fail(E, IM)).
 
 -spec lift(monad:monadic(M, A), t(M)) -> writer_t(_W, M, A).
 lift(MA, {?MODULE, IM}) ->
@@ -194,7 +215,7 @@ mplus(WTA, WTB, {?MODULE, IM}) ->
 
 -spec tell([W], t(M)) -> writer_t(W, M, ok).
 tell(Ws, {?MODULE, IM}) ->
-    writer_t(runtime_do:return({ok, Ws}, IM)).
+    writer_t(monad:return({ok, Ws}, IM)).
 
 -spec listen(writer_t(W, M, A), t(M)) -> writer_t(W, M, {A, [W]}).
 listen(WTA, {?MODULE, _IM} = WT) ->

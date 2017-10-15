@@ -26,9 +26,8 @@
 -export([as/2, empty/1, run/2, id/1]).
 
 % depricated functions
--export([join/2, sequence/2, map_m/3, lift_m/3]).
--export([bind/3, then/3]).
--export(['>>='/3, '>>'/3, return/2]).
+-export([sequence/2, map_m/3, lift_m/3]).
+-export(['>>='/3, return/2, fail/2]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
@@ -73,11 +72,6 @@ id(Monad) ->
 
 %% depricated functions
 
-%% Utility functions
--spec join(M, monadic(M, monadic(M, A))) -> monadic(M, A).
-join(Monad, X) ->
-    bind(Monad, X, fun(Y) -> Y end). 
-
 %% traversable functions
 -spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).
 sequence(Monad, Xs) ->
@@ -99,27 +93,28 @@ lift_m(Monad, F, X) ->
            A <- X,
            return(F(A))
        ]).
-    
+
+
+%% functions for do transform
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-'>>='(X, F, {T, _IM} = M) ->
-    T:'>>='(undetermined:run(X, T), F, M);
-'>>='(X, F, M) ->
-    M:'>>='(undetermined:run(X, M), F).
+'>>='(X, K, monad) ->
+    monad:'>>='(X, K);
+'>>='({undetermined, _} = UX, K, Monad) ->
+    '>>='(undetermined:run(UX, Monad), fun(A) -> undetermined:run(K(A), Monad) end, Monad);
+'>>='(X, K, {T, M}) ->
+    T:'>>='(X, K, {T, M});
+'>>='(X, K, M) ->
+    M:'>>='(X, K).
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
-return(A, {T, IM}) when is_atom(T) ->
-    T:lift(return(A, IM), {T, IM});
-return(A, M) when is_atom(M) ->
+return(A, {T, M}) ->
+    T:return(A, {T, M});
+return(A, M) ->
     M:return(A).
 
--spec '>>'(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-'>>'(Xa, Xb, Monad) ->
-    '>>='(Monad, Xa, fun(_) -> Xb end).
-
--spec bind(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-bind(Monad, X, F) ->
-    '>>='(Monad, X, F).
-
--spec then(M, monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-then(Monad, Xa, Xb) ->
-    '>>'(Monad, Xa, Xb).
+fail(E, {T, M}) ->
+    T:fail(E, {T, M});
+fail(E, monad) ->
+    monad_fail:fail(E);
+fail(E, M) ->
+    M:fail(E).

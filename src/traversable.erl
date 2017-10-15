@@ -4,17 +4,37 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 10 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(writer_m).
--behaviour(monad).
--compile({parse_transform, monad_m}).
--transformer(writer_t).
+-module(traversable).
+
+%% API
+-export([sequence_a/1, traverse/2, sequence/1, map_m/2]).
+
+-type traversable(_A) :: any().
+
+-callback traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A)) -> applicative:applicate(traversable(B)).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+%% some traversable could not check type by instance
+-spec traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A)) -> applicative:applicate(traversable(B)).
+traverse(A_FB, TA) ->
+    Module = typeclass:module(traversable, TA),
+    Module:traverse(A_FB, TA).
+
+sequence_a(TFA) ->
+    traverse(fun(A) -> A end, TFA).
+
+map_m(A_MB, TA) ->
+    traverse(A_MB, TA).
+
+sequence(TMA) ->
+    sequence_a(TMA).
+
+    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

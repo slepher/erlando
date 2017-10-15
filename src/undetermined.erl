@@ -15,6 +15,9 @@
 -behaviour(monad_fail).
 -behaviour(monad_reader).
 -behaviour(monad_state).
+-behaviour(alternative).
+-behaviour(monad_plus).
+-behaviour(monoid).
 
 %% API
 -export([undetermined/1, run/2]).
@@ -26,6 +29,9 @@
 -export([fail/1]).
 -export([ask/0, reader/1, local/2]).
 -export([get/0, put/1, state/1]).
+-export([empty/0, '<|>'/2]).
+-export([mzero/0, mplus/2]).
+-export([mempty/0, mappend/2]).
 
 -export([map_undetermined/2]).
 %%%===================================================================
@@ -107,6 +113,54 @@ put(S) ->
 
 state(F) ->
     undetermined(fun(Module) -> Module:state(F) end).
+
+empty() ->
+    undetermined(fun(Module) -> Module:empty() end).
+
+'<|>'({?MODULE, {identity, _}} = UA, UB) ->
+    map_undetermined(
+      fun(Module, AA) ->
+              AB = run(UB, Module),
+              Module:'<|>'(AA, AB)
+      end, UA);
+'<|>'(UA, UB) ->
+    map_undetermined(
+      fun(Module, AB) ->
+              AA = run(UA, Module),
+              Module:'<|>'(AA, AB)
+      end, UB).
+
+mzero() ->
+    undetermined(fun(Module) -> Module:mzero() end).
+
+mplus({?MODULE, {identity, _}} = UA, UB) ->
+    map_undetermined(
+      fun(Module, MA) ->
+              MB = run(UB, Module),
+              Module:mplus(MA, MB)
+      end, UA);
+mplus(UA, UB) ->
+    map_undetermined(
+      fun(Module, MB) ->
+              MA = run(UA, Module),
+              Module:mplus(MA, MB)
+      end, UB).
+
+mempty() ->
+    undetermined(fun(Module) -> Module:mempty() end).
+
+mappend({?MODULE, {identity, _}} = UA, UB) ->
+    map_undetermined(
+      fun(Module, MA) ->
+              MB = run(UB, Module),
+              Module:mappend(MA, MB)
+      end, UA);
+mappend(UA, UB) ->
+    map_undetermined(
+      fun(Module, MB) ->
+              MA = run(UA, Module),
+              Module:mappend(MA, MB)
+      end, UB).
 
 map_undetermined(F, {undetermined, {identity, M}}) ->
     Module = typeclass:module(undefined, M),

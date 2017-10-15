@@ -16,39 +16,42 @@
 
 -module(monad_plus).
 -compile({parse_transform, do}).
--compile({parse_transform, cut}).
 
--export_type([monad/0, monadic/2]).
+-export([mzero/0, mplus/2]).
+-export([guard/1, msum/1, mfilter/2]).
 
+%% functions for old monad transform functions
 -export([mzero/1, mplus/3]).
--export([guard/2, msum/2, mfilter/3]).
-
--type monad()         :: module() | {module(), monad()}.
--type monadic(_M, _A) :: any().
 
 %% MonadPlus primitives
--callback mzero() -> monadic(_M, _A).
--callback mplus(monadic(M, A), monadic(M, A)) -> monadic(M, A).
+-callback mzero() -> monad:monadic(_M, _A).
+-callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
 
-mzero({Trans, _Inner} = M) ->
-    Trans:mzero(M);
+mzero() ->
+    undetermined:mzero().
+
+mplus(MA, MB) ->
+    undetermined:unwrap(undetermined:mplus(undetermined:wrap(MA), undetermined:wrap(MB))).
+
+%% Utility functions
+-spec guard(boolean()) -> monad:monadic(_M, _A).
+guard(true)  -> monad:return(ok);
+guard(false) -> mzero().
+
+-spec msum([monad:monadic(M, A)]) -> monad:monadic(M, A).
+msum(List) ->
+    lists:foldr(fun mplus/2, mzero(), List).
+
+-spec mfilter(fun( (A) -> boolean() ), monad:monadic(M, A)) -> monad:monadic(M, A).
+mfilter(Pred, X) ->
+    do([monad || A <- X, guard(Pred(A))]).
+
+mzero({T, M}) ->
+    T:mzero(M);
 mzero(M) ->
     M:mzero().
 
-mplus({Trans, _Inner} = M, MA, MB) ->
-    Trans:mplus(MA, MB, M);
-mplus(M, MA, MB) ->
+mplus(MA, MB, {T, M}) ->
+    T:mplus(MA, MB, M);
+mplus(MA, MB, M) ->
     M:mplus(MA, MB).
-
-%% Utility functions
--spec guard(M, boolean()) -> monad:monadic(M, _A).
-guard(M, true)  -> monad:return(M, ok);
-guard(M, false) -> mzero(M).
-
--spec msum(M, [monadic(M, A)]) -> monadic(M, A).
-msum(M, List) ->
-    lists:foldr(mplus(M, _, _), mzero(M), List).
-
--spec mfilter(M, fun( (A) -> boolean() ), monadic(M, A)) -> monadic(M, A).
-mfilter(M, Pred, X) ->
-    do([M || A <- X, guard(M, Pred(A))]).

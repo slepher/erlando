@@ -171,7 +171,7 @@ fmap(F, X, {?MODULE, IM}) ->
        ])).
 
 -spec return(A, t(M)) -> error_t(_E, M, A).
-return(A, {?MODULE, IM}) -> error_t(runtime_do:return(error_instance:return(A), IM)).
+return(A, {?MODULE, IM}) -> error_t(monad:return(error_instance:return(A), IM)).
 
 %% This is the equivalent of
 %%     fail msg = ErrorT $ return (Left (strMsg msg))
@@ -184,7 +184,7 @@ return(A, {?MODULE, IM}) -> error_t(runtime_do:return(error_instance:return(A), 
 %% is encapsulated.
 -spec fail(E, t(M)) -> error_t(E, M, _A).
 fail(E, {?MODULE, IM}) ->
-    error_t(runtime_do:return(error_instance:fail(E), IM)).
+    error_t(monad:return(error_instance:fail(E), IM)).
 
 -spec lift(monad:monadic(M, A), M) -> error_t(_E, M, A).
 lift(X, {?MODULE, IM}) ->

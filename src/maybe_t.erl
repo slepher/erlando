@@ -177,11 +177,11 @@ fmap(F, X, {?MODULE, IM}) ->
 
 -spec return(A, t(M)) -> maybe_t(M, A).
 return(A, {?MODULE, IM}) ->
-    maybe_t(runtime_do:return(maybe:return(A), IM)).
+    maybe_t(monad:return(maybe:return(A), IM)).
 
 -spec fail(_E, t(M)) -> maybe_t(M, _A).
 fail(E, {?MODULE, IM}) ->
-    maybe_t(runtime_do:return(maybe:fail(E), IM)).
+    maybe_t(monad:return(maybe:fail(E), IM)).
 
 -spec lift(monad:monadic(M, A), t(M)) -> maybe_t(M, A).
 lift(MA, {?MODULE, IM}) ->
@@ -193,7 +193,7 @@ lift(MA, {?MODULE, IM}) ->
 
 -spec mzero(t(M)) -> maybe_t(M, _A).
 mzero({?MODULE, IM}) ->
-    maybe_t(runtime_do:return(maybe:mzero(), IM)).
+    maybe_t(monad:return(maybe:mzero(), IM)).
 
 -spec mplus(maybe_t(M, A), maybe_t(M, A), t(M)) -> maybe_t(M, A).
 mplus(MTA, MTB, {?MODULE, IM}) ->
