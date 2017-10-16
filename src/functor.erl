@@ -21,7 +21,7 @@
 
 -spec fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
 fmap(F, UA) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, FA) ->
               Module:fmap(F, FA)
       end, UA).

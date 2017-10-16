@@ -20,16 +20,16 @@
 %%%===================================================================
 
 empty() ->
-    undetermined:undetermined(fun(Module) -> Module:empty() end).
+    undetermined:new(fun(Module) -> Module:empty() end).
 
 '<|>'({undetermined, _} = UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, AB) ->
               AA = undetermined:run(UA, Module),
               Module:'<|>'(AA, AB)
       end, UB);
 '<|>'(UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, AA) ->
               AB = undetermined:run(UB, Module),
               Module:'<|>'(AA, AB)

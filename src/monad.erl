@@ -38,14 +38,14 @@
 
 -spec '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='(X, MK) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MA) ->
               Module:'>>='(MA, fun(A) -> undetermined:run(MK(A), Module) end)
       end, X).
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
-    undetermined:undetermined(fun(Module) -> Module:return(A) end).
+    undetermined:new(fun(Module) -> Module:return(A) end).
 
 -spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(X, F) ->
@@ -108,7 +108,6 @@ lift_m(Monad, F, X) ->
     T:'>>='(undetermined:run(UX, T), fun(A) -> undetermined:run(K(A), T) end, {T, M});
 '>>='(UX, K, M) ->
     M:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end).
-
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
 return(A, {T, M}) ->

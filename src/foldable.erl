@@ -20,7 +20,7 @@
 %%% API
 %%%===================================================================
 fold_map(F, TA) ->
-    undetermined:undetermined(fun(Module) -> Module:foldmap(F, TA) end).
+    undetermined:new(fun(Module) -> Module:foldmap(F, TA) end).
 
 %%--------------------------------------------------------------------
 %% @doc

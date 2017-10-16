@@ -28,17 +28,17 @@
 -callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
 
 mzero() ->
-    undetermined:undetermined(fun(Module) -> Module:mzero() end).
+    undetermined:new(fun(Module) -> Module:mzero() end).
 
 
 mplus({undetermined, _} = UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MB) ->
               MA = undetermined:run(UA, Module),
               Module:mplus(MA, MB)
       end, UB);
 mplus(UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MA) ->
               MB = undetermined:run(UB, Module),
               Module:mplus(MA, MB)

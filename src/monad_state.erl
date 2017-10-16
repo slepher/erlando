@@ -17,10 +17,10 @@
 -export([get/0, put/1, state/1]).
 
 get() ->
-    undetermined:undetermined(fun(Module) -> Module:get() end).
+    undetermined:new(fun(Module) -> Module:get() end).
 
 put(S) ->
-    undetermined:undetermined(fun(Module) -> Module:put(S) end).
+    undetermined:new(fun(Module) -> Module:put(S) end).
 
 state(F) ->
-    undetermined:undetermined(fun(Module) -> Module:state(F) end).
+    undetermined:new(fun(Module) -> Module:state(F) end).

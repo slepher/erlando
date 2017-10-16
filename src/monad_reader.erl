@@ -20,13 +20,13 @@
 
 
 ask() ->
-    undetermined:undetermined(fun(Module) -> Module:ask() end).
+    undetermined:new(fun(Module) -> Module:ask() end).
 
 reader(F) ->
-    undetermined:undetermined(fun(Module) -> Module:reader(F) end).
+    undetermined:new(fun(Module) -> Module:reader(F) end).
 
 local(F, UA) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MA) ->
               Module:local(F, MA)
       end, UA).

@@ -18,7 +18,7 @@
 %%%===================================================================
 
 fail(E) ->
-    undetermined:undetermined(fun(Module) -> Module:fail(E) end).
+    undetermined:new(fun(Module) -> Module:fail(E) end).
 
 %%--------------------------------------------------------------------
 %% @doc

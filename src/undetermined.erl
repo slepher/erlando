@@ -9,12 +9,11 @@
 -module(undetermined).
 
 %% API
--export([undetermined/1, run/2]).
--export([map_undetermined/2]).
+-export([new/1, run/2, map/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
-undetermined(Inner) ->
+new(Inner) ->
     {?MODULE, Inner}.
 
 run({?MODULE, R}, TypeModule) ->
@@ -22,11 +21,11 @@ run({?MODULE, R}, TypeModule) ->
 run(A, _TypeModule) ->
     A.
 
-map_undetermined(F, {undetermined, FI}) ->
-    undetermined(
+map(F, {undetermined, FI}) ->
+    new(
       fun(Module) ->
               F(Module, FI(Module))
       end);
-map_undetermined(F, M) ->
+map(F, M) ->
     Module = typeclass:module(undefined, M),
     F(Module, M).

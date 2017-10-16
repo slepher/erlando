@@ -18,7 +18,7 @@
 %%% API
 %%%===================================================================
 run(UA, Args) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MA) ->
               N = Module:run_nargs(),
               IsTransformer = lists:member({lift,1}, Module:module_info(exports)),

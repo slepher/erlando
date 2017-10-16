@@ -22,16 +22,16 @@
 %%%===================================================================
 
 mempty() ->
-    undetermined:undetermined(fun(Module) -> Module:mempty() end).
+    undetermined:new(fun(Module) -> Module:mempty() end).
 
 mappend({undetermined, _} = UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MB) ->
               MA = undetermined:run(UA, Module),
               Module:mappend(MA, MB)
       end, UB);
 mappend(UA, UB) ->
-    undetermined:map_undetermined(
+    undetermined:map(
       fun(Module, MA) ->
               MB = undetermined:run(UB, Module),
               Module:mappend(MA, MB)
