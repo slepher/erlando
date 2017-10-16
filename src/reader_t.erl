@@ -17,6 +17,7 @@
 -behaviour(monad_state).
 -behaviour(alternative).
 -behaviour(monad_plus).
+-behaviour(monad_runner).
 
 -define(READER_T_MONAD, {?MODULE, monad}).
 
@@ -39,6 +40,7 @@
 -export([get/0, put/1, state/1]).
 -export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
+-export([run_nargs/0, run/2]).
 % reader related functions
 -export([run_reader/2, map_reader/2, with_reader/2]).
 
@@ -152,6 +154,12 @@ mplus(RA, RB) ->
       fun(R) ->
               monad_plus:mplus(run_reader(RA, R), run_reader(RB, R))
       end).
+
+run_nargs() ->
+    1.
+
+run(MR, [R]) ->
+    run_reader(MR, R).
 
 -spec run_reader(reader_t(R, M, A), R) -> monad:monadic(M, A).
 run_reader(MR, R) ->

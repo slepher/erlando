@@ -18,6 +18,7 @@
 -behaviour(monad_trans).
 -behaviour(monad_reader).
 -behaviour(monad_state).
+-behaviour(monad_runner).
 
 -export([new/1, error_t/1, run_error_t/1]).
 -export([fmap/2]).
@@ -27,6 +28,7 @@
 -export([fail/1]).
 -export([ask/0, reader/1, local/2]).
 -export([get/0, put/1, state/1]).
+-export([run_nargs/0, run/2]).
 -export([run_error/1, map_error/2, with_error/2]).
 
 %% ---------------------------------------------------------------------------------------
@@ -145,6 +147,12 @@ with_error(F, X) ->
               functor:fmap(fun({error, R}) -> {error, F(R)}; (Val) -> Val end, MA)
       end, X).
 
+run_nargs() ->
+    0.
+
+run(EM, []) ->
+    run_error(EM).
+
 %% ---------------------------------------------------------------------------------------
 %%
 %% old transform funcitons below
@@ -197,9 +205,6 @@ lift(X, {?MODULE, IM}) ->
 -spec run_error(error_t(E, M, A), M) -> monad:monadic(M, error_m:error_m(E, A)).
 run_error(EM, {?MODULE, _IM}) ->
     run_error(EM).
-
-run(EM, ET) ->
-    run_error(EM, ET).
 
 -spec map_error(fun((monad:monadic(M, error_m:error_m(EA, A))) -> monad:monadic(N, error_m:error_m(EB, B))),
                 error_t(EA, M, A), t(M)) -> error_t(EB, N, B).

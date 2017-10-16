@@ -40,7 +40,7 @@
 '>>='(X, MK) ->
     undetermined:map_undetermined(
       fun(Module, MA) ->
-              Module:'>>='(MA, fun(A) -> run(MK(A), Module) end)
+              Module:'>>='(MA, fun(A) -> undetermined:run(MK(A), Module) end)
       end, X).
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
@@ -104,12 +104,11 @@ lift_m(Monad, F, X) ->
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='(X, K, monad) ->
     monad:'>>='(X, K);
-'>>='({undetermined, _} = UX, K, Monad) ->
-    '>>='(undetermined:run(UX, Monad), fun(A) -> undetermined:run(K(A), Monad) end, Monad);
-'>>='(X, K, {T, M}) ->
-    T:'>>='(X, K, {T, M});
-'>>='(X, K, M) ->
-    M:'>>='(X, K).
+'>>='(UX, K, {T, M}) ->
+    T:'>>='(undetermined:run(UX, T), fun(A) -> undetermined:run(K(A), T) end, {T, M});
+'>>='(UX, K, M) ->
+    M:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end).
+
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
 return(A, {T, M}) ->

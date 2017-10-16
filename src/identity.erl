@@ -18,12 +18,14 @@
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
+-behaviour(monad_runner).
 
 -export_type([identity/1]).
 
 -export([fmap/2]).
 -export(['<*>'/2, pure/1]).
 -export(['>>='/2, return/1]).
+-export([run_nargs/0, run/2]).
 -export([run_identity/1]).
 
 -type identity(A) :: {identity, A}.
@@ -45,6 +47,12 @@ pure(A) -> return(A).
 
 -spec return(A) -> identity(A).
 return(A) -> two_tuple:return(identity, A).
+
+run_nargs() ->
+    0.
+
+run(I, []) ->
+    run_identity(I).
 
 run_identity(I) ->
     two_tuple:run(identity, I).

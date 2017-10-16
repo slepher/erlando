@@ -22,6 +22,7 @@
 -behaviour(monad_fail).
 -behaviour(monad_state).
 -behaviour(monad_reader).
+-behaviour(monad_runner).
 
 -compile({parse_transform, do}).
 -export_type([state_t/3]).
@@ -45,6 +46,8 @@
 -export([get/0, put/1, state/1]).
 % impl of moand_state.
 -export([ask/0, reader/1, local/2]).
+% impl of monad_runner.
+-export([run_nargs/0, run/2]).
 %% state related functions
 -export([eval_state/2, exec_state/2, run_state/2, map_state/2, with_state/2]).
 
@@ -96,7 +99,7 @@ fmap(F, X) ->
 -spec '<*>'(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
 '<*>'(STF, STA) ->
     state_t(
-      fun(S) ->
+      fun(S) ->              
               do([monad ||
                      {F, NS} <- run_state(STF, S),
                      {A, NNS} <- run_state(STA, NS),
@@ -176,6 +179,12 @@ map_state(F, SM) ->
 -spec with_state(fun((S) -> S), state_t(S, M, A)) -> state_t(S, M, A).
 with_state(F, SM) ->
     state_t(fun (S) -> run_state(SM, F(S)) end).
+
+run_nargs() ->
+    1.
+
+run(STA, [S]) ->
+    run_state(STA, S).
 
 %% ---------------------------------------------------------------------------------------
 %%

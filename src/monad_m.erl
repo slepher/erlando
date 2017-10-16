@@ -15,16 +15,16 @@
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
     case ast_traverse:attributes(transformer, Forms) of
-        [Module] ->
+        [{Module, Functions}] ->
+            io:format("functions is ~p", [Functions]),
             Exports = Module:module_info(exports),
-            Exclues = [new, list_to_atom("run_" ++ atom_to_list(Module)), Module, module_info, lift],
             GenFunctions = 
                 lists:foldl(
                   fun({FName, Arity}, Acc) ->
-                          case lists:member(FName, Exclues) of
-                              false ->
-                                  [{FName, Arity - 1}|Acc];
+                          case lists:member({FName, Arity}, Functions) of
                               true ->
+                                  [{FName, Arity - 1}|Acc];
+                              false ->
                                   Acc
                           end
                   end, [], Exports),
@@ -40,6 +40,7 @@ parse_transform(Forms, _Opts) ->
         [] ->
             exit(no_transformers_defeind);
         Other ->
+            io:format("functions is ~p", [Other]),
             exit({invalid_transformers, Other})
     end.
 %%--------------------------------------------------------------------

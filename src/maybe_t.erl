@@ -19,6 +19,7 @@
 -behaviour(monad_fail).
 -behaviour(monad_reader).
 -behaviour(monad_state).
+-behaviour(monad_runnner).
 
 -export_type([maybe_t/2]).
 
@@ -42,6 +43,8 @@
 -export([ask/0, reader/1, local/2]).
 % impl of monad_state.
 -export([get/0, put/1, state/1]).
+% impl of monad_runner.
+-export([run_nargs/0, run/2]).
 % maybe_t functions.
 -export([run_maybe/1, map_maybe/2]).
 
@@ -136,6 +139,12 @@ put(S) ->
 -spec state(fun((S) -> {A, S})) -> maybe_t(_M, A).
 state(F) ->
     lift(monad_state:state(F)).
+
+run_nargs() ->
+    0.
+
+run(MTA, []) ->
+    run_maybe(MTA).
 
 -spec run_maybe(maybe_t(M, A)) -> inner_maybe_t(M, A).
 run_maybe(X) ->

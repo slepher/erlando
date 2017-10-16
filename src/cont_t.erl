@@ -20,6 +20,7 @@
 -behaviour(monad_cont).
 -behaviour(monad_state).
 -behaviour(monad_reader).
+-behaviour(monad_runner).
 
 -export_type([cont_t/3]).
 
@@ -33,6 +34,7 @@
 -export([shift/1, reset/1]).
 -export([get/0, put/1, state/1]).
 -export([ask/0, reader/1, local/2]).
+-export([run_nargs/0, run/2]).
 
 -export([run_cont/2, eval_cont/1, map_cont/2, with_cont/2]).
 -export([lift_local/4]).
@@ -147,6 +149,12 @@ reader(F) ->
 
 local(F, X) ->
     lift_local(fun() -> monad_reader:ask() end, monad_reader:local(_, _), F, X).
+
+run_nargs() ->
+    1.
+
+run(CTA, [CC]) ->
+    run_cont(CTA, CC).
 
 lift_local(Ask, Local, F, X) ->
     cont_t(fun (CC) ->

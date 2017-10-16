@@ -18,8 +18,11 @@
 
 -export_type([maybe/1]).
 
+-behaviour(functor).
+-behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_plus).
+-behaviour(monad_runner).
 
 %% impl of functor
 -export([fmap/2]).
@@ -28,6 +31,7 @@
 -export(['>>='/2, return/1, fail/1]).
 %% impl of monad plus
 -export([mzero/0, mplus/2]).
+-export([run_nargs/0, run/2]).
 
 -type maybe(A) :: {just, A} | nothing.
 
@@ -62,3 +66,9 @@ mzero() -> nothing.
 -spec mplus(maybe(A), maybe(A)) -> maybe(A).
 mplus(nothing, Y) -> Y;
 mplus(X,      _Y) -> X.
+
+run_nargs() ->
+    0.
+
+run(MA, []) ->
+    MA.
