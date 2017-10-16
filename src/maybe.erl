@@ -26,7 +26,7 @@
 
 %% impl of functor
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 %% impl of monad
 -export(['>>='/2, return/1, fail/1]).
 %% impl of monad plus
@@ -40,11 +40,11 @@ fmap(F, {just, X}) ->
 fmap(_F, nothing) ->
     nothing.
 
-'<*>'(nothing, _) ->
+ap(nothing, _) ->
     nothing;
-'<*>'(_, nothing) ->
+ap(_, nothing) ->
     nothing;
-'<*>'({just, F}, {just, A}) ->
+ap({just, F}, {just, A}) ->
     {just, F(A)}.
 
 pure(A) ->

@@ -17,30 +17,30 @@
 -type f(_A) :: any().
 -type applicative(_F, _A) :: any().
 
--callback '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+-callback ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
 -callback pure(A) -> f(A).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
-'<*>'({undetermined, _} = UF, UA) ->
+-spec ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+ap({undetermined, _} = UF, UA) ->
     undetermined:map(
       fun(Module, AA) ->
               AF = undetermined:run(UF, Module),
-              Module:'<*>'(AF, AA)
+              Module:ap(AF, AA)
       end, UA);
-'<*>'(UF, UA) ->
+ap(UF, UA) ->
     undetermined:map(
       fun(Module, AF) ->
               AA = undetermined:run(UA, Module),
-              Module:'<*>'(AF, AA)
+              Module:ap(AF, AA)
       end, UF).
 
--spec ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
-ap(AF, A) ->
-    '<*>'(AF, A).
+-spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+'<*>'(AF, A) ->
+    ap(AF, A).
 
 -spec pure(A) -> applicative:applicative(_F, A).
 pure(A) ->

@@ -30,7 +30,7 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 
 parse_ops(Forms) ->
-    Overloads = erlando_ast:attributes(overloads, Forms),
+    Overloads = ast_traverse:attributes(overloads, Forms),
     lists:flatten(Overloads).
 
 walk(pre, {op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, Ops) ->

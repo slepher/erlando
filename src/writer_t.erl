@@ -8,6 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(writer_t).
 -compile({parse_transform, do}).
+-compile({parse_transform, import_as}).
+-import_as({functor, [{'<$>'/2, '<$>'}]}).
+-import_as({applicative, [{'<*>'/2, '<*>'}]}).
+-compile({parse_transform, overload_op}).
+-overloads(['<$>', '<*>']).
 
 -export_type([writer_t/3]).
 
@@ -26,7 +31,7 @@
 -export([writer_t/1, run_writer_t/1]).
 
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
@@ -60,18 +65,18 @@ run_writer_t(Other) ->
 fmap(F, WTA) ->
     map_writer(
       fun(MA) ->
-              functor:fmap(fun({A, Ws}) ->  {F(A), Ws} end, MA)
+              fun({A, Ws}) ->  {F(A), Ws} end /'<$>'/ MA
       end, WTA).
 
--spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
-'<*>'(WTF, WTA) ->
-      AF = 
-          fun({F, W1}) ->
-                  fun({A, W2}) ->
-                          {F(A), W1 ++ W2}
-                  end
-          end,
-    writer_t(functor:fmap(applicative:'<*>'(AF, run_writer_t(WTF)),  run_writer_t(WTA))).
+-spec ap(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
+ap(WTF, WTA) ->
+    AF = 
+        fun({F, W1}) ->
+                fun({A, W2}) ->
+                        {F(A), W1 ++ W2}
+                end
+        end,
+    writer_t((AF /'<$>'/ run_writer(WTF)) /'<*>'/ run_writer_t(WTA)).
 
 -spec pure(A) -> writer_t(_W, _M, A).
 pure(A) ->
@@ -91,7 +96,7 @@ return(A) ->
 
 -spec lift(monad:monadic(M, A)) -> writer_t(_W, M, A).
 lift(MA) ->
-    writer_t(functor:fmap(fun(A) -> {A, []} end, MA)).
+    writer_t(fun(A) -> {A, []} end /'<$>'/ MA).
 
 -spec fail(any()) -> writer_t(_W, _M, _A).
 fail(E) ->
@@ -109,21 +114,21 @@ listen(WTA) ->
 listens(F, WTA) ->
     map_writer(
       fun(MA) ->
-              functor:fmap(fun({A, Ws}) -> {{A, F(Ws)}, Ws} end, MA)
+              fun({A, Ws}) -> {{A, F(Ws)}, Ws} end /'<$>'/ MA
       end, WTA).
 
 -spec pass(writer_t(W, M, {A, fun(([W]) -> [W])})) -> writer_t(W, M, A).
 pass(WTAK) ->
     map_writer(
       fun(MAK) ->
-              functor:fmap(fun({{A, F}, Ws}) -> {A, F(Ws)} end, MAK)
+              fun({{A, F}, Ws}) -> {A, F(Ws)} end /'<$>'/ MAK
       end, WTAK).
 
 -spec censor(fun(([W]) -> [W]), writer_t(W, M, A)) -> writer_t(W, M, A).
 censor(F, WTA) ->
     map_writer(
       fun(MA) ->
-              functor:fmap(fun({A, Ws}) -> {A, F(Ws)} end, MA)
+              fun({A, Ws}) -> {A, F(Ws)} end /'<$>'/ MA
       end, WTA).
 
 empty() ->

@@ -23,7 +23,7 @@
 -export_type([identity/1]).
 
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([run_nargs/0, run/2]).
 -export([run_identity/1]).
@@ -34,8 +34,8 @@
 fmap(F, X) ->
     two_tuple:fmap(identity, F, X).
 
--spec '<*>'(identity(fun((A) -> B)), identity(A)) -> identity(B).
-'<*>'(F, A) ->
+-spec ap(identity(fun((A) -> B)), identity(A)) -> identity(B).
+ap(F, A) ->
     two_tuple:ap(identity, F, A).
 
 -spec '>>='(identity(A), fun( (A) -> identity(B) )) -> identity(B).

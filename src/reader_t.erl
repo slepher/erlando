@@ -8,6 +8,12 @@
 %%%-------------------------------------------------------------------
 -module(reader_t).
 -compile({parse_transform, do}).
+-compile({parse_transform, import_as}).
+-import_as({functor, [{'<$>'/2, '<$>'}]}).
+-import_as({applicative, [{'<*>'/2, '<*>'}]}).
+-compile({parse_transform, overload_op}).
+-overloads(['<$>', '<*>']).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -27,7 +33,7 @@
 % impl of functor
 -export([fmap/2]).
 % impl of applicative
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 % impl of monad
 -export(['>>='/2, return/1]).
 % impl of monad_trans
@@ -80,18 +86,18 @@ run_reader_t(Other) ->
 fmap(F, X) ->
     map_reader(
       fun(RIM) ->
-              functor:fmap(F, RIM)
+              F /'<$>'/ RIM
       end, X).
 
 -spec pure(A) -> reader_t(_R, _M, A).
 pure(A) ->
     return(A).
 
--spec '<*>'(reader_t(R, M, fun((A) -> B)), reader_t(R, M, A)) -> reader_t(R, M, B).
-'<*>'(RAB, RA) ->
+-spec ap(reader_t(R, M, fun((A) -> B)), reader_t(R, M, A)) -> reader_t(R, M, B).
+ap(RAB, RA) ->
     reader_t(
       fun(R) ->
-              applicative:'<*>'(run_reader(RAB, R), run_reader(RA, R))
+              (run_reader(RAB, R) /'<*>'/ run_reader(RA, R))
       end).
 
 -spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) )) -> reader_t(R, M, B).

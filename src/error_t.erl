@@ -9,6 +9,10 @@
 -module(error_t).
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
+-compile({parse_transform, import_as}).
+-import_as({functor, [{'<$>'/2, '<$>'}]}).
+-compile({parse_transform, overload_op}).
+-overloads(['<$>']).
 
 -export_type([error_t/3]).
 
@@ -22,7 +26,7 @@
 
 -export([new/1, error_t/1, run_error_t/1]).
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
@@ -39,7 +43,6 @@
 -export([fmap/3]).
 -export(['>>='/3, return/2, fail/2, lift/2]).
 -export([run_error/2, map_error/3, with_error/3]).
--export([run/2]).
 
 -opaque error_t(E, M, A) :: {error_t, inner_error_t(E, M, A)}.
 
@@ -67,15 +70,16 @@ run_error_t(Other) ->
 fmap(F, ETA) ->
     map_error(
       fun(MA) ->
-              functor:fmap(fun(A) -> error_instance:fmap(F, A) end, MA)
+              error_instance:fmap(F, _) /'<$>'/ MA
       end, ETA).
 
--spec '<*>'(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
-'<*>'(ETF, ETA) ->
+-spec ap(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
+ap(ETF, ETA) ->
     error_t(
       do([monad || 
              EF <- run_error_t(ETF),
-             error_instance:'>>='(EF, fun(F) -> functor:fmap(error_instance:fmap(F, _), run_error_t(ETA)) end)
+             error_instance:'>>='(
+               EF, fun(F) -> error_instance:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
          ])).
 
 -spec pure(A) -> error_t(_E, _M, A).
@@ -98,11 +102,11 @@ return(A) -> error_t(monad:return(error_instance:return(A))).
 
 -spec lift(monad:monadic(M, A)) -> error_t(_E, M, A).
 lift(X) ->
-    error_t(functor:fmap(error_instance:return(_), X)).
+    error_t(error_instance:return(_) /'<$>'/ X).
 
 -spec fail(E) -> error_t(E, _M, _A).
 fail(E) ->
-    error_t(monad:return({error, E})).
+    error_t(monad:return(error_instance:fail(E))).
 
 -spec ask() -> error_t(_E, _M, _A).
 ask() ->
@@ -144,7 +148,7 @@ map_error(F, X) ->
 with_error(F, X) ->
     map_error(
       fun(MA) ->
-              functor:fmap(fun({error, R}) -> {error, F(R)}; (Val) -> Val end, MA)
+              fun({error, R}) -> {error, F(R)}; (Val) -> Val end /'<$>'/ MA
       end, X).
 
 run_nargs() ->

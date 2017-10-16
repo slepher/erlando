@@ -18,7 +18,7 @@
 % functor instance.
 -export([fmap/2]).
 % applicative instance.
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 % monad instance.
 -export(['>>='/2, return/1]).
 % monad reader instance.
@@ -36,7 +36,7 @@
 fmap(F, G) ->
     '.'(F, G).
 
-'<*>'(F, G) ->
+ap(F, G) ->
     fun(X) -> (F(X))(G(X)) end.
 
 pure(A) ->

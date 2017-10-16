@@ -24,7 +24,7 @@
 -behaviour(monad_fail).
 
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
 -export([run_error/1]).
@@ -47,13 +47,13 @@ fmap(F, E) ->
             {error, Reason}
     end.
 
-'<*>'({ok, F}, {ok, A}) ->
+ap({ok, F}, {ok, A}) ->
     {ok, F(A)};
-'<*>'({ok, F}, ok) ->
+ap({ok, F}, ok) ->
     {ok, F(ok)};
-'<*>'({ok, _F}, {error, R}) ->
+ap({ok, _F}, {error, R}) ->
     {error, R};
-'<*>'({error, R}, _) ->
+ap({error, R}, _) ->
     {error, R}.
 
 -spec pure(A) -> error_instance(_E, A).

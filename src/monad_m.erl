@@ -16,7 +16,6 @@
 parse_transform(Forms, _Opts) ->
     case ast_traverse:attributes(transformer, Forms) of
         [{Module, Functions}] ->
-            io:format("functions is ~p", [Functions]),
             Exports = Module:module_info(exports),
             GenFunctions = 
                 lists:foldl(
@@ -40,7 +39,6 @@ parse_transform(Forms, _Opts) ->
         [] ->
             exit(no_transformers_defeind);
         Other ->
-            io:format("functions is ~p", [Other]),
             exit({invalid_transformers, Other})
     end.
 %%--------------------------------------------------------------------

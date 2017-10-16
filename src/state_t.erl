@@ -25,6 +25,11 @@
 -behaviour(monad_runner).
 
 -compile({parse_transform, do}).
+-compile({parse_transform, import_as}).
+-import_as({functor, [{'<$>'/2, '<$>'}]}).
+-compile({parse_transform, overload_op}).
+-overloads(['<$>']).
+
 -export_type([state_t/3]).
 
 -compile({no_auto_import, [get/1, put/2]}).
@@ -35,7 +40,7 @@
 % impl of functor.
 -export([fmap/2]).
 % impl of applcative.
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 % impl of monad.
 -export(['>>='/2, return/1]).
 % impl of monad_trans.
@@ -89,15 +94,12 @@ run_state_t(Other) ->
 fmap(F, X) ->
     map_state(
       fun(SIM) ->
-              functor:fmap(
-                fun({A, S}) ->
-                        {F(A), S}
-                end, SIM)
+              fun({A, S}) -> {F(A), S} end /'<$>'/ SIM
       end, X).
 
 
--spec '<*>'(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
-'<*>'(STF, STA) ->
+-spec ap(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
+ap(STF, STA) ->
     state_t(
       fun(S) ->              
               do([monad ||
@@ -163,11 +165,11 @@ local(F, STM) ->
 
 -spec eval_state(state_t(S, M, A), S) -> monad:monadic(M, A).
 eval_state(SM, S) ->    
-    functor:fmap(fun({A, _}) -> A end, run_state(SM, S)).
+    fun({A, _}) -> A end /'<$>'/ run_state(SM, S).
 
 -spec exec_state(state_t(S, M, _A), S) -> monad:monadic(M, S).
 exec_state(SM, S) ->
-    functor:fmap(fun({_, NS}) -> NS end, run_state(SM, S)).
+    fun({_, NS}) -> NS end /'<$>'/ run_state(SM, S).
 
 -spec run_state(state_t(S, M, A), S) -> monad:monadic(M, {A, S}).
 run_state(SM, S) -> (run_state_t(SM))(S).

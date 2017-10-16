@@ -26,7 +26,7 @@
 
 -export([cont_t/1, run_cont_t/1]).
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
 -export([lift/1]).
@@ -76,7 +76,7 @@ fmap(F, CTA) ->
               run_cont(CTA, fun(A) -> CC(F(A)) end)
       end).
 
-'<*>'(CTF, CTA) ->
+ap(CTF, CTA) ->
     cont_t(
       fun(CC) ->
               run_cont(CTF, fun(F) -> run_cont(CTA, fun(A) -> CC(F(A)) end) end)

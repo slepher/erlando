@@ -9,6 +9,10 @@
 -module(maybe_t).
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
+-compile({parse_transform, import_as}).
+-import_as({functor, [{'<$>'/2, '<$>'}]}).
+-compile({parse_transform, overload_op}).
+-overloads(['<$>']).
 
 -define(MAYBE_T_MONAD, {?MODULE, monad}).
 
@@ -19,7 +23,7 @@
 -behaviour(monad_fail).
 -behaviour(monad_reader).
 -behaviour(monad_state).
--behaviour(monad_runnner).
+-behaviour(monad_runner).
 
 -export_type([maybe_t/2]).
 
@@ -32,7 +36,7 @@
 % impl of functor.
 -export([fmap/2]).
 % impl of applicative.
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 % impl of monad.
 -export(['>>='/2, return/1]).
 % impl of monad_trans.
@@ -73,15 +77,15 @@ run_maybe_t(Other) ->
 fmap(F, MTA) ->
     map_maybe(
       fun(IA) ->
-              functor:fmap(F, IA)
+              F /'<$>'/ IA
       end, MTA).
 
--spec '<*>'(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
-'<*>'(MTF, MTA) ->
+-spec ap(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
+ap(MTF, MTA) ->
     maybe_t(
       do([monad ||
              MF <- run_maybe_t(MTF),
-             maybe:'>>='(MF, fun(F) -> functor:fmap(maybe:fmap(F, _), run_maybe_t(MTA)) end)
+             maybe:'>>='(MF, fun(F) -> maybe:fmap(F, _) /'<$>'/ run_maybe_t(MTA) end)
          ])).
 
 -spec pure(A) -> maybe_t(_M, A).
@@ -111,7 +115,7 @@ fail(E) ->
 
 -spec lift(monad:monadic(M, A)) -> maybe_t(M, A).
 lift(X) ->
-    maybe_t(functor:fmap(maybe:return(_), X)).
+    maybe_t(maybe:return(_) /'<$>'/ X).
 
 -spec ask() -> maybe_t(_M, _A).
 ask() ->

@@ -22,6 +22,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_fail).
+-behaviour(monad_runner).
 -behaviour(foldable).
 -behaviour(traversable).
 -behaviour(alternative).
@@ -29,9 +30,10 @@
 -behaviour(monoid).
 
 -export([fmap/2]).
--export(['<*>'/2, pure/1]).
+-export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
+-export([run_nargs/0, run/2]).
 -export([fold_map/2]).
 -export([traverse/2, sequence_a/1]).
 
@@ -42,8 +44,8 @@
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
 
--spec '<*>'([fun((A) -> B)], [A]) -> [B].
-'<*>'(LF, LA) ->
+-spec ap([fun((A) -> B)], [A]) -> [B].
+ap(LF, LA) ->
     [F(A) || F <- LF, A <- LA].
 
 pure(A) ->
@@ -63,6 +65,12 @@ return(X) -> [X].
 
 -spec fail(any()) -> [_A].
 fail(_E) -> [].
+
+run_nargs() ->
+    0.
+
+run(As, []) ->
+    As.
 
 fold_map(F, As) ->
     lists:foldr(
