@@ -71,7 +71,12 @@ fold_map(F, As) ->
       end, monoid:mempty(), As).
 
 traverse(A_FB, [H|T]) ->
-    applicative:ap(functor:fmap(fun(A, B) -> [A|B] end, A_FB(H)), traverse(A_FB, T));
+    F = fun(A) ->
+                fun(B) ->
+                        [A|B]
+                end
+        end,
+    applicative:ap(functor:fmap(F, A_FB(H)), traverse(A_FB, T));
 traverse(_A_FB, []) ->
     applicative:pure([]).
 

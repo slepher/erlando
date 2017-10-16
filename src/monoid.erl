@@ -1,4 +1,3 @@
-
 %%%-------------------------------------------------------------------
 %%% @author Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2017, Chen Slepher
@@ -23,11 +22,20 @@
 %%%===================================================================
 
 mempty() ->
-    undetermined:mempty().
+    undetermined:undetermined(fun(Module) -> Module:mempty() end).
 
-mappend(MA, MB) ->
-    undetermined:unwrap(undetermined:mappend(undetermined:wrap(MA), undetermined:wrap(MB))).
-    
+mappend({undetermined, _} = UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, MB) ->
+              MA = undetermined:run(UA, Module),
+              Module:mappend(MA, MB)
+      end, UB);
+mappend(UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, MA) ->
+              MB = undetermined:run(UB, Module),
+              Module:mappend(MA, MB)
+      end, UA).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

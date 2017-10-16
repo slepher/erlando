@@ -20,10 +20,20 @@
 %%%===================================================================
 
 empty() ->
-    undetermined:empty().
+    undetermined:undetermined(fun(Module) -> Module:empty() end).
 
-'<|>'(AA, AB) ->
-    undetermined:unwrap(undetermined:'<|>'(undetermined:wrap(AA), undetermined:wrap(AB))).
+'<|>'({undetermined, _} = UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, AB) ->
+              AA = undetermined:run(UA, Module),
+              Module:'<|>'(AA, AB)
+      end, UB);
+'<|>'(UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, AA) ->
+              AB = undetermined:run(UB, Module),
+              Module:'<|>'(AA, AB)
+      end, UA).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

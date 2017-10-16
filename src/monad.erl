@@ -36,13 +36,18 @@
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback return(A) -> monadic(M, A) when M :: monad(). 
 
-'>>='(X, F) ->
-    undetermined:unwrap(undetermined:'>>='(undetermined:wrap(X), fun(A) -> undetermined:wrap(F(A)) end)).
+-spec '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
+'>>='(X, MK) ->
+    undetermined:map_undetermined(
+      fun(Module, MA) ->
+              Module:'>>='(MA, fun(A) -> run(MK(A), Module) end)
+      end, X).
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
-    undetermined:return(A).
+    undetermined:undetermined(fun(Module) -> Module:return(A) end).
 
+-spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(X, F) ->
     '>>='(X, F).
 
@@ -50,6 +55,7 @@ bind(X, F) ->
 '>>'(Xa, Xb) ->
     '>>='(Xa, fun(_) -> Xb end).
 
+-spec then(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 then(X, F) ->
     '>>'(X, F).
 
@@ -57,18 +63,18 @@ join(MMA) ->
     bind(MMA, fun(MA) -> MA end).
 
 as(A, {T, IM}) when is_atom(T) ->
-    T:lift(as(A, IM));
+    T:lift(as(A, IM), {T, IM});
 as(A, M) when is_atom(M) ->
     M:return(A).
 
+id(M) ->
+    as(fun(A) -> A end, M).
+
 empty(M) ->
-    as({}, M).
+    as(ok, M).
 
 run(M, Monad) ->
     applicative:ap(id(Monad), M).
-
-id(Monad) ->
-    as(fun(A) -> A end, Monad).
 
 %% depricated functions
 
@@ -93,7 +99,6 @@ lift_m(Monad, F, X) ->
            A <- X,
            return(F(A))
        ]).
-
 
 %% functions for do transform
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).

@@ -28,10 +28,22 @@
 -callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
 
 mzero() ->
-    undetermined:mzero().
+    undetermined:undetermined(fun(Module) -> Module:mzero() end).
 
-mplus(MA, MB) ->
-    undetermined:unwrap(undetermined:mplus(undetermined:wrap(MA), undetermined:wrap(MB))).
+
+mplus({undetermined, _} = UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, MB) ->
+              MA = undetermined:run(UA, Module),
+              Module:mplus(MA, MB)
+      end, UB);
+mplus(UA, UB) ->
+    undetermined:map_undetermined(
+      fun(Module, MA) ->
+              MB = undetermined:run(UB, Module),
+              Module:mplus(MA, MB)
+      end, UA).
+
 
 %% Utility functions
 -spec guard(boolean()) -> monad:monadic(_M, _A).

@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(functor).
 
+-export_type([functor/2]).
 %% API
 -export([fmap/2, '<$>'/2]).
 
@@ -18,10 +19,14 @@
 %%% API
 %%%===================================================================
 
-fmap(F, FA) ->
-    FModule = typeclass:module(functor, FA),
-    FModule:fmap(F, FA).
+-spec fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
+fmap(F, UA) ->
+    undetermined:map_undetermined(
+      fun(Module, FA) ->
+              Module:fmap(F, FA)
+      end, UA).
 
+-spec '<$>'(fun((A) -> B), functor(F, A)) -> functor(F, B).
 '<$>'(F, FA) ->
     fmap(F, FA).
 %%--------------------------------------------------------------------

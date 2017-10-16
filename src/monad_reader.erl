@@ -20,13 +20,16 @@
 
 
 ask() ->
-    undetermined:ask().
+    undetermined:undetermined(fun(Module) -> Module:ask() end).
 
 reader(F) ->
-    undetermined:reader(F).
+    undetermined:undetermined(fun(Module) -> Module:reader(F) end).
 
-local(F, M) ->
-    undetermined:unwrap(undetermined:local(F, undetermined:wrap(M))).
+local(F, UA) ->
+    undetermined:map_undetermined(
+      fun(Module, MA) ->
+              Module:local(F, MA)
+      end, UA).
 
 asks(F) ->
     do([monad || 
