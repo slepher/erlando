@@ -1,0 +1,3 @@
+-compile({parse_transform, overload_op}).
+-overloads([{functor, ['<$>', '<$']}, {applicative, ['<*>', '*>', '<*']}]).
+-overloads([{monad, ['>>=', '>>']}, {alternative, ['<|>']}]).

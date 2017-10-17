@@ -8,10 +8,13 @@
 %%%-------------------------------------------------------------------
 -module(applicative).
 
+-include("op.hrl").
+
 -export_type([applicative_module/0, f/1, applicative/2]).
 
 %% API
 -export(['<*>'/2, ap/2, pure/1]).
+-export(['<*'/2, '*>'/2]).
 
 -type applicative_module() :: module().
 -type f(_A) :: any().
@@ -42,8 +45,23 @@ ap(UF, UA) ->
 '<*>'(AF, A) ->
     ap(AF, A).
 
+-spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
+'*>'(AA, AB) ->
+    ConstId = 
+        fun(_A) ->
+                fun(B) -> B end
+        end,
+    (ConstId /'<$>'/ AA) /'<*>'/ AB.
+
+-spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
+'<*'(AA, AB) ->
+    Const = 
+        fun(A) -> 
+                fun(_B) -> A end
+        end,
+    (Const /'<$>'/ AA) /'<*>'/ AB.
+
+
 -spec pure(A) -> applicative:applicative(_F, A).
 pure(A) ->
     undetermined:new(fun(M) -> M:pure(A) end).
-
-    

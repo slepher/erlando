@@ -10,7 +10,7 @@
 
 -export_type([functor/2]).
 %% API
--export([fmap/2, '<$>'/2]).
+-export([fmap/2, '<$>'/2, '<$'/2]).
 
 -type functor(_F, _A) :: any().
 
@@ -28,6 +28,10 @@ fmap(F, UA) ->
 -spec '<$>'(fun((A) -> B), functor(F, A)) -> functor(F, B).
 '<$>'(F, FA) ->
     fmap(F, FA).
+
+-spec '<$'(B, functor(F, _A)) -> functor(F, B).
+'<$'(B, FA) ->
+    fmap(fun(_A) -> B end, FA).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

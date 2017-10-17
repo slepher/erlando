@@ -7,6 +7,7 @@
 %%% Created : 19 June 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(reader_t).
+
 -compile({parse_transform, do}).
 
 -include("op.hrl").
