@@ -10,6 +10,8 @@
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
 
+-include("op.hrl").
+
 -define(CONT_T_MONAD, {?MODULE, monad}).
 
 -behaviour(functor).

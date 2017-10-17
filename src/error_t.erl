@@ -9,10 +9,8 @@
 -module(error_t).
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
--compile({parse_transform, import_as}).
--import_as({functor, [{'<$>'/2, '<$>'}]}).
--compile({parse_transform, overload_op}).
--overloads(['<$>']).
+
+-include("op.hrl").
 
 -export_type([error_t/3]).
 

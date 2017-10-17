@@ -8,11 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(reader_t).
 -compile({parse_transform, do}).
--compile({parse_transform, import_as}).
--import_as({functor, [{'<$>'/2, '<$>'}]}).
--import_as({applicative, [{'<*>'/2, '<*>'}]}).
--compile({parse_transform, overload_op}).
--overloads(['<$>', '<*>']).
+
+-include("op.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
