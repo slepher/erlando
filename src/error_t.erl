@@ -24,7 +24,7 @@
 
 -export([new/1, error_t/1, run_error_t/1]).
 -export([fmap/2, '<$'/2]).
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
@@ -71,17 +71,30 @@ fmap(F, ETA) ->
               error_instance:fmap(F, _) /'<$>'/ FA
       end, ETA).
 
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+-spec '<$'(B, error_t(E, M, _A)) -> error_t(E, M, B).
+'<$'(B, ETA) ->
+    functor:'default_<$'(B, ETA, ?MODULE).
 
--spec ap(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
-ap(ETF, ETA) ->
+-spec '<*>'(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
+'<*>'(ETF, ETA) ->
     error_t(
       do([monad || 
              EF <- run_error_t(ETF),
              error_instance:'>>='(
                EF, fun(F) -> error_instance:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
          ])).
+
+-spec lift_a2(fun((A, B) -> C), error_t(E, M, A), error_t(E, M, B)) -> error_t(E, M, C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(error_t(E, M, _A), error_t(E, M, B)) -> error_t(E, M, B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(error_t(E, M, A), error_t(E, M, _B)) -> error_t(E, M, A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec pure(A) -> error_t(_E, _M, A).
 pure(A) ->

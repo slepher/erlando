@@ -18,7 +18,7 @@
 % functor instance.
 -export([fmap/2, '<$'/2]).
 % applicative instance.
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % monad instance.
 -export(['>>='/2, return/1]).
 % monad reader instance.
@@ -33,23 +33,41 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-fmap(F, G) ->
-    '.'(F, G).
+-spec fmap(fun((A) -> B), fun((R) -> A)) -> fun((R) -> B).
+fmap(F, FA) ->
+    '.'(F, FA).
 
+-spec '<$'(B, fun((R) -> _A)) -> fun((R) -> B).
 '<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+    functor:'default_<$'(B, FA, ?MODULE).
 
-ap(F, G) ->
-    fun(X) -> (F(X))(G(X)) end.
+-spec '<*>'(fun((R) -> fun((A) -> B)), fun((R) -> A)) -> fun((R) -> B).
+'<*>'(FF, FA) ->
+    fun(R) -> (FF(R))(FA(R)) end.
 
+-spec pure(A) -> fun((_R) -> A).
 pure(A) ->
     const(A).
-             
-'>>='(F, K) ->
-    fun(X) -> (K(F(X)))(X) end.
 
+-spec lift_a2(fun((A, B) -> C), fun((R) -> A), fun((R) -> B)) -> fun((R) -> C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(fun((R) -> A), fun((R) -> _B)) -> fun((R) -> A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
+           
+-spec '>>='(fun((R) -> A), fun((A) -> fun((R) -> B))) -> fun((R) -> B).  
+'>>='(FA, KFB) ->
+    fun(X) -> (KFB(FA(X)))(X) end.
+
+-spec return(A) -> fun((_R) -> A).
 return(A) ->
-    const(A).
+    pure(A).
 
 ask() ->
     id().

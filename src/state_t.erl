@@ -38,7 +38,7 @@
 % impl of functor.
 -export([fmap/2, '<$'/2]).
 % impl of applcative.
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % impl of monad.
 -export(['>>='/2, return/1]).
 % impl of monad_trans.
@@ -96,10 +96,14 @@ fmap(F, STA) ->
       end, STA).
 
 '<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+    functor:'default_<$'(B, FA, ?MODULE).
 
--spec ap(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
-ap(STF, STA) ->
+-spec pure(A) -> state_t(_S, _M, A).
+pure(A) ->
+    state(fun (S) -> {A, S} end).
+
+-spec '<*>'(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
+'<*>'(STF, STA) ->
     state_t(
       fun(S) ->              
               do([monad ||
@@ -109,9 +113,17 @@ ap(STF, STA) ->
                  ])
       end).
 
--spec pure(A) -> state_t(_S, _M, A).
-pure(A) ->
-    state(fun (S) -> {A, S} end).
+-spec lift_a2(fun((A, B) -> C), state_t(S, M, A), state_t(S, M, B)) -> state_t(S, M, C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(state_t(S, M, _A), state_t(S, M, B)) -> state_t(S, M, B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(state_t(S, M, A), state_t(S, M, _B)) -> state_t(S, M, A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B))) -> state_t(S, M, B).
 '>>='(X, Fun) ->

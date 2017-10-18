@@ -28,7 +28,7 @@
 -export([writer_t/1, run_writer_t/1]).
 
 -export([fmap/2, '<$'/2]).
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
@@ -66,10 +66,14 @@ fmap(F, WTA) ->
       end, WTA).
 
 '<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+    functor:'default_<$'(B, FA, ?MODULE).
 
--spec ap(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
-ap(WTF, WTA) ->
+-spec pure(A) -> writer_t(_W, _M, A).
+pure(A) ->
+    return(A).
+
+-spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
+'<*>'(WTF, WTA) ->
     AF = 
         fun({F, W1}) ->
                 fun({A, W2}) ->
@@ -78,9 +82,17 @@ ap(WTF, WTA) ->
         end,
     writer_t((AF /'<$>'/ run_writer(WTF)) /'<*>'/ run_writer_t(WTA)).
 
--spec pure(A) -> writer_t(_W, _M, A).
-pure(A) ->
-    return(A).
+-spec lift_a2(fun((A, B) -> C), writer_t(W, M, A), writer_t(W, M, B)) -> writer_t(W, M, C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(writer_t(W, M, _A), writer_t(W, M, B)) -> writer_t(W, M, B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(writer_t(W, M, A), writer_t(W, M, _B)) -> writer_t(W, M, A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(writer_t(W, M, A), fun((A) -> writer_t(W, M, B) )) -> writer_t(W, M, B).
 '>>='(WTA, KWTB) -> 

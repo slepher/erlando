@@ -30,7 +30,7 @@
 -behaviour(monoid).
 
 -export([fmap/2, '<$'/2]).
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
 -export([run_nargs/0, run/2]).
@@ -44,27 +44,38 @@
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
 
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+'<$'(B, As) ->
+    functor:'default_<$'(B, As, ?MODULE).
 
--spec ap([fun((A) -> B)], [A]) -> [B].
-ap(LF, LA) ->
+pure(A) -> [A].
+
+-spec '<*>'([fun((A) -> B)], [A]) -> [B].
+'<*>'(LF, LA) ->
     [F(A) || F <- LF, A <- LA].
 
-pure(A) ->
-    return(A).
+-spec lift_a2(fun((A, B) -> C), [A], [B]) -> [C].
+lift_a2(F, As, Bs) ->
+    applicative:default_lift_a2(F, As, Bs, ?MODULE).
+
+-spec '<*'([_A], [B]) -> [B].
+'*>'(As, Bs) ->
+    applicative:'default_*>'(As, Bs, ?MODULE).
+
+-spec '*>'([A], [_B]) -> [A].
+'<*'(As, Bs) ->
+    applicative:'default_<*'(As, Bs, ?MODULE).
 
 %% Note that using a list comprehension is (obviously) cheating, but
 %% it's easier to read. The "real" implementation is also included for
 %% completeness.
-
 
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
 '>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).
 
 -spec return(A) -> [A].
-return(X) -> [X].
+return(A) -> 
+    monad:default_return(A, ?MODULE).
 
 -spec fail(any()) -> [_A].
 fail(_E) -> [].

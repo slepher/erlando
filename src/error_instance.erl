@@ -24,7 +24,7 @@
 -behaviour(monad_fail).
 
 -export([fmap/2, '<$'/2]).
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
 -export([run_error/1]).
@@ -47,21 +47,35 @@ fmap(F, E) ->
             {error, Reason}
     end.
 
+-spec '<$'(B, error_instance(E, _A)) -> error_instance(E, B).
 '<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
-
-ap({ok, F}, {ok, A}) ->
-    {ok, F(A)};
-ap({ok, F}, ok) ->
-    {ok, F(ok)};
-ap({ok, _F}, {error, R}) ->
-    {error, R};
-ap({error, R}, _) ->
-    {error, R}.
+    functor:'default_<$'(B, FA, ?MODULE).
 
 -spec pure(A) -> error_instance(_E, A).
 pure(A) ->
-    return(A).
+    {ok, A}.
+
+-spec '<*>'(error_instance(E, fun((A) -> B)), error_instance(E, A)) -> error_instance(E, B).
+'<*>'({ok, F}, {ok, A}) ->
+    {ok, F(A)};
+'<*>'({ok, F}, ok) ->
+    {ok, F(ok)};
+'<*>'({ok, _F}, {error, R}) ->
+    {error, R};
+'<*>'({error, R}, _) ->
+    {error, R}.
+
+-spec lift_a2(fun((A, B) -> C), error_instance(E, A), error_instance(E, B)) -> error_instance(E, C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(error_instance(E, _A), error_instance(E, B)) -> error_instance(E, B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(error_instance(E, A), error_instance(E, _B)) -> error_instance(E, A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(error_instance(E, A), fun( (A) -> error_instance(E, B) )) -> error_instance(E, B).
 '>>='({error, _Err} = Error, _Fun) -> Error;

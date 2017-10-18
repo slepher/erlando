@@ -26,7 +26,7 @@
 
 %% impl of functor
 -export([fmap/2, '<$'/2]).
--export([ap/2, pure/1]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 %% impl of monad
 -export(['>>='/2, return/1, fail/1]).
 %% impl of monad plus
@@ -35,23 +35,39 @@
 
 -type maybe(A) :: {just, A} | nothing.
 
+-spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
 fmap(F, {just, X}) ->
     {just, F(X)};
 fmap(_F, nothing) ->
     nothing.
 
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA).
+-spec '<$'(B, maybe(_A)) -> maybe(B).
+'<$'(B, MA) ->
+    functor:'default_<$'(B, MA, ?MODULE).
 
-ap(nothing, _) ->
-    nothing;
-ap(_, nothing) ->
-    nothing;
-ap({just, F}, {just, A}) ->
-    {just, F(A)}.
-
+-spec pure(A) -> maybe(A).
 pure(A) ->
     {just, A}.
+
+-spec '<*>'(maybe(fun((A) -> B)), A) -> maybe(B).
+'<*>'(nothing, _) ->
+    nothing;
+'<*>'(_, nothing) ->
+    nothing;
+'<*>'({just, F}, {just, A}) ->
+    {just, F(A)}.
+
+-spec lift_a2(fun((A, B) -> C), maybe(A), maybe(B)) -> maybe(C).
+lift_a2(F, RTA, RTB) ->
+    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+
+-spec '*>'(maybe(_A), maybe(B)) -> maybe(B).
+'*>'(RTA, RTB) ->
+    applicative:'default_*>'(RTA, RTB, ?MODULE).
+
+-spec '<*'(maybe(A), maybe(_B)) -> maybe(A).
+'<*'(RTA, RTB) ->
+    applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(maybe(A), fun( (A) -> maybe(B) )) -> maybe(B).
 '>>='({just, X}, Fun) -> Fun(X);
@@ -70,8 +86,10 @@ mzero() -> nothing.
 mplus(nothing, Y) -> Y;
 mplus(X,      _Y) -> X.
 
+-spec run_nargs() -> integer().
 run_nargs() ->
     0.
 
+-spec run(maybe(A), [any()]) -> maybe(A).
 run(MA, []) ->
     MA.

@@ -13,7 +13,7 @@
 -export_type([functor/2]).
 %% API
 -export([fmap/2, '<$>'/2, '<$'/2]).
--export(['default_<$'/2]).
+-export(['default_<$'/3]).
 
 -type functor(_F, _A) :: any().
 
@@ -40,8 +40,8 @@ fmap(F, UA) ->
               Module:'<$'(F, FA)
       end, UA).
 
-'default_<$'(B, FA) ->
-    function_instance:const(B) /'<$>'/ FA.
+'default_<$'(B, FA, Module) ->
+    Module:fmap(function_instance:const(B), FA).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

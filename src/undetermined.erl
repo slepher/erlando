@@ -9,7 +9,7 @@
 -module(undetermined).
 
 %% API
--export([new/1, run/2, map/2]).
+-export([new/1, run/2, map/2, map_pair/3]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -29,3 +29,16 @@ map(F, {undetermined, FI}) ->
 map(F, M) ->
     Module = typeclass:module(undefined, M),
     F(Module, M).
+
+map_pair(F, {undetermined, _} = UA, UB) ->
+    undetermined:map(
+      fun(Module, A) ->
+              B = run(UB, Module),
+              F(Module, A, B)
+      end, UA);
+map_pair(F, UA, UB) ->
+    undetermined:map(
+      fun(Module, B) ->
+              A = run(UA, Module),
+              F(Module, A, B)
+      end, UB).

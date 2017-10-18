@@ -19,6 +19,7 @@
 -export_type([monad/0, monadic/2]).
 
 -export(['>>='/2, '>>'/2, return/1]).
+-export([default_return/2]).
 %% bind is same as >>=, then is same as >> 
 -export([bind/2, then/2]).
 %% utility function join
@@ -46,6 +47,10 @@
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
     undetermined:new(fun(Module) -> Module:return(A) end).
+
+-spec default_return(A, module()) -> monad:monadic(M, A) when M :: monad().
+default_return(A, Module) ->
+    Module:pure(A).
 
 -spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(X, F) ->

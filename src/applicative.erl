@@ -13,54 +13,84 @@
 -export_type([applicative_module/0, f/1, applicative/2]).
 
 %% API
--export(['<*>'/2, ap/2, pure/1]).
--export(['<*'/2, '*>'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]).
+-export([default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
+-export([ap/2]).
 
--type applicative_module() :: module().
+-type applicative_module() :: {module(), applicative_module()} | module().
 -type f(_A) :: any().
 -type applicative(_F, _A) :: any().
 
--callback ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
 -callback pure(A) -> f(A).
+-callback '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+-callback lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B)) -> applicative(F, C).
+-callback '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
+-callback '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec pure(A) -> applicative:applicative(_F, A).
+pure(A) ->
+    undetermined:new(fun(M) -> M:pure(A) end).
 
 -spec ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
-ap({undetermined, _} = UF, UA) ->
-    undetermined:map(
-      fun(Module, AA) ->
-              AF = undetermined:run(UF, Module),
-              Module:ap(AF, AA)
-      end, UA);
-ap(UF, UA) ->
-    undetermined:map(
-      fun(Module, AF) ->
-              AA = undetermined:run(UA, Module),
-              Module:ap(AF, AA)
-      end, UF).
+'<*>'(UF, UA) ->
+    undetermined:map_pair(
+      fun(Module, AF, AA) ->
+              'real_<*>'(AF, AA, Module)
+      end, UF, UA).
 
--spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
-'<*>'(AF, A) ->
-    ap(AF, A).
+lift_a2(F, UA, UB) ->
+    undetermined:map_pair(
+      fun(Module, AA, AB) ->
+              Module:lift_a2(F, AA, AB)
+      end, UA, UB).
+
 
 -spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
-'*>'(AA, AB) ->
+'*>'(UA, UB) ->
+    undetermined:map_pair(
+      fun(Module, AA, AB) ->
+              Module:'*>'(AA, AB)
+      end, UA, UB).
+
+-spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
+'<*'(UA, UB) ->
+    undetermined:map_pair(
+      fun(Module, AA, AB) ->
+              Module:'<*'(AA, AB)
+      end, UA, UB).
+
+-spec default_lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B), module()) -> applicative(F, C).
+default_lift_a2(F, AA, AB, Module) ->
+    NF = 
+        fun(A) ->
+                fun(B) ->
+                        F(A, B)
+                end
+        end,
+    Module:'<*>'(Module:fmap(NF, AA), AB).
+
+-spec 'default_*>'(applicative(F, _A), applicative(F, B), module()) -> applicative(F, B).
+'default_*>'(AA, AB, Module) ->
     ConstId = 
         fun(_A) ->
                 fun(B) -> B end
         end,
-    (ConstId /'<$>'/ AA) /'<*>'/ AB.
+    Module:'<*>'(Module:fmap(ConstId, AA), AB).
 
--spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
-'<*'(AA, AB) ->
+-spec 'default_<*'(applicative(F, A), applicative(F, _B), module()) -> applicative(F, A).
+'default_<*'(AA, AB, Module) ->
     Const = 
         fun(A) -> 
                 fun(_B) -> A end
         end,
-    (Const /'<$>'/ AA) /'<*>'/ AB.
+    Module:'<*>'(Module:fmap(Const, AA), AB).
 
--spec pure(A) -> applicative:applicative(_F, A).
-pure(A) ->
-    undetermined:new(fun(M) -> M:pure(A) end).
+'real_<*>'(AF, AA, Module) ->
+    Module:'<*>'(AF, AA).
+
+-spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+ap(AF, A) ->
+    '<*>'(AF, A).
