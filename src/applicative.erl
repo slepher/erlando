@@ -15,7 +15,7 @@
 %% API
 -export([pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]).
 -export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
--export([ap/2]).
+-export([ap/2, '<**>'/2, lift_a3/4]).
 
 -type applicative_module() :: {module(), applicative_module()} | module().
 -type f(_A) :: any().
@@ -97,3 +97,17 @@ default_lift_a2(F, AA, AB, Module) ->
 -spec 'ap'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
 ap(AF, A) ->
     '<*>'(AF, A).
+
+-spec '<**>'(applicative(F, A), applicative(F, fun((A) -> B))) -> applicative(F, B).
+'<**>'(AA, AF) ->
+    AF /'<*>'/ AA.
+
+-spec lift_a3(fun((A, B, C) -> D), applicative(F, A), applicative(F, B), applicative(F, C)) -> applicative(F, D).
+lift_a3(F, AA, AB, AC) ->
+    NF = 
+        fun(A) ->
+                fun(B) ->
+                        fun(C) -> F(A, B, C) end
+                end
+        end,
+    (((NF /'<$>'/ AA) /'<*>'/ AB) /'<*>'/ AC).
