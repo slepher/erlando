@@ -21,15 +21,19 @@
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
+-behaviour(monad_fail).
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
-%% impl of functor
+%% impl of functor.
 -export([fmap/2, '<$'/2]).
+%% impl of applicative.
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
-%% impl of monad
--export(['>>='/2, return/1, fail/1]).
-%% impl of monad plus
+%% impl of monad.
+-export(['>>='/2, '>>'/2, return/1]).
+%% impl of monad fail.
+-export([fail/1]).
+%% impl of monad plus.
 -export([mzero/0, mplus/2]).
 -export([run_nargs/0, run/2]).
 
@@ -73,11 +77,16 @@ lift_a2(F, RTA, RTB) ->
 '>>='({just, X}, Fun) -> Fun(X);
 '>>='(nothing,  _Fun) -> nothing.
 
+-spec '>>'(maybe(_A), maybe(B)) -> maybe(B).
+'>>'(MA, MB) ->
+    monad:'default_>>'(MA, MB, ?MODULE).
+
 -spec return(A) -> maybe(A).
-return(X) -> {just, X}.
+return(A) -> 
+    monad:default_return(A, ?MODULE).
 
 -spec fail(any()) -> maybe(_A).
-fail(_X) -> nothing.
+fail(_E) -> nothing.
 
 -spec mzero() -> maybe(_A).
 mzero() -> nothing.

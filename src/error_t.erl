@@ -25,7 +25,7 @@
 -export([new/1, error_t/1, run_error_t/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
 -export([ask/0, reader/1, local/2]).
@@ -85,20 +85,20 @@ fmap(F, ETA) ->
          ])).
 
 -spec lift_a2(fun((A, B) -> C), error_t(E, M, A), error_t(E, M, B)) -> error_t(E, M, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, ETA, ETB) ->
+    applicative:default_lift_a2(F, ETA, ETB, ?MODULE).
 
 -spec '*>'(error_t(E, M, _A), error_t(E, M, B)) -> error_t(E, M, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(ETA, ETB) ->
+    applicative:'default_*>'(ETA, ETB, ?MODULE).
 
 -spec '<*'(error_t(E, M, A), error_t(E, M, _B)) -> error_t(E, M, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(ETA, ETB) ->
+    applicative:'default_<*'(ETA, ETB, ?MODULE).
 
 -spec pure(A) -> error_t(_E, _M, A).
 pure(A) ->
-    return(A).
+    error_t(applicative:pure(error_instance:pure(A))).
 
 -spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) )) -> error_t(E, M, B).
 '>>='(X, Fun) ->
@@ -111,8 +111,13 @@ pure(A) ->
               end
        ])).
 
+-spec '>>'(error_t(E, M, _A), error_t(E, M, B)) -> error_t(E, M, B).
+'>>'(ETA, ETB) ->
+    monad:'default_>>'(ETA, ETB, ?MODULE).
+
 -spec return(A) -> error_t(_E, _M, A).
-return(A) -> error_t(monad:return(error_instance:return(A))).
+return(A) ->
+    monad:default_return(A, ?MODULE).
 
 -spec lift(monad:monadic(M, A)) -> error_t(_E, M, A).
 lift(X) ->

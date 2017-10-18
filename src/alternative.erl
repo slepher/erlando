@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(alternative).
 
+-compile({parse_transform, cut}).
 %% API
 -export([empty/0, '<|>'/2]).
 
@@ -22,18 +23,11 @@
 empty() ->
     undetermined:new(fun(Module) -> Module:empty() end).
 
-'<|>'({undetermined, _} = UA, UB) ->
-    undetermined:map(
-      fun(Module, AB) ->
-              AA = undetermined:run(UA, Module),
-              Module:'<|>'(AA, AB)
-      end, UB);
 '<|>'(UA, UB) ->
-    undetermined:map(
-      fun(Module, AA) ->
-              AB = undetermined:run(UB, Module),
+    undetermined:map_pair(
+      fun(Module, AA, AB) ->
               Module:'<|>'(AA, AB)
-      end, UA).
+      end, UA, UB).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

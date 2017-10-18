@@ -29,7 +29,7 @@
 -export([cont_t/1, run_cont_t/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
 -export([lift/1]).
 -export([callCC/1]).
@@ -94,26 +94,30 @@ pure(A) ->
       end).
 
 -spec lift_a2(fun((A, B) -> C), cont_t(R, M, A), cont_t(R, M, B)) -> cont_t(R, M, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, CTA, CTB) ->
+    applicative:default_lift_a2(F, CTA, CTB, ?MODULE).
 
 -spec '*>'(cont_t(R, M, _A), cont_t(R, M, B)) -> cont_t(R, M, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(CTA, CTB) ->
+    applicative:'default_*>'(CTA, CTB, ?MODULE).
 
 -spec '<*'(cont_t(R, M, A), cont_t(R, M, _B)) -> cont_t(R, M, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(CTA, CTB) ->
+    applicative:'default_<*'(CTA, CTB, ?MODULE).
 
 -spec '>>='(cont_t(R, M, A), fun((A) -> cont_t(R, M, B))) -> cont_t(R, M, B).
-'>>='(CTA, Fun) ->
+'>>='(CTA, KCTB) ->
     cont_t(
       fun (K) -> 
               run_cont(CTA, 
                        fun (A) -> 
-                               run_cont(Fun(A), K) 
+                               run_cont(KCTB(A), K) 
                        end) 
       end).
+
+-spec '>>'(cont_t(R, M, _A), cont_t(R, M, B)) -> cont_t(R, M, B).
+'>>'(CTA, CTB) ->
+    monad:'default_>>'(CTA, CTB, ?MODULE).
 
 -spec return(A) -> cont_t(_R, _M, A).
 return(A) ->

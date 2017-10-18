@@ -33,7 +33,7 @@
 % impl of applicative
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % impl of monad
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 % impl of monad_trans
 -export([lift/1]).
 % impl of monad fail
@@ -92,7 +92,7 @@ fmap(F, RTA) ->
 
 -spec pure(A) -> reader_t(_R, _M, A).
 pure(A) ->
-    return(A).
+    reader_t(fun (_) -> applicative:pure(A) end).
 
 -spec '<*>'(reader_t(R, M, fun((A) -> B)), reader_t(R, M, A)) -> reader_t(R, M, B).
 '<*>'(RTAB, RTA) ->
@@ -114,18 +114,22 @@ lift_a2(F, RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) )) -> reader_t(R, M, B).
-'>>='(X, Fun) ->
+'>>='(RTA, KRTB) ->
     reader_t(
       fun(R) ->
               do([monad || 
-                     A <- run_reader(X, R),
-                     run_reader(Fun(A), R)
+                     A <- run_reader(RTA, R),
+                     run_reader(KRTB(A), R)
                ])
       end).
 
+-spec '>>'(reader_t(R, M, _A), reader_t(R, M, B)) -> reader_t(R, M, B).
+'>>'(RTA, RTB) ->
+    monad:'default_>>'(RTA, RTB, ?MODULE).
+
 -spec return(A) -> reader_t(_R, _M, A).
 return(A) ->
-    reader_t(fun (_) -> monad:return(A) end).
+    monad:default_return(A, ?MODULE).
 
 -spec lift(monad:monadic(M, A)) -> reader_t(_R, M, A).
 lift(X) ->

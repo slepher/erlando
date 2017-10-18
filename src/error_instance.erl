@@ -22,11 +22,13 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_fail).
+-behaviour(monad_runner).
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
+-export([run_nargs/0, run/2]).
 -export([run_error/1]).
 
 %% This is really instance (Error e) => Monad (Either e) with 'error'
@@ -66,28 +68,39 @@ pure(A) ->
     {error, R}.
 
 -spec lift_a2(fun((A, B) -> C), error_instance(E, A), error_instance(E, B)) -> error_instance(E, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, EA, EB) ->
+    applicative:default_lift_a2(F, EA, EB, ?MODULE).
 
 -spec '*>'(error_instance(E, _A), error_instance(E, B)) -> error_instance(E, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(EA, EB) ->
+    applicative:'default_*>'(EA, EB, ?MODULE).
 
 -spec '<*'(error_instance(E, A), error_instance(E, _B)) -> error_instance(E, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(EA, EB) ->
+    applicative:'default_<*'(EA, EB, ?MODULE).
 
 -spec '>>='(error_instance(E, A), fun( (A) -> error_instance(E, B) )) -> error_instance(E, B).
-'>>='({error, _Err} = Error, _Fun) -> Error;
-'>>='({ok, Result},           Fun) -> Fun(Result);
-'>>='(ok,                     Fun) -> Fun(ok).
+'>>='({error, _Err} = Error, _KEB) -> Error;
+'>>='({ok, A},                KEB) -> KEB(A);
+'>>='(ok,                     KEB) -> KEB(ok).
+
+-spec '>>'(error_instance(E, _A), error_instance(E, B)) -> error_instance(E, B).
+'>>'(EA, EB) ->
+    monad:'default_>>'(EA, EB, ?MODULE).
 
 -spec return(A) -> error_instance(_E, A).
-return(X ) -> {ok, X}.
+return(A) ->
+    monad:default_return(A, ?MODULE).
 
 -spec fail(E) -> error_instance(E, _A).
-fail(X) ->
-    {error, X}.
+fail(E) ->
+    {error, E}.
+
+run_nargs() ->
+    0.
+
+run(EA, []) ->
+    EA.
 
 run_error({undetermined, _} = U) ->
     run_error(undetermined:run(U, ?MODULE));

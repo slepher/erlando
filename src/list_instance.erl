@@ -31,7 +31,7 @@
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
 -export([run_nargs/0, run/2]).
 -export([fold_map/2]).
@@ -72,6 +72,10 @@ lift_a2(F, As, Bs) ->
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
 '>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).
+
+-spec '>>'([_A], [B]) -> [B].
+'>>'(As, Bs) ->
+    monad:'default_>>'(As, Bs, ?MODULE).
 
 -spec return(A) -> [A].
 return(A) -> 

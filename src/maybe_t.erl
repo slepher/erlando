@@ -36,7 +36,7 @@
 % impl of applicative.
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % impl of monad.
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 % impl of monad_trans.
 -export([lift/1]).
 % impl of monad_fail.
@@ -83,7 +83,7 @@ fmap(F, MTA) ->
 
 -spec pure(A) -> maybe_t(_M, A).
 pure(A) ->
-    return(A).
+    maybe_t(applicative:pure(maybe:pure(A))).
 
 -spec '<*>'(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
 '<*>'(MTF, MTA) ->
@@ -95,16 +95,16 @@ pure(A) ->
 
 
 -spec lift_a2(fun((A, B) -> C), maybe_t(M, A), maybe_t(M, B)) -> maybe_t(M, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, MTA, MTB) ->
+    applicative:default_lift_a2(F, MTA, MTB, ?MODULE).
 
 -spec '*>'(maybe_t(M, _A), maybe_t(M, B)) -> maybe_t(M, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(MTA, MTB) ->
+    applicative:'default_*>'(MTA, MTB, ?MODULE).
 
 -spec '<*'(maybe_t(M, A), maybe_t(M, _B)) -> maybe_t(M, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(MTA, MTB) ->
+    applicative:'default_<*'(MTA, MTB, ?MODULE).
 
 -spec '>>='(maybe_t(M, A), fun((A) -> maybe_t(M, B))) -> maybe_t(M, B).
 '>>='(MTA, KMTB) ->
@@ -119,9 +119,13 @@ lift_a2(F, RTA, RTB) ->
              end
          ])).
 
+-spec '>>'(maybe_t(M, _A), maybe_t(M, B)) -> maybe_t(M, B).
+'>>'(MTA, MTB) ->
+    monad:'default_>>'(MTA, MTB, ?MODULE).
+
 -spec return(A) -> maybe_t(_M, A).
 return(A) ->
-    maybe_t(monad:return(maybe:return(A))).
+    monad:default_return(A, ?MODULE).
 
 -spec fail(_E) -> maybe_t(_M, _A).
 fail(E) ->

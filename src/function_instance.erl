@@ -20,7 +20,7 @@
 % applicative instance.
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % monad instance.
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 % monad reader instance.
 -export([ask/0, reader/1, local/2]).
 % monad runner instance.
@@ -65,9 +65,13 @@ lift_a2(F, RTA, RTB) ->
 '>>='(FA, KFB) ->
     fun(X) -> (KFB(FA(X)))(X) end.
 
+-spec '>>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
+'>>'(FA, FB) ->
+    monad:'default_>>'(FA, FB, ?MODULE).
+
 -spec return(A) -> fun((_R) -> A).
 return(A) ->
-    pure(A).
+    monad:default_return(A, ?MODULE).
 
 ask() ->
     id().

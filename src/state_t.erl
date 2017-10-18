@@ -40,7 +40,7 @@
 % impl of applcative.
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 % impl of monad.
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 % impl of monad_trans.
 -export([lift/1]).
 % impl of monad_fail.
@@ -95,8 +95,8 @@ fmap(F, STA) ->
               fun({A, S}) -> {F(A), S} end /'<$>'/ FA
       end, STA).
 
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA, ?MODULE).
+'<$'(B, STA) ->
+    functor:'default_<$'(B, STA, ?MODULE).
 
 -spec pure(A) -> state_t(_S, _M, A).
 pure(A) ->
@@ -114,36 +114,40 @@ pure(A) ->
       end).
 
 -spec lift_a2(fun((A, B) -> C), state_t(S, M, A), state_t(S, M, B)) -> state_t(S, M, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, STA, STB) ->
+    applicative:default_lift_a2(F, STA, STB, ?MODULE).
 
 -spec '*>'(state_t(S, M, _A), state_t(S, M, B)) -> state_t(S, M, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(STA, STB) ->
+    applicative:'default_*>'(STA, STB, ?MODULE).
 
 -spec '<*'(state_t(S, M, A), state_t(S, M, _B)) -> state_t(S, M, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(STA, STB) ->
+    applicative:'default_<*'(STA, STB, ?MODULE).
 
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B))) -> state_t(S, M, B).
-'>>='(X, Fun) ->
+'>>='(STA, KSTB) ->
     state_t(
       fun (S) ->
               do([ monad || 
-                     {A, NS} <- run_state(X, S),
-                     run_state(Fun(A), NS)
+                     {A, NS} <- run_state(STA, S),
+                     run_state(KSTB(A), NS)
                  ])
         end).
 
+-spec '>>'(state_t(S, M, _A), state_t(S, M, B)) -> state_t(S, M, B).
+'>>'(STA, STB) ->
+    monad:'default_>>'(STA, STB, ?MODULE).
+
 -spec return(A) -> state_t(_S, _M, A).
 return(A) ->
-    pure(A).
+    monad:default_return(A, ?MODULE).
 
 -spec lift(monad:monadic(M, A)) -> state_t(_S, M, A).
-lift(ISTM) ->
+lift(MA) ->
     state_t(
       fun(S) ->
-              functor:fmap(fun(A) -> {A, S} end, ISTM)
+              functor:fmap(fun(A) -> {A, S} end, MA)
       end).
 
 -spec fail(_E) -> state_t(_S, _M, _A).
@@ -161,7 +165,7 @@ put(S) ->
 
 -spec state(fun((S) -> {A, S})) -> state_t(S, _M, A).
 state(F) ->
-    state_t(fun (S) -> monad:return(F(S)) end).
+    state_t(fun (S) -> applicative:pure(F(S)) end).
 
 ask() ->
     lift(monad_reader:ask()).
@@ -169,30 +173,30 @@ ask() ->
 reader(F) ->
     lift(monad_reader:reader(F)).
 
-local(F, STM) ->
+local(F, STA) ->
     map_state(
-      fun(IM) ->
-              monad_reader:local(F, IM)
-      end, STM).
+      fun(MA) ->
+              monad_reader:local(F, MA)
+      end, STA).
 
 -spec eval_state(state_t(S, M, A), S) -> monad:monadic(M, A).
-eval_state(SM, S) ->    
-    fun({A, _}) -> A end /'<$>'/ run_state(SM, S).
+eval_state(STA, S) ->    
+    fun({A, _}) -> A end /'<$>'/ run_state(STA, S).
 
 -spec exec_state(state_t(S, M, _A), S) -> monad:monadic(M, S).
-exec_state(SM, S) ->
-    fun({_, NS}) -> NS end /'<$>'/ run_state(SM, S).
+exec_state(STA, S) ->
+    fun({_, NS}) -> NS end /'<$>'/ run_state(STA, S).
 
 -spec run_state(state_t(S, M, A), S) -> monad:monadic(M, {A, S}).
-run_state(SM, S) -> (run_state_t(SM))(S).
+run_state(STA, S) -> (run_state_t(STA))(S).
 
 -spec map_state(fun((monad:monadic(M, {A, S})) -> monad:monadic(N, {B, S})), state_t(S, M, A)) -> state_t(S, N, B).
-map_state(F, SM) ->
-    state_t(fun (S) -> F(run_state(SM, S)) end).
+map_state(F, STA) ->
+    state_t(fun (S) -> F(run_state(STA, S)) end).
 
 -spec with_state(fun((S) -> S), state_t(S, M, A)) -> state_t(S, M, A).
-with_state(F, SM) ->
-    state_t(fun (S) -> run_state(SM, F(S)) end).
+with_state(F, STA) ->
+    state_t(fun (S) -> run_state(STA, F(S)) end).
 
 run_nargs() ->
     1.
@@ -206,10 +210,10 @@ run(STA, [S]) ->
 %%
 %% ---------------------------------------------------------------------------------------
 -spec '>>='(state_t(S, M, A), fun( (A) -> state_t(S, M, B)), t(M)) -> state_t(S, M, B).
-'>>='(X, Fun, {?MODULE, IM} = ST) ->
+'>>='(STA, KSTB, {?MODULE, IM} = ST) ->
     state_t(fun (S) ->
-                    do([ IM || {A, NS} <- run_state(X, S, ST),
-                               run_state(Fun(A), NS, ST)
+                    do([ IM || {A, NS} <- run_state(STA, S, ST),
+                               run_state(KSTB(A), NS, ST)
                        ])
         end).
 
@@ -222,10 +226,10 @@ fail(E, {?MODULE, IM}) ->
     state_t(fun (_) -> monad:fail(IM, E) end).
 
 -spec lift(monad:monadic(M, A), t(M)) -> state_t(_S, M, A).
-lift(ISTM, {?MODULE, IM}) ->
+lift(MA, {?MODULE, IM}) ->
     state_t(
       fun (S) ->
-              do([IM || A <- ISTM,
+              do([IM || A <- MA,
                         return({A, S})
                  ])
       end).
@@ -235,10 +239,10 @@ mzero({?MODULE, IM}) ->
     state_t(fun(_) -> monad_plus:mzero(IM) end).
 
 -spec mplus(state_t(S, M, A), state_t(S, M, A), t(M)) -> state_t(S, M, A).
-mplus(SA, SB, {?MODULE, IM} = ST) ->
+mplus(STA, STB, {?MODULE, IM} = ST) ->
     state_t(
       fun(S) ->
-              monad_plus:mplus(IM, run_state(SA, S, ST), run_state(SB, S, ST))
+              monad_plus:mplus(IM, run_state(STA, S, ST), run_state(STB, S, ST))
       end).
 
 -spec get(t(M)) -> state_t(S, M, S).
@@ -258,41 +262,41 @@ modify(Fun, {?MODULE, _M} = ST) ->
     state(fun (S) -> {ok, Fun(S)} end, ST).
 
 -spec state(fun((S) -> {A, S}), t(M)) -> state_t(S, M, A).
-state(Fun, {?MODULE, IM}) ->
-    state_t(fun (S) -> monad:return(Fun(S), IM) end).
+state(F, {?MODULE, IM}) ->
+    state_t(fun (S) -> monad:return(F(S), IM) end).
 
 -spec eval_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, A).
-eval_state(SM, S, {?MODULE, IM} = ST) ->
-     do([ IM || {A, _NS} <- run_state(SM, S, ST),
+eval_state(STA, S, {?MODULE, IM} = ST) ->
+     do([ IM || {A, _NS} <- run_state(STA, S, ST),
                 return(A)
        ]).
 
 -spec exec_state(state_t(S, M, _A), S, t(M)) -> monad:monadic(M, S).
-exec_state(SM, S, {?MODULE, IM}) ->
-     do([ IM || {_A, NS} <- run_state(SM, S),
+exec_state(STA, S, {?MODULE, IM}) ->
+     do([ IM || {_A, NS} <- run_state(STA, S),
                 return(NS)
         ]).
 
 -spec run_state(state_t(S, M, A), S, t(M)) -> monad:monadic(M, {A, S}).
-run_state(SM, S, {?MODULE, _IM} = _ST) ->
-    run_state(SM, S).
+run_state(STA, S, {?MODULE, _IM} = _ST) ->
+    run_state(STA, S).
 
 -spec map_state(fun((monad:monadic(M, {A, S})) -> monad:monadic(N, {B, S})), state_t(S, M, A), t(M)) -> state_t(S, N, B).
-map_state(F, SM, {?MODULE, _IM}) ->
-    map_state(F, SM).
+map_state(F, STA, {?MODULE, _IM}) ->
+    map_state(F, STA).
 
 -spec with_state(fun((S) -> S), state_t(S, M, A), t(M)) -> state_t(S, M, A).
 with_state(F, STA, {?MODULE, _IM}) ->
     with_state(F, STA).
 
-eval(SM, S, M) ->
-    eval_state(SM, S, M).
+eval(STA, S, M) ->
+    eval_state(STA, S, M).
 
-exec(SM, S, M) ->
-    exec_state(SM, S, M).
+exec(STA, S, M) ->
+    exec_state(STA, S, M).
 
-run(SM, S, M) ->
-    run_state(SM, S, M).
+run(STA, S, M) ->
+    run_state(STA, S, M).
 
 modify_and_return(F, M) ->
     state(F, M).

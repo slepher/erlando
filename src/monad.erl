@@ -19,7 +19,7 @@
 -export_type([monad/0, monadic/2]).
 
 -export(['>>='/2, '>>'/2, return/1]).
--export([default_return/2]).
+-export([default_return/2, 'default_>>'/3]).
 %% bind is same as >>=, then is same as >> 
 -export([bind/2, then/2]).
 %% utility function join
@@ -34,8 +34,10 @@
 -type monadic(_M, _A) :: any().
 
 %% Monad primitives
--callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback return(A) -> monadic(M, A) when M :: monad(). 
+-callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
+-callback '>>'(monadic(M, _A), monadic(M, B) ) -> monadic(M, B) when M :: monad().
+
 
 -spec '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='(X, MK) ->
@@ -44,9 +46,20 @@
               Module:'>>='(MA, fun(A) -> undetermined:run(MK(A), Module) end)
       end, X).
 
+-spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
+'>>'(UA, UB) ->
+    undetermined:map_pair(
+      fun(Module, MA, MB) ->
+              Module:'>>'(MA, MB)
+      end, UA, UB).
+
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
     undetermined:new(fun(Module) -> Module:return(A) end).
+
+-spec 'default_>>'(monadic(M, _A), monadic(M, B), module()) -> monadic(M, B).
+'default_>>'(MA, MB, Module) ->
+    Module:'>>='(MA, fun(_) -> MB end).
 
 -spec default_return(A, module()) -> monad:monadic(M, A) when M :: monad().
 default_return(A, Module) ->
@@ -56,17 +69,16 @@ default_return(A, Module) ->
 bind(X, F) ->
     '>>='(X, F).
 
--spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-'>>'(Xa, Xb) ->
-    '>>='(Xa, fun(_) -> Xb end).
-
 -spec then(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 then(X, F) ->
     '>>'(X, F).
 
+-spec join(monadic(M, monadic(M, A))) -> monadic(M, A).
 join(MMA) ->
     bind(MMA, fun(MA) -> MA end).
 
+
+%% build some typed monad
 as(A, {T, IM}) when is_atom(T) ->
     T:lift(as(A, IM), {T, IM});
 as(A, M) when is_atom(M) ->
@@ -80,8 +92,6 @@ empty(M) ->
 
 run(M, Monad) ->
     applicative:ap(id(Monad), M).
-
-%% depricated functions
 
 %% traversable functions
 -spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).

@@ -29,7 +29,7 @@
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, return/1]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([lift/1]).
 -export([fail/1]).
 -export([tell/1, listen/1, listens/2, pass/1, censor/2]).
@@ -70,7 +70,7 @@ fmap(F, WTA) ->
 
 -spec pure(A) -> writer_t(_W, _M, A).
 pure(A) ->
-    return(A).
+    writer_t(applicative:pure({A, []})).
 
 -spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 '<*>'(WTF, WTA) ->
@@ -83,16 +83,16 @@ pure(A) ->
     writer_t((AF /'<$>'/ run_writer(WTF)) /'<*>'/ run_writer_t(WTA)).
 
 -spec lift_a2(fun((A, B) -> C), writer_t(W, M, A), writer_t(W, M, B)) -> writer_t(W, M, C).
-lift_a2(F, RTA, RTB) ->
-    applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
+lift_a2(F, WTA, WTB) ->
+    applicative:default_lift_a2(F, WTA, WTB, ?MODULE).
 
 -spec '*>'(writer_t(W, M, _A), writer_t(W, M, B)) -> writer_t(W, M, B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(WTA, WTB) ->
+    applicative:'default_*>'(WTA, WTB, ?MODULE).
 
 -spec '<*'(writer_t(W, M, A), writer_t(W, M, _B)) -> writer_t(W, M, A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(WTA, WTB) ->
+    applicative:'default_<*'(WTA, WTB, ?MODULE).
 
 -spec '>>='(writer_t(W, M, A), fun((A) -> writer_t(W, M, B) )) -> writer_t(W, M, B).
 '>>='(WTA, KWTB) -> 
@@ -102,9 +102,13 @@ lift_a2(F, RTA, RTB) ->
                    return({B, LogsA ++ LogsB})
        ])).
 
+-spec '>>'(writer_t(W, M, _A), writer_t(W, M, B)) -> writer_t(W, M, B).
+'>>'(WTA, WTB) ->
+    monad:'default_>>'(WTA, WTB, ?MODULE).
+
 -spec return(A) -> writer_t(_W, _M, A).
 return(A) -> 
-    writer_t(monad:return({A, []})).
+    monad:default_return(A, ?MODULE).
 
 -spec lift(monad:monadic(M, A)) -> writer_t(_W, M, A).
 lift(MA) ->
