@@ -29,7 +29,7 @@
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 % impl of applicative
 -export([ap/2, pure/1]).
 % impl of monad
@@ -81,11 +81,14 @@ run_reader_t(Other) ->
     exit({invalid_reader_t, Other}).
 
 -spec fmap(fun((A) -> B), reader_t(R, M, A)) -> reader_t(R, M, B).
-fmap(F, X) ->
+fmap(F, RTA) ->
     map_reader(
-      fun(RIM) ->
-              F /'<$>'/ RIM
-      end, X).
+      fun(FA) ->
+              F /'<$>'/ FA
+      end, RTA).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec pure(A) -> reader_t(_R, _M, A).
 pure(A) ->

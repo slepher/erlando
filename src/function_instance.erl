@@ -16,7 +16,7 @@
 
 %% API
 % functor instance.
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 % applicative instance.
 -export([ap/2, pure/1]).
 % monad instance.
@@ -35,6 +35,9 @@
 %%%===================================================================
 fmap(F, G) ->
     '.'(F, G).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 ap(F, G) ->
     fun(X) -> (F(X))(G(X)) end.

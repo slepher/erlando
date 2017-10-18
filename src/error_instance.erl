@@ -23,7 +23,7 @@
 -behaviour(monad).
 -behaviour(monad_fail).
 
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
@@ -46,6 +46,9 @@ fmap(F, E) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 ap({ok, F}, {ok, A}) ->
     {ok, F(A)};

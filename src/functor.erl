@@ -8,13 +8,17 @@
 %%%-------------------------------------------------------------------
 -module(functor).
 
+-include("op.hrl").
+
 -export_type([functor/2]).
 %% API
 -export([fmap/2, '<$>'/2, '<$'/2]).
+-export(['default_<$'/2]).
 
 -type functor(_F, _A) :: any().
 
 -callback fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
+-callback '<$'(B, functor(F, _A)) -> functor(F, B).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -30,8 +34,14 @@ fmap(F, UA) ->
     fmap(F, FA).
 
 -spec '<$'(B, functor(F, _A)) -> functor(F, B).
-'<$'(B, FA) ->
-    fmap(fun(_A) -> B end, FA).
+'<$'(F, UA) ->
+    undetermined:map(
+      fun(Module, FA) ->
+              Module:'<$'(F, FA)
+      end, UA).
+
+'default_<$'(B, FA) ->
+    function_instance:const(B) /'<$>'/ FA.
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

@@ -61,7 +61,6 @@ ap(UF, UA) ->
         end,
     (Const /'<$>'/ AA) /'<*>'/ AB.
 
-
 -spec pure(A) -> applicative:applicative(_F, A).
 pure(A) ->
     undetermined:new(fun(M) -> M:pure(A) end).

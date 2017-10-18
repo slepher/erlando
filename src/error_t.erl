@@ -23,7 +23,7 @@
 -behaviour(monad_runner).
 
 -export([new/1, error_t/1, run_error_t/1]).
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
@@ -67,9 +67,12 @@ run_error_t(Other) ->
 -spec fmap(fun((A) -> B), error_t(E, M, A)) -> error_t(E, M, B).
 fmap(F, ETA) ->
     map_error(
-      fun(MA) ->
-              error_instance:fmap(F, _) /'<$>'/ MA
+      fun(FA) ->
+              error_instance:fmap(F, _) /'<$>'/ FA
       end, ETA).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec ap(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
 ap(ETF, ETA) ->

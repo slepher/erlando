@@ -36,7 +36,7 @@
 
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 % impl of applcative.
 -export([ap/2, pure/1]).
 % impl of monad.
@@ -89,12 +89,14 @@ run_state_t(Other) ->
     exit({invalid_state_t, Other}).
 
 -spec fmap(fun((A) -> B), state_t(S, M, A)) -> state_t(S, M, B).
-fmap(F, X) ->
+fmap(F, STA) ->
     map_state(
-      fun(SIM) ->
-              fun({A, S}) -> {F(A), S} end /'<$>'/ SIM
-      end, X).
+      fun(FA) ->
+              fun({A, S}) -> {F(A), S} end /'<$>'/ FA
+      end, STA).
 
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec ap(state_t(S, M, fun((A) -> B)),  state_t(S, M, A)) -> state_t(S, M, B).
 ap(STF, STA) ->

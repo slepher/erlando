@@ -27,7 +27,7 @@
 -export_type([cont_t/3]).
 
 -export([cont_t/1, run_cont_t/1]).
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
@@ -77,6 +77,9 @@ fmap(F, CTA) ->
       fun(CC) ->
               run_cont(CTA, fun(A) -> CC(F(A)) end)
       end).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 ap(CTF, CTA) ->
     cont_t(

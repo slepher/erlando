@@ -29,7 +29,7 @@
 -behaviour(monad_plus).
 -behaviour(monoid).
 
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([fail/1]).
@@ -43,6 +43,9 @@
 
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec ap([fun((A) -> B)], [A]) -> [B].
 ap(LF, LA) ->

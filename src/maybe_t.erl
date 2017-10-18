@@ -32,7 +32,7 @@
 %% API
 -export([maybe_t/1, run_maybe_t/1]).
 % impl of functor.
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 % impl of applicative.
 -export([ap/2, pure/1]).
 % impl of monad.
@@ -74,9 +74,12 @@ run_maybe_t(Other) ->
 -spec fmap(fun((A) -> B), maybe_t(M, A)) -> maybe_t(M, B).
 fmap(F, MTA) ->
     map_maybe(
-      fun(IA) ->
-              F /'<$>'/ IA
+      fun(FA) ->
+              F /'<$>'/ FA
       end, MTA).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec ap(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
 ap(MTF, MTA) ->

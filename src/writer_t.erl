@@ -27,7 +27,7 @@
 
 -export([writer_t/1, run_writer_t/1]).
 
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 -export(['>>='/2, return/1]).
 -export([lift/1]).
@@ -61,9 +61,12 @@ run_writer_t(Other) ->
 -spec fmap(fun((A) -> B), writer_t(W, M, A)) -> writer_t(W, M, B).
 fmap(F, WTA) ->
     map_writer(
-      fun(MA) ->
-              fun({A, Ws}) ->  {F(A), Ws} end /'<$>'/ MA
+      fun(FA) ->
+              fun({A, Ws}) ->  {F(A), Ws} end /'<$>'/ FA
       end, WTA).
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 -spec ap(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 ap(WTF, WTA) ->

@@ -25,7 +25,7 @@
 -behaviour(monad_runner).
 
 %% impl of functor
--export([fmap/2]).
+-export([fmap/2, '<$'/2]).
 -export([ap/2, pure/1]).
 %% impl of monad
 -export(['>>='/2, return/1, fail/1]).
@@ -39,6 +39,9 @@ fmap(F, {just, X}) ->
     {just, F(X)};
 fmap(_F, nothing) ->
     nothing.
+
+'<$'(B, FA) ->
+    functor:'default_<$'(B, FA).
 
 ap(nothing, _) ->
     nothing;
