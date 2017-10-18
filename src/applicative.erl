@@ -14,7 +14,7 @@
 
 %% API
 -export([pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]).
--export([default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
+-export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
 -export([ap/2]).
 
 -type applicative_module() :: {module(), applicative_module()} | module().
@@ -34,11 +34,11 @@
 pure(A) ->
     undetermined:new(fun(M) -> M:pure(A) end).
 
--spec ap(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+-spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
 '<*>'(UF, UA) ->
     undetermined:map_pair(
       fun(Module, AF, AA) ->
-              'real_<*>'(AF, AA, Module)
+              Module:'<*>'(AF, AA)
       end, UF, UA).
 
 lift_a2(F, UA, UB) ->
@@ -46,7 +46,6 @@ lift_a2(F, UA, UB) ->
       fun(Module, AA, AB) ->
               Module:lift_a2(F, AA, AB)
       end, UA, UB).
-
 
 -spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
 '*>'(UA, UB) ->
@@ -61,6 +60,13 @@ lift_a2(F, UA, UB) ->
       fun(Module, AA, AB) ->
               Module:'<*'(AA, AB)
       end, UA, UB).
+
+'default_<*>'(AF, AA, Module) ->
+    FA = 
+        fun(F, A) ->
+                F(A)
+        end,
+    Module:lift_a2(FA, AF, AA).
 
 -spec default_lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B), module()) -> applicative(F, C).
 default_lift_a2(F, AA, AB, Module) ->
@@ -88,9 +94,6 @@ default_lift_a2(F, AA, AB, Module) ->
         end,
     Module:'<*>'(Module:fmap(Const, AA), AB).
 
-'real_<*>'(AF, AA, Module) ->
-    Module:'<*>'(AF, AA).
-
--spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
+-spec 'ap'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
 ap(AF, A) ->
     '<*>'(AF, A).
