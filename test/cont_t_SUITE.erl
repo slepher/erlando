@@ -174,6 +174,7 @@ test_cont_t(_Config) ->
     NR = monad:run(R, cont_t),
     CC = fun(X) -> monad:return(X) end,
     %?assertEqual({ok, 5}, cont_t:run_cont(RX, CC)),
+    ?assertEqual({ok, 5}, error_instance:run_error(cont_t:run_cont(NR, CC))),
     ?assertEqual({ok, 5}, monad:run(cont_t:run_cont(NR, CC), error_instance)),
     ok.
 

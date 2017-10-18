@@ -32,13 +32,13 @@ map(F, M) ->
 
 map_pair(F, {undetermined, _} = UA, UB) ->
     undetermined:map(
-      fun(Module, A) ->
-              B = run(UB, Module),
-              F(Module, A, B)
-      end, UA);
-map_pair(F, UA, UB) ->
-    undetermined:map(
       fun(Module, B) ->
               A = run(UA, Module),
               F(Module, A, B)
-      end, UB).
+      end, UB);
+map_pair(F, UA, UB) ->
+    undetermined:map(
+      fun(Module, A) ->
+              B = run(UB, Module),
+              F(Module, A, B)
+      end, UA).
