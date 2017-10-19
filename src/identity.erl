@@ -22,31 +22,53 @@
 
 -export_type([identity/1]).
 
--export([fmap/2]).
--export([ap/2, pure/1]).
--export(['>>='/2, return/1]).
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
 -export([run_nargs/0, run/2]).
 -export([run_identity/1]).
 
--type identity(A) :: {identity, A}.
+-type identity(A) :: {?MODULE, A}.
 
 -spec fmap(fun((A) -> B), identity(A)) -> identity(B).
-fmap(F, X) ->
-    two_tuple:fmap(identity, F, X).
+fmap(F, IA) ->
+    two_tuple:fmap(identity, F, IA).
 
--spec ap(identity(fun((A) -> B)), identity(A)) -> identity(B).
-ap(F, A) ->
-    two_tuple:ap(identity, F, A).
-
--spec '>>='(identity(A), fun( (A) -> identity(B) )) -> identity(B).
-'>>='(X, Fun) -> 
-    two_tuple:bind(identity, X, Fun).
+-spec '<$'(B, identity(_A)) -> identity(B).
+'<$'(B, IA) ->
+    functor:'default_<$'(B, IA, ?MODULE).
 
 -spec pure(A) -> identity(A).
-pure(A) -> return(A).
+pure(A) -> 
+    {?MODULE, A}.
+
+-spec '<*>'(identity(fun((A) -> B)), identity(A)) -> identity(B).
+'<*>'(IF, IA) ->
+    two_tuple:ap(identity, IF, IA).
+
+-spec lift_a2(fun((A, B) -> C), identity(A), identity(B)) -> identity(C).
+lift_a2(F, IA, IB) ->
+    applicative:default_lift_a2(F, IA, IB, ?MODULE).
+
+-spec '*>'(identity(_A), identity(B)) -> identity(B).
+'*>'(IA, IB) ->
+    applicative:'default_*>'(IA, IB, ?MODULE).
+
+-spec '<*'(identity(A), identity(_B)) -> identity(A).
+'<*'(IA, IB) ->
+    applicative:'default_<*'(IA, IB, ?MODULE).
+
+-spec '>>='(identity(A), fun( (A) -> identity(B) )) -> identity(B).
+'>>='(IA, KIB) -> 
+    two_tuple:bind(identity, IA, KIB).
+
+-spec '>>'(identity(_A), identity(B)) -> identity(B).
+'>>'(IA, IB) ->
+    monad:'default_>>'(IA, IB, ?MODULE).
 
 -spec return(A) -> identity(A).
-return(A) -> two_tuple:return(identity, A).
+return(A) ->
+    monad:default_return(A, ?MODULE).
 
 run_nargs() ->
     0.

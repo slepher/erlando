@@ -163,21 +163,12 @@ test_cont_t() ->
     [{doc, "Test cont_t"}].
 
 test_cont_t(_Config) ->
-    M1 = monad:return(2),
-    M2 = monad:return(3),
-
-
     R = do([monad || 
-               R1 <- M1,
-               R2 <- M2,
+               R1 <- monad:return(2),
+               R2 <- monad:return(3),
                return(R1 + R2)]),
-    NR = monad:run(R, cont_t),
-    CC = fun(X) -> monad:return(X) end,
-    %?assertEqual({ok, 5}, cont_t:run_cont(RX, CC)),
-    ?assertEqual({ok, 5}, error_instance:run_error(cont_t:run_cont(NR, CC))),
-    ?assertEqual({ok, 5}, monad:run(cont_t:run_cont(NR, CC), error_instance)),
+    ?assertEqual({ok, 5}, monad:run(cont_t:eval_cont(R), error_instance)),
     ok.
-
 
 test_cont_t_callCC(_Config) ->
     MonadState = state_t:new(identity),
