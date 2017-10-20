@@ -22,6 +22,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_fail).
+-behaviour(alternative).
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
@@ -33,8 +34,11 @@
 -export(['>>='/2, '>>'/2, return/1]).
 %% impl of monad fail.
 -export([fail/1]).
+%% impl of alternative.
+-export([empty/0, '<|>'/2]).
 %% impl of monad plus.
 -export([mzero/0, mplus/2]).
+%% impl of monad runner.
 -export([run_nargs/0, run/2]).
 
 -type maybe(A) :: {just, A} | nothing.
@@ -88,12 +92,22 @@ return(A) ->
 -spec fail(any()) -> maybe(_A).
 fail(_E) -> nothing.
 
+empty() ->
+    nothing.
+
+-spec '<|>'(maybe(A), maybe(A)) -> maybe(A).
+'<|>'(nothing, MB) -> 
+    MB;
+'<|>'(MA,     _MB) -> 
+    MA.
+
 -spec mzero() -> maybe(_A).
-mzero() -> nothing.
+mzero() -> 
+    empty().
 
 -spec mplus(maybe(A), maybe(A)) -> maybe(A).
-mplus(nothing, Y) -> Y;
-mplus(X,      _Y) -> X.
+mplus(MA, MB) ->
+    '<|>'(MA, MB).
 
 -spec run_nargs() -> integer().
 run_nargs() ->

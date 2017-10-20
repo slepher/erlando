@@ -22,6 +22,7 @@
 
 -export_type([identity/1]).
 
+-export([identity/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
@@ -29,6 +30,9 @@
 -export([run_identity/1]).
 
 -type identity(A) :: {?MODULE, A}.
+
+identity(A) ->
+    {?MODULE, A}.
 
 -spec fmap(fun((A) -> B), identity(A)) -> identity(B).
 fmap(F, IA) ->

@@ -12,7 +12,7 @@
 
 -export_type([functor/2]).
 %% API
--export([fmap/2, '<$>'/2, '<$'/2]).
+-export([fmap/1, fmap/2, '<$>'/2, '<$'/2]).
 -export(['default_<$'/3]).
 
 -type functor(_F, _A) :: any().
@@ -22,6 +22,12 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec fmap(fun((A) -> B)) -> fun((functor(F, A)) -> functor(F, B)).
+fmap(F) ->
+    fun(UA) ->
+            fmap(F, UA)
+    end.
+
 -spec fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
 fmap(F, UA) ->
     undetermined:map(

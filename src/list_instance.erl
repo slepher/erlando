@@ -18,6 +18,10 @@
 
 -module(list_instance).
 
+-compile({parse_transform, cut}).
+
+-include("op.hrl").
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -97,12 +101,7 @@ fold_map(F, As) ->
       end, monoid:mempty(), As).
 
 traverse(A_FB, [H|T]) ->
-    F = fun(A) ->
-                fun(B) ->
-                        [A|B]
-                end
-        end,
-    applicative:ap(functor:fmap(F, A_FB(H)), traverse(A_FB, T));
+    applicative:lift_a2([_|_], A_FB(H), traverse(A_FB, T));
 traverse(_A_FB, []) ->
     applicative:pure([]).
 
