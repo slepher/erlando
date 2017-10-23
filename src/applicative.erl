@@ -39,27 +39,27 @@ pure(A) ->
     undetermined:map_pair(
       fun(Module, AF, AA) ->
               Module:'<*>'(AF, AA)
-      end, UF, UA).
+      end, UF, UA, ?MODULE).
 
 lift_a2(F, UA, UB) ->
     undetermined:map_pair(
       fun(Module, AA, AB) ->
               Module:lift_a2(F, AA, AB)
-      end, UA, UB).
+      end, UA, UB, ?MODULE).
 
 -spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
 '*>'(UA, UB) ->
     undetermined:map_pair(
       fun(Module, AA, AB) ->
               Module:'*>'(AA, AB)
-      end, UA, UB).
+      end, UA, UB, ?MODULE).
 
 -spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
 '<*'(UA, UB) ->
     undetermined:map_pair(
       fun(Module, AA, AB) ->
               Module:'<*'(AA, AB)
-      end, UA, UB).
+      end, UA, UB, ?MODULE).
 
 'default_<*>'(AF, AA, Module) ->
     FA = 

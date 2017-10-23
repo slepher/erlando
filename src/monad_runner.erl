@@ -40,7 +40,7 @@ run(UA, Args) ->
                               exit(invalid_run_nargs, {Module, N})
                       end
               end
-      end, UA).
+      end, UA, ?MODULE).
 
 %%--------------------------------------------------------------------
 %% @doc

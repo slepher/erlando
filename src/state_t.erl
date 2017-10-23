@@ -15,6 +15,7 @@
 %%
 
 -module(state_t).
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -34,6 +35,7 @@
 
 -define(STATE_T_MONAD, {?MODULE, monad}).
 
+-export([type/0]).
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
 -export([fmap/2, '<$'/2]).
@@ -71,6 +73,9 @@
 -type inner_state_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
 
 -type t(M) :: {state_t, M}.
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(Inner) ->

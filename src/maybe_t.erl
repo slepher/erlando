@@ -14,6 +14,7 @@
 
 -define(MAYBE_T_MONAD, {?MODULE, monad}).
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -29,6 +30,7 @@
 -type inner_maybe_t(M, A) :: monad:monadic(M, maybe:maybe(A)).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
+-export([type/0]).
 %% API
 -export([maybe_t/1, run_maybe_t/1]).
 % impl of functor.
@@ -58,6 +60,8 @@
 -export([mzero/1, mplus/3]).
 -export([run_maybe/2, map_maybe/3]).
 
+type() ->
+    type:default_type(?MODULE).
 
 -spec maybe_t(inner_maybe_t(M, A)) -> maybe_t(M, A).
 maybe_t(Inner) ->

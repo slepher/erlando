@@ -29,7 +29,7 @@ local(F, UA) ->
     undetermined:map(
       fun(Module, MA) ->
               Module:local(F, MA)
-      end, UA).
+      end, UA, ?MODULE).
 
 asks(F) ->
     do([monad || 

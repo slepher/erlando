@@ -3,4 +3,5 @@
   {vsn, "%%VSN%%"},
   {modules, []},
   {registered, []},
+  {mod, {erlando_app, []}},
   {applications, [kernel, stdlib, syntax_tools]}]}.

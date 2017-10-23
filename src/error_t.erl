@@ -14,6 +14,7 @@
 
 -export_type([error_t/3]).
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -22,6 +23,7 @@
 -behaviour(monad_state).
 -behaviour(monad_runner).
 
+-export([type/0]).
 -export([new/1, error_t/1, run_error_t/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
@@ -47,6 +49,9 @@
 -type inner_error_t(E, M, A) :: monad:monadic(M, error_m:error_m(E, A)).
 
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

@@ -27,7 +27,7 @@ empty() ->
     undetermined:map_pair(
       fun(Module, AA, AB) ->
               Module:'<|>'(AA, AB)
-      end, UA, UB).
+      end, UA, UB, ?MODULE).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

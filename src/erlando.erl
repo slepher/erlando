@@ -4,31 +4,17 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 10 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 23 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(monoid).
--export_type([monoid/1]).
-
--type monoid(_M) :: any().
-
--callback mempty() -> monoid(_M).
--callback mappend(monoid(M), monoid(M)) -> monoid(M).
+-module(erlando).
 
 %% API
--export([mempty/0, mappend/2]).
+-export([]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-mempty() ->
-    undetermined:new(fun(Module) -> Module:mempty() end).
-
-mappend(UA, UB) ->
-    undetermined:map_pair(
-      fun(Module, MA, MB) ->
-              Module:mappend(MA, MB)
-      end, UA, UB, ?MODULE).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

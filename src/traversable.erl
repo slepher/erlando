@@ -26,13 +26,13 @@
 -spec traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A)) ->
                       applicative:applicate(traversable(B)).
 traverse(A_FB, TA) ->
-    Module = typeclass:module(traversable, TA),
+    Module = type:module(traversable, TA),
     Module:traverse(A_FB, TA).
 
 -spec sequence_a(traversable(applicative:applicate(A))) -> 
                         applicative:applicate(traversable(A)).
 sequence_a(TFA) ->
-    Module = typeclass:module(traversable, TFA),
+    Module = type:module(traversable, TFA),
     Module:sequence_a(TFA).
 
 default_traverse(AF_B, TA) ->

@@ -4,38 +4,46 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 19 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 23 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(choice).
+-module(type).
 
--callback left(any()) -> any().
--callback right(any()) -> any().
+-callback type() -> atom().
 
 %% API
--export([left/1, right/1]).
--export([default_left/2, default_right/2]).
+-export([type/1, module/2, default_type/1]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-left(UAB) ->
-    undetermined:map(
-      fun(Module, PAB) ->
-              Module:left(PAB)
-      end, UAB).
+type(L) when is_list(L) ->
+    list;
+type(F) when is_function(F, 1) ->
+    function;
+type({ok, _}) ->
+    error;
+type(ok) ->
+    error;
+type({error, _}) ->
+    error;
+type({just, _}) ->
+    maybe;
+type(nothing) ->
+    maybe;
+type({left, _}) ->
+    either;
+type({right, _}) ->
+    either;
+type({Module, _Instance}) ->
+    Module.
 
-right(UAB) ->
-    undetermined:map(
-      fun(Module, PAB) ->
-              Module:right(PAB)
-      end, UAB).
+module(Typeclass, Instance) ->
+    Type = type(Instance),
+    erlando_typeclass:module(Type, Typeclass).
 
-default_left(PAB, Module) ->
-    (Module:dimap(either:swap(), either:swap()))(Module:right(PAB)).
-
-default_right(PAB, Module) ->
-    (Module:dimap(either:swap(), either:swap()))(Module:left(PAB)).
+default_type(Module) ->
+    Module.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -46,3 +54,4 @@ default_right(PAB, Module) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+

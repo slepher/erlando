@@ -33,7 +33,7 @@ fmap(F, UA) ->
     undetermined:map(
       fun(Module, FA) ->
               Module:fmap(F, FA)
-      end, UA).
+      end, UA, ?MODULE).
 
 -spec '<$>'(fun((A) -> B), functor(F, A)) -> functor(F, B).
 '<$>'(F, FA) ->
@@ -44,7 +44,7 @@ fmap(F, UA) ->
     undetermined:map(
       fun(Module, FA) ->
               Module:'<$'(F, FA)
-      end, UA).
+      end, UA, ?MODULE).
 
 'default_<$'(B, FA, Module) ->
     Module:fmap(function_instance:const(B), FA).

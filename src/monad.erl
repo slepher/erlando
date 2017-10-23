@@ -44,14 +44,14 @@
     undetermined:map(
       fun(Module, MA) ->
               Module:'>>='(MA, fun(A) -> undetermined:run(MK(A), Module) end)
-      end, X).
+      end, X, ?MODULE).
 
 -spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 '>>'(UA, UB) ->
     undetermined:map_pair(
       fun(Module, MA, MB) ->
               Module:'>>'(MA, MB)
-      end, UA, UB).
+      end, UA, UB, ?MODULE).
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->

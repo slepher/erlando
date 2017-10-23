@@ -15,6 +15,8 @@
 %%
 
 -module(identity).
+
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -22,6 +24,7 @@
 
 -export_type([identity/1]).
 
+-export([type/0]).
 -export([identity/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
@@ -33,6 +36,9 @@
 
 identity(A) ->
     {?MODULE, A}.
+
+type() ->
+    identity.
 
 -spec fmap(fun((A) -> B), identity(A)) -> identity(B).
 fmap(F, IA) ->

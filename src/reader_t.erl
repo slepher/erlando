@@ -12,6 +12,7 @@
 
 -include("op.hrl").
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -26,6 +27,8 @@
 -define(READER_T_MONAD, {?MODULE, monad}).
 
 -export_type([reader_t/3]).
+
+-export([type/0]).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
@@ -63,6 +66,9 @@
 -type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
 
 -type t(M) :: {reader_t, M}.
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

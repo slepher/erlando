@@ -17,6 +17,7 @@
 -type inner_writer_t(W, M, A) :: monad:monadic(M, {A, [W]}).
 -type t(M) :: {writer_t, M}.
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -26,6 +27,8 @@
 -behaviour(monad_plus).
 
 -export([writer_t/1, run_writer_t/1]).
+
+-export([type/0]).
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
@@ -45,6 +48,9 @@
 -export([tell/2, listen/2, listens/3, pass/2, censor/3]).
 -export([exec_writer/2, map_writer/3]).
 -export([run_writer/2]).
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec writer_t(inner_writer_t(W, M, A)) -> writer_t(W, M, A).
 writer_t(Inner) ->

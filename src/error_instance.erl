@@ -18,12 +18,14 @@
 
 -export_type([error_instance/2, ok/1, error/1]).
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_fail).
 -behaviour(monad_runner).
 
+-export([type/0]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
@@ -37,6 +39,9 @@
 
 -type ok(A) :: ok | {ok, A}.
 -type error(E) :: {error, E}.
+
+type() ->
+    error.
 
 -spec fmap(fun((A) -> B), error_instance(E, A)) -> error_instance(E, B).
 fmap(F, E) ->

@@ -14,6 +14,7 @@
 
 -define(CONT_T_MONAD, {?MODULE, monad}).
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -26,6 +27,7 @@
 
 -export_type([cont_t/3]).
 
+-export([type/0]).
 -export([cont_t/1, run_cont_t/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
@@ -58,6 +60,9 @@
 -opaque cont_t(R, M, A) :: {cont_t, inner_cont_t(R, M, A)}.
 -type inner_cont_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
 -type t(M) :: {cont_t, M}.
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec cont_t(inner_cont_t(R, M, A)) -> cont_t(R, M, A).
 cont_t(Inner) ->

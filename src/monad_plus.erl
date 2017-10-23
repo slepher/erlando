@@ -30,20 +30,11 @@
 mzero() ->
     undetermined:new(fun(Module) -> Module:mzero() end).
 
-
-mplus({undetermined, _} = UA, UB) ->
-    undetermined:map(
-      fun(Module, MB) ->
-              MA = undetermined:run(UA, Module),
-              Module:mplus(MA, MB)
-      end, UB);
 mplus(UA, UB) ->
-    undetermined:map(
-      fun(Module, MA) ->
-              MB = undetermined:run(UB, Module),
+    undetermined:map_pair(
+      fun(Module, MA, MB) ->
               Module:mplus(MA, MB)
-      end, UA).
-
+      end, UA, UB, ?MODULE).
 
 %% Utility functions
 -spec guard(boolean()) -> monad:monadic(_M, _A).

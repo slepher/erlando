@@ -10,14 +10,15 @@
 
 -include("op.hrl").
 
+-behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_reader).
 -behaviour(monad_runner).
--behaviour(profunctor).
 
 %% API
+-export([type/0]).
 % functor instance.
 -export([fmap/2, '<$'/2]).
 % applicative instance.
@@ -28,10 +29,6 @@
 -export([ask/0, reader/1, local/2]).
 % monad runner instance.
 -export([run_nargs/0, run/2]).
-% profunctor instance
--export([lmap/1, rmap/1, dimap/2]).
-% choice instance
--export([left/1, right/1]).
 
 -export(['.'/2]).
 -export([const/1]).
@@ -40,6 +37,9 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+type() ->
+    function.
+
 -spec fmap(fun((A) -> B), fun((R) -> A)) -> fun((R) -> B).
 fmap(F, FA) ->
     '.'(F, FA).
@@ -94,31 +94,6 @@ run_nargs() ->
 
 run(F, [A]) ->
     F(A).
-
-dimap(AB, CD) ->
-    fun(BC) ->
-            CD /'.'/ BC /'.'/ AB
-    end.
-
-lmap(AB) ->
-    fun(BC) ->
-         BC /'.'/ AB
-    end.
-
-rmap(BC) ->
-    fun(AB) ->
-            BC /'.'/ AB
-    end.
-
-right(PAB) ->
-    fun({right, A}) ->
-            {right, PAB(A)};
-       ({left, C}) ->
-            {left, C}
-    end.
-
-left(PAB) ->
-    choice:default_left(PAB, ?MODULE).
 
 '.'(F, G) ->
     fun(X) -> F(G(X)) end.
