@@ -28,12 +28,7 @@
 %%%===================================================================
 
 module(Type, Behaviour) ->
-    case gen_server:call(?SERVER, {module, Type, Behaviour}) of
-        {just, Module} ->
-            Module;
-        nothing ->
-            exit({unregisted_module, {Type, Behaviour}})
-    end.
+    typeclass:module(Type, Behaviour).
 
 register_application(Application) ->
     case application:get_key(Application, modules) of
@@ -72,6 +67,7 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+    load_module(maps:new()),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -104,6 +100,7 @@ handle_call({register_modules, Modules}, _From, #state{behaviour_modules = Behav
                           Acc0
                   end
           end, BehaviourModules, Modules),
+    load_module(NBehaviourModules),
     {reply, ok, State#state{behaviour_modules = NBehaviourModules}};
 
 handle_call({module, Type, Behaviour}, _From, #state{behaviour_modules = BehaviourModules} = State) ->
@@ -174,10 +171,28 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+load_module(BehaviourModules) ->
+    Module = generate_module(BehaviourModules),
+    {ok, Mod, Bin} = compile:forms(Module),
+    code:load_binary(Mod, [], Bin).
+
+generate_module(BehaviourModules) ->
+    TypeclassModule = {attribute,0,module,typeclass},
+    Export = {attribute,0,export,[{module,2}]},
+    Clauses = 
+        maps:fold(
+          fun({Type, Behaviour}, Module, Acc) ->
+                  [module_clause(0, Type, Behaviour, Module)|Acc]
+          end, [], BehaviourModules),
+    LastClause = {clause, 0, [{var, 0, 'A'}, {var, 0, 'B'}], [], 
+                  [{call, 0, {atom, 0, exit}, 
+                    [{tuple, 0, [{atom, 0, unregisted_module}, {tuple, 0, [{var, 0, 'A'}, {var, 0, 'B'}]}]}]}]},
+    Function = {function, 0, module, 2, lists:reverse([LastClause|Clauses])},
+    [TypeclassModule, Export, Function].
+
 module_clause(Line, Type, Behaviour, Module) ->
     {clause, 1, [{atom, Line, Type}, {atom, Line, Behaviour}], [],
      [{atom, Line, Module}]}.
-
 
 behaviours(Module) ->
     Attributes = Module:module_info(attributes),

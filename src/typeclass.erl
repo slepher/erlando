@@ -4,46 +4,18 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 23 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 24 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(type).
-
--callback type() -> atom().
+-module(typeclass).
 
 %% API
--export([type/1, module/2, default_type/1]).
+-export([module/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-type(L) when is_list(L) ->
-    list;
-type(F) when is_function(F, 1) ->
-    function;
-type({ok, _}) ->
-    error;
-type(ok) ->
-    error;
-type({error, _}) ->
-    error;
-type({just, _}) ->
-    maybe;
-type(nothing) ->
-    maybe;
-type({left, _}) ->
-    either;
-type({right, _}) ->
-    either;
-type({Module, _Instance}) ->
-    Module.
-
-module(Typeclass, Instance) ->
-    Type = type(Instance),
-    typeclass:module(Type, Typeclass).
-
-default_type(Module) ->
-    Module.
+module(A, B) ->
+    exit({unregisted_module, {A, B}}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -54,4 +26,3 @@ default_type(Module) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
