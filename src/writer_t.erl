@@ -13,8 +13,8 @@
 
 -export_type([writer_t/3]).
 
--type writer_t(W, M, A) :: {writer_t, inner_writer_t(W, M, A)}.
--type inner_writer_t(W, M, A) :: monad:monadic(M, {A, [W]}).
+-type writer_t(W, M, A) :: {writer_t, inner_t(W, M, A)}.
+-type inner_t(W, M, A) :: monad:monadic(M, {A, [W]}).
 -type t(M) :: {writer_t, M}.
 
 -behaviour(type).
@@ -25,48 +25,49 @@
 -behaviour(monad_fail).
 -behaviour(alternative).
 -behaviour(monad_plus).
+-behaviour(monad_runner).
 
--export([writer_t/1, run_writer_t/1]).
-
+-export([new/1, writer_t/1, run_writer_t/1]).
 -export([type/0]).
-
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export([pure/2]).
 -export(['>>='/2, '>>'/2, return/1]).
+-export([return/2]).
 -export([lift/1]).
 -export([fail/1]).
--export([tell/1, listen/1, listens/2, pass/1, censor/2]).
+-export([writer/1, tell/1, listen/1, pass/1]).
+-export([writer/2, tell/2]).
 -export([empty/0, '<|>'/2]).
+-export([empty/1]).
 -export([mzero/0, mplus/2]).
--export([exec_writer/1, map_writer/2]).
--export([run_writer/1]).
+-export([mzero/1]).
+-export([run_nargs/0, run_m/2]).
+-export([exec/1, map/2]).
+-export([run/1]).
 
--export([new/1]).
--export([fmap/3]).
--export([mzero/1, mplus/3]).
--export(['>>='/3, return/2, fail/2, lift/2]).
--export([tell/2, listen/2, listens/3, pass/2, censor/3]).
--export([exec_writer/2, map_writer/3]).
--export([run_writer/2]).
+-spec new(M) -> t(M) when M :: monad:monad().
+new(M) ->
+    {?MODULE, M}.
 
-type() ->
-    type:default_type(?MODULE).
-
--spec writer_t(inner_writer_t(W, M, A)) -> writer_t(W, M, A).
+-spec writer_t(inner_t(W, M, A)) -> writer_t(W, M, A).
 writer_t(Inner) ->
     {?MODULE, Inner}.
 
--spec run_writer_t(writer_t(W, M, A)) -> inner_writer_t(W, M, A).
+-spec run_writer_t(writer_t(W, M, A)) -> inner_t(W, M, A).
 run_writer_t({?MODULE, Inner}) ->
     Inner;
 run_writer_t({undetermined, _} = U) ->
     run_writer_t(undetermined:run(U, ?MODULE));
 run_writer_t(Other) ->
-    exit({invalid_writer_t, Other}).
+    exit({invalid_t, Other}).
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), writer_t(W, M, A)) -> writer_t(W, M, B).
 fmap(F, WTA) ->
-    map_writer(
+    map(
       fun(FA) ->
               fun({A, Ws}) ->  {F(A), Ws} end /'<$>'/ FA
       end, WTA).
@@ -76,7 +77,10 @@ fmap(F, WTA) ->
 
 -spec pure(A) -> writer_t(_W, _M, A).
 pure(A) ->
-    writer_t(applicative:pure({A, []})).
+    pure(A, applicative).
+
+pure(A, IM) ->
+    writer_t(applicative:pure({A, []}, IM)).
 
 -spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 '<*>'(WTF, WTA) ->
@@ -86,7 +90,7 @@ pure(A) ->
                         {F(A), W1 ++ W2}
                 end
         end,
-    writer_t((AF /'<$>'/ run_writer(WTF)) /'<*>'/ run_writer_t(WTA)).
+    writer_t(applicative:lift_a2(AF, run(WTF), run_writer_t(WTA))).
 
 -spec lift_a2(fun((A, B) -> C), writer_t(W, M, A), writer_t(W, M, B)) -> writer_t(W, M, C).
 lift_a2(F, WTA, WTB) ->
@@ -114,7 +118,10 @@ lift_a2(F, WTA, WTB) ->
 
 -spec return(A) -> writer_t(_W, _M, A).
 return(A) -> 
-    monad:default_return(A, ?MODULE).
+    return(A, monad).
+
+return(A, IM) ->
+    writer_t(monad:return({A, []}, IM)).
 
 -spec lift(monad:monadic(M, A)) -> writer_t(_W, M, A).
 lift(MA) ->
@@ -124,175 +131,75 @@ lift(MA) ->
 fail(E) ->
     writer_t(monad_fail:fail(E)).
 
+writer({A, Ws}) ->
+    writer({A, Ws}, monad).
+
+writer({A, Ws}, IM) ->
+    writer_t(monad:return({A, Ws}, IM)).
+
 -spec tell([W]) -> writer_t(W, _M, ok).
 tell(Ws) ->
-    writer_t(monad:return({ok, Ws})).
+    tell(Ws, monad).
+    
+tell(Ws, IM) ->
+    writer_t(monad:return({ok, Ws}, IM)).
 
 -spec listen(writer_t(W, M, A)) -> writer_t(W, M, {A, [W]}).
 listen(WTA) ->
-    listens(fun(Ws) -> Ws end, WTA).
-
--spec listens(fun(([W]) -> B), writer_t(W, M, A)) -> writer_t(W, M, {A, B}).
-listens(F, WTA) ->
-    map_writer(
-      fun(MA) ->
-              fun({A, Ws}) -> {{A, F(Ws)}, Ws} end /'<$>'/ MA
+    map(
+      fun(WIM) ->
+              NF = fun({A, Ws}) -> {{A, Ws}, Ws} end,
+              monad:lift_m(NF, WIM)
       end, WTA).
 
 -spec pass(writer_t(W, M, {A, fun(([W]) -> [W])})) -> writer_t(W, M, A).
 pass(WTAK) ->
-    map_writer(
+    map(
       fun(MAK) ->
               fun({{A, F}, Ws}) -> {A, F(Ws)} end /'<$>'/ MAK
       end, WTAK).
 
--spec censor(fun(([W]) -> [W]), writer_t(W, M, A)) -> writer_t(W, M, A).
-censor(F, WTA) ->
-    map_writer(
-      fun(MA) ->
-              fun({A, Ws}) -> {A, F(Ws)} end /'<$>'/ MA
-      end, WTA).
-
 empty() ->
-    mzero().
+    empty(alternative).
+
+empty(IM) ->
+    writer_t(alternative:empty(IM)).
 
 '<|>'(WTA, WTB) ->
-    mplus(WTA, WTB).
+    writer_t(run_writer_t(WTA) /'<|>'/ run_writer_t(WTB)).
 
--spec mzero() -> writer_t(_W, _M, _A).
 mzero() ->
-    writer_t(monad_plus:mzero()).
+    mzero(monad_plus).
+
+-spec mzero(t(M)) -> writer_t(_W, M, _A).
+mzero(IM) ->
+    writer_t(monad_plus:mzero(IM)).
 
 -spec mplus(writer_t(W, M, A), writer_t(W, M, A)) -> writer_t(W, M, A).
 mplus(WTA, WTB) ->
-    writer_t(
-      monad_plus:mplus(run_writer_t(WTA), run_writer_t(WTB))
-     ).
+    writer_t(monad_plus:mplus(run_writer_t(WTA), run_writer_t(WTB))).
 
--spec exec_writer(writer_t(W, M, _A)) -> monad:monadic(M, [W]).
-exec_writer(WTA) ->
+run_nargs() ->
+    0.
+
+run_m(WTA, []) ->
+    run_writer_t(WTA).
+
+-spec run(writer_t(_W, M, A)) -> monad:monadic(M, A).
+run(WTA) ->
+    do([monad || 
+           {A, _Ws} <- run_writer_t(WTA),
+           return(A)
+       ]).
+
+-spec exec(writer_t(W, M, _A)) -> monad:monadic(M, [W]).
+exec(WTA) ->
     do([monad || 
            {_A, Ws} <- run_writer_t(WTA),
            return(Ws)
        ]).
 
--spec map_writer(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
+-spec map(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
                    writer_t(WA, M, A)) -> writer_t(WB, N, B).
-map_writer(F, X) ->
+map(F, X) ->
     writer_t(F(run_writer_t(X))).
-
--spec run_writer(writer_t(_W, M, A)) -> monad:monadic(M, A).
-run_writer(WTA) ->
-    do([monad || 
-           {A, _Ws} <- run_writer_t(WTA),
-           return(A)
-       ]).
-
-%%----------------------------------------------------------------------------------------
-%%
-%% old monad trans functions below
-%%
-%%----------------------------------------------------------------------------------------
--spec new(M) -> t(M) when M :: monad:monad().
-new(M) ->
-    {?MODULE, M}.
-
--spec fmap(fun((A) -> B), writer_t(W, M, A), t(M)) -> writer_t(W, M, B).
-fmap(F, WTA, {?MODULE, IM}) ->
-    map_writer(
-      fun(MA) ->
-              do([IM ||
-                     {A, Ws} <- MA,
-                     return({F(A), Ws})
-                 ])
-      end, WTA).
-
--spec '>>='(writer_t(W, M, A), fun((A) -> writer_t(W, M, B) ), M) -> writer_t(W, M, B).
-'>>='(WTA, KWTB, {?MODULE, IM}) ->
-    writer_t(
-      do([IM || {A, LogsA} <- run_writer_t(WTA),
-                {B, LogsB} <- run_writer_t(KWTB(A)),
-                return({B, LogsA ++ LogsB})
-       ])).
-
--spec return(A, M) -> writer_t(_W, M, A).
-return(A, {?MODULE, IM}) ->
-    writer_t(monad:return({A, []}, IM)).
-
--spec fail(any(), M) -> writer_t(_W, M, _A).
-fail(E, {?MODULE, IM}) ->
-    writer_t(monad:fail(E, IM)).
-
--spec lift(monad:monadic(M, A), t(M)) -> writer_t(_W, M, A).
-lift(MA, {?MODULE, IM}) ->
-    do([IM ||
-           A <- MA,
-           return({A, []})
-       ]).
-
--spec mzero(t(M)) -> writer_t(_W, M, _A).
-mzero({?MODULE, IM}) ->
-    writer_t(monad_plus:mzero(IM)).
-
--spec mplus(writer_t(W, M, A), writer_t(W, M, A), t(M)) -> writer_t(W, M, A).
-mplus(WTA, WTB, {?MODULE, IM}) ->
-    writer_t(
-      monad_plus:mplus(IM, run_writer_t(WTA), run_writer_t(WTB))
-     ).
-
--spec tell([W], t(M)) -> writer_t(W, M, ok).
-tell(Ws, {?MODULE, IM}) ->
-    writer_t(monad:return({ok, Ws}, IM)).
-
--spec listen(writer_t(W, M, A), t(M)) -> writer_t(W, M, {A, [W]}).
-listen(WTA, {?MODULE, _IM} = WT) ->
-    listens(fun(Ws) -> Ws end, WTA, WT).
-
--spec listens(fun(([W]) -> B), writer_t(W, M, A), t(M)) -> writer_t(W, M, {A, B}).
-listens(F, WTA, {?MODULE, IM}) ->
-    map_writer(
-      fun(WIM) ->
-              do([IM ||
-                     {A, Ws} <- WIM,
-                     return({{A, F(Ws)}, Ws})
-                 ])
-      end, WTA).
-
--spec pass(writer_t(W, M, {A, fun(([W]) -> [W])}), t(M)) -> writer_t(W, M, A).
-pass(WTAK, {?MODULE, IM}) ->
-    map_writer(
-      fun(MAK) ->
-              do([IM ||
-                     {{A, F}, Ws} <- MAK,
-                     return({A, F(Ws)})
-                 ])
-      end, WTAK).
-
--spec censor(fun(([W]) -> [W]), writer_t(W, M, A), t(M)) -> writer_t(W, M, A).
-censor(F, WTA, {?MODULE, IM}) ->
-    map_writer(
-      fun(MA) ->
-              do([IM ||
-                     {A, Ws} <- MA,
-                     return({A, F(Ws)})
-                 ])
-      end, WTA).
-
--spec exec_writer(writer_t(W, M, _A), t(M)) -> monad:monadic(M, [W]).
-exec_writer(WTA, {?MODULE, IM}) ->
-    do([IM ||
-           {_, Ws} <- run_writer_t(WTA),
-           return(Ws)
-       ]).
-
--spec map_writer(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
-                   writer_t(WA, M, A), t(M)) -> writer_t(WB, N, B).
-map_writer(F, WTA, {?MODULE, _IM}) ->
-    map_writer(F, WTA).
-
--spec run_writer(writer_t(_W, M, A), t(M)) -> monad:monadic(M, A).
-run_writer(WTA, {?MODULE, IM}) ->
-    do([IM || 
-           {A, _Ws} <- run_writer_t(WTA),
-           return(A)
-       ]).

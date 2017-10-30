@@ -6,58 +6,45 @@
 %%% @end
 %%% Created : 16 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(state_m).
+-module(reader_m).
 
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
--behaviour(monad_state).
+-behaviour(monad_reader).
 
 -compile({parse_transform, import_as}).
 
--import_as({state_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
-                      '>>='/2, '>>'/2]}).
+-import_as({reader_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
+                       '>>='/2, '>>'/2, local/2]}).
 
--define(STATE, {state_t, identity}).
+-define(READER, {reader_t, identity}).
 
-%% API
-% impl of functor.
 -export([fmap/2, '<$'/2]).
-% impl of applcative.
+% impl of applicative
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
-% impl of monad.
+% impl of monad
 -export(['>>='/2, '>>'/2, return/1]).
-% impl of monad_state.
--export([get/0, put/1, state/1]).
--export([eval/2, exec/2, run/2]).
-
+% impl of monad reader
+-export([ask/0, reader/1, local/2]).
+-export([run/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
-
 pure(A) ->
-    state_t:pure(A, identity).
+    reader_t:pure(A, identity).
 
 return(A) ->
-    state_t:return(A, identity).
+    reader_t:return(A, identity).
 
-get() ->
-    state_t:get(identity).
+ask() ->
+    reader_t:ask(identity).
 
-put(S) ->
-    state_t:put(S, identity).
+reader(R) ->
+    reader_t:reader(R, identity).
 
-state(F) ->
-    state_t:state(F, identity).
-
-eval(SM, S) ->
-    identity:run(state_t:eval(SM, S)).
-
-exec(SM, S) ->
-    identity:run(state_t:exec(SM, S)).
-
-run(SM, S) ->
-    identity:run(state_t:run(SM, S)).
+run(RTA, R) ->
+    identity:run(reader_t:run(RTA, R)).
 
 %%--------------------------------------------------------------------
 %% @doc

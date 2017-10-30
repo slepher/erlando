@@ -39,7 +39,7 @@
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
--export([run_nargs/0, run/2]).
+-export([run_nargs/0, run_m/2]).
 -export([fold_map/2]).
 -export([traverse/2, sequence_a/1]).
 
@@ -96,7 +96,7 @@ fail(_E) -> [].
 run_nargs() ->
     0.
 
-run(As, []) ->
+run_m(As, []) ->
     As.
 
 fold_map(F, As) ->

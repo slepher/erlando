@@ -29,8 +29,8 @@
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
--export([run_nargs/0, run/2]).
--export([run_identity/1]).
+-export([run_nargs/0, run_m/2]).
+-export([run/1]).
 
 -type identity(A) :: {?MODULE, A}.
 
@@ -83,8 +83,8 @@ return(A) ->
 run_nargs() ->
     0.
 
-run(I, []) ->
-    run_identity(I).
+run_m(I, []) ->
+    run(I).
 
-run_identity(I) ->
+run(I) ->
     two_tuple:run(identity, I).

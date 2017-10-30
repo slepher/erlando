@@ -18,23 +18,24 @@
 -compile({parse_transform, do}).
 
 -export([mzero/0, mplus/2]).
+-export([mzero/1]).
 -export([guard/1, msum/1, mfilter/2]).
-
-%% functions for old monad transform functions
--export([mzero/1, mplus/3]).
 
 %% MonadPlus primitives
 -callback mzero() -> monad:monadic(_M, _A).
 -callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
 
 mzero() ->
-    undetermined:new(fun(Module) -> Module:mzero() end).
+    undetermined:new(fun(MPlus) -> mzero(MPlus) end).
 
 mplus(UA, UB) ->
     undetermined:map_pair(
       fun(Module, MA, MB) ->
               Module:mplus(MA, MB)
       end, UA, UB, ?MODULE).
+
+mzero(MPlus) ->
+    monad_trans:apply_fun(mzero, [], MPlus).
 
 %% Utility functions
 -spec guard(boolean()) -> monad:monadic(_M, _A).
@@ -48,13 +49,3 @@ msum(List) ->
 -spec mfilter(fun( (A) -> boolean() ), monad:monadic(M, A)) -> monad:monadic(M, A).
 mfilter(Pred, X) ->
     do([monad || A <- X, guard(Pred(A))]).
-
-mzero({T, M}) ->
-    T:mzero(M);
-mzero(M) ->
-    M:mzero().
-
-mplus(MA, MB, {T, M}) ->
-    T:mplus(MA, MB, M);
-mplus(MA, MB, M) ->
-    M:mplus(MA, MB).

@@ -15,6 +15,7 @@
 
 -export([lift/1]).
 -export([lift/2]).
+-export([apply_fun/3]).
 
 %% Lift a computation form the argument monad to the constructed
 %% monad.
@@ -22,10 +23,14 @@
 
 -spec lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
 lift(MA) ->
-    undetermined:new(fun(Module) -> Module:lift(MA) end).
+    undetermined:new(fun(MonadTrans) -> lift(MA, MonadTrans) end).
 
 -spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
 lift(X, {T, _IM} = M) ->
     T:lift(X, M).
 
+apply_fun(F, Args, {T, M}) when is_atom(T) ->
+    erlang:apply(T, F, Args ++ [M]);
+apply_fun(F, Args, M) when is_atom(M) ->
+    erlang:apply(M, F, Args).
 

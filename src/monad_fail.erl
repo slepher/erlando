@@ -10,6 +10,7 @@
 
 %% API
 -export([fail/1]).
+-export([fail/2]).
 
 -callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
 
@@ -18,7 +19,10 @@
 %%%===================================================================
 
 fail(E) ->
-    undetermined:new(fun(Module) -> Module:fail(E) end).
+    undetermined:new(fun(MonadFail) -> fail(E, MonadFail) end).
+
+fail(E, MonadFail) ->
+    monad_trans:apply_fun(fail, [E], MonadFail).
 
 %%--------------------------------------------------------------------
 %% @doc

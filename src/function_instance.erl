@@ -28,7 +28,7 @@
 % monad reader instance.
 -export([ask/0, reader/1, local/2]).
 % monad runner instance.
--export([run_nargs/0, run/2]).
+-export([run_nargs/0, run_m/2]).
 
 -export(['.'/2]).
 -export([const/1]).
@@ -92,7 +92,7 @@ local(F, FI) ->
 run_nargs() ->
     1.
 
-run(F, [A]) ->
+run_m(F, [A]) ->
     F(A).
 
 '.'(F, G) ->

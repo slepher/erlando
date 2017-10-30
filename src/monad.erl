@@ -23,7 +23,7 @@
 %% bind is same as >>=, then is same as >> 
 -export([bind/2, then/2]).
 %% utility function join
--export([join/1]).
+-export([join/1, lift_m/2]).
 -export([as/2, empty/1, run/2, id/1]).
 
 % depricated functions
@@ -55,7 +55,11 @@
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
-    undetermined:new(fun(Module) -> Module:return(A) end).
+    undetermined:new(fun(Monad) -> return(A, Monad) end).
+
+-spec return(M, A) -> monad:monadic(M, A) when M :: monad().
+return(A, Monad) ->
+    monad_trans:apply_fun(return, [A], Monad).
 
 -spec 'default_>>'(monadic(M, _A), monadic(M, B), module()) -> monadic(M, B).
 'default_>>'(MA, MB, Module) ->
@@ -63,7 +67,7 @@ return(A) ->
 
 -spec default_return(A, module()) -> monad:monadic(M, A) when M :: monad().
 default_return(A, Module) ->
-    Module:pure(A).
+    monad_trans:apply_fun(pure, [A], Module).
 
 -spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 bind(X, F) ->
@@ -77,11 +81,12 @@ then(X, F) ->
 join(MMA) ->
     bind(MMA, fun(MA) -> MA end).
 
+lift_m(F, X) ->
+    lift_m(F, X, monad).
 
-%% build some typed monad
-as(A, {T, IM}) when is_atom(T) ->
-    T:lift(as(A, IM), {T, IM});
-as(A, M) when is_atom(M) ->
+as(A, {T, M}) ->
+    T:lift(as(A, M));
+as(A, M) ->
     M:return(A).
 
 id(M) ->
@@ -109,7 +114,7 @@ map_m(Monad, _F, []) ->
     return(Monad, []).
 
 -spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
-lift_m(Monad, F, X) ->
+lift_m(F, X, Monad) ->
     do([Monad || 
            A <- X,
            return(F(A))
@@ -119,20 +124,10 @@ lift_m(Monad, F, X) ->
 -spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='(X, K, monad) ->
     monad:'>>='(X, K);
-'>>='(UX, K, {T, M}) ->
-    T:'>>='(undetermined:run(UX, T), fun(A) -> undetermined:run(K(A), T) end, {T, M});
+'>>='(UX, K, {T, _} = M) ->
+    T:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end);
 '>>='(UX, K, M) ->
     M:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end).
 
--spec return(M, A) -> monad:monadic(M, A) when M :: monad().
-return(A, {T, M}) ->
-    T:return(A, {T, M});
-return(A, M) ->
-    M:return(A).
-
-fail(E, {T, M}) ->
-    T:fail(E, {T, M});
-fail(E, monad) ->
-    monad_fail:fail(E);
-fail(E, M) ->
-    M:fail(E).
+fail(E, MonadFail) ->
+    monad_fail:fail(E, MonadFail).

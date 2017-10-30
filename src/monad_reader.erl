@@ -13,6 +13,7 @@
 -compile({parse_transform, do}).
 
 -export([ask/0, reader/1, local/2, asks/1]).
+-export([ask/1, reader/2]).
 
 -callback ask() -> monad:monadic(M, _R) when M :: monad:monad().
 -callback local(fun((R) -> R), monad:monadic(M, R)) -> monad:monadic(M, R) when M :: monad:monad().
@@ -20,10 +21,10 @@
 
 
 ask() ->
-    undetermined:new(fun(Module) -> Module:ask() end).
+    undetermined:new(fun(Module) -> ask(Module) end).
 
 reader(F) ->
-    undetermined:new(fun(Module) -> Module:reader(F) end).
+    undetermined:new(fun(Module) -> reader(F, Module) end).
 
 local(F, UA) ->
     undetermined:map(
@@ -36,3 +37,10 @@ asks(F) ->
            A <- ask(),
            return(F(A))
        ]).
+
+ask(MonadTrans) ->
+    monad_trans:apply_fun(ask, [], MonadTrans).
+
+reader(F, MonadTrans) ->
+    monad_trans:apply_fun(reader, [F], MonadTrans).
+    

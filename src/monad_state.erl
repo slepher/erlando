@@ -15,12 +15,22 @@
 -callback state(fun((S) -> {A, S})) -> monad:monadic(M, A)  when M :: monad:monad().
 
 -export([get/0, put/1, state/1]).
+-export([get/1, put/2, state/2]).
 
 get() ->
-    undetermined:new(fun(Module) -> Module:get() end).
+    undetermined:new(fun(Module) -> monad_state:get(Module) end).
 
 put(S) ->
-    undetermined:new(fun(Module) -> Module:put(S) end).
+    undetermined:new(fun(Module) -> monad_state:put(S, Module) end).
 
 state(F) ->
-    undetermined:new(fun(Module) -> Module:state(F) end).
+    undetermined:new(fun(Module) -> monad_state:state(F, Module) end).
+
+get(Module) ->
+    monad_trans:apply_fun(get, [], Module).
+
+put(S, Module) ->
+    monad_trans:apply_fun(put, [S], Module).
+
+state(F, Module) ->
+    monad_trans:apply_fun(state, [F], Module).

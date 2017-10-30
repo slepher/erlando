@@ -14,6 +14,7 @@
 
 %% API
 -export([pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]).
+-export([pure/2]).
 -export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
 -export([ap/2, '<**>'/2, lift_a3/4]).
 
@@ -60,6 +61,9 @@ lift_a2(F, UA, UB) ->
       fun(Module, AA, AB) ->
               Module:'<*'(AA, AB)
       end, UA, UB, ?MODULE).
+
+pure(A, Module) ->
+    monad_trans:apply_fun(pure, [A], Module).
 
 'default_<*>'(AF, AA, Module) ->
     FA = 

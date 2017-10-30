@@ -41,7 +41,7 @@
 %% impl of monad plus.
 -export([mzero/0, mplus/2]).
 %% impl of monad runner.
--export([run_nargs/0, run/2]).
+-export([run_nargs/0, run_m/2]).
 
 -type maybe(A) :: {just, A} | nothing.
 
@@ -118,6 +118,6 @@ mplus(MA, MB) ->
 run_nargs() ->
     0.
 
--spec run(maybe(A), [any()]) -> maybe(A).
-run(MA, []) ->
+-spec run_m(maybe(A), [any()]) -> maybe(A).
+run_m(MA, []) ->
     MA.

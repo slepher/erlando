@@ -61,12 +61,16 @@ alias_fun(Module, _AttLine, {{Dest, Arity}, Alias}) when is_atom(Module) andalso
                     Vars},
             {function, Line, Alias, Arity, [{clause, Line, Vars, [], [Body]}]}
     end;
+alias_fun(Module, AttLine, {Dest, Arity}) when is_atom(Module) andalso 
+                                               is_atom(Dest) andalso
+                                               is_integer(Arity) ->
+    alias_fun(Module, AttLine, {{Dest, Arity}, Dest});
 alias_fun(_Module, AttLine, WrongThing) ->
     fun (_Line) ->
             Str = io_lib:format("~p", [WrongThing]),
             {error, {AttLine, erl_parse,
                      ["-import_as: Expected a pair of "
-                      "{target_fun/arity, alias}, not: ", Str]}}
+                      "{target_fun/arity, alias} or target_fun/arity, not: ", Str]}}
     end.
 
 general_error_fun(AttLine, WrongThing) ->

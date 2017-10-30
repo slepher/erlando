@@ -4,60 +4,41 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 16 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 29 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(state_m).
-
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_state).
+-module(writer_m).
 
 -compile({parse_transform, import_as}).
 
--import_as({state_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
-                      '>>='/2, '>>'/2]}).
-
--define(STATE, {state_t, identity}).
+-import_as({writer_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
+                       '>>='/2, '>>'/2, listen/1, pass/1]}).
+                       
+-define(WRITER, {writer_t, identity}).
 
 %% API
-% impl of functor.
 -export([fmap/2, '<$'/2]).
-% impl of applcative.
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
-% impl of monad.
 -export(['>>='/2, '>>'/2, return/1]).
-% impl of monad_state.
--export([get/0, put/1, state/1]).
--export([eval/2, exec/2, run/2]).
+-export([writer/1, tell/1, listen/1, pass/1]).
+-export([run/1]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
 pure(A) ->
-    state_t:pure(A, identity).
+    writer_t:pure(A, identity).
 
 return(A) ->
-    state_t:return(A, identity).
+    writer_t:return(A, identity).
 
-get() ->
-    state_t:get(identity).
+writer({A, Ws}) ->
+    writer_t:writer({A, Ws}, identity).
 
-put(S) ->
-    state_t:put(S, identity).
+tell(Ws) ->
+    writer_t:tell(Ws, identity).
 
-state(F) ->
-    state_t:state(F, identity).
-
-eval(SM, S) ->
-    identity:run(state_t:eval(SM, S)).
-
-exec(SM, S) ->
-    identity:run(state_t:exec(SM, S)).
-
-run(SM, S) ->
-    identity:run(state_t:run(SM, S)).
+run(WA) ->
+    identity:run(writer_t:run(WA)).
 
 %%--------------------------------------------------------------------
 %% @doc

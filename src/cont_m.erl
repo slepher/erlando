@@ -4,35 +4,43 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 15 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created : 29 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(alternative).
+-module(cont_m).
 
--compile({parse_transform, cut}).
+-compile({parse_transform, import_as}).
+
+-import_as({cont_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
+                     '>>='/2, '>>'/2, callCC/1]}).
+
+-define(CONT, {cont_t, identity}).
+
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_cont).
+
 %% API
--export([empty/0, '<|>'/2]).
--export([empty/1]).
-
--callback empty() -> applicative:applicative(_F, _A).
--callback '<|>'(applicative:applicative(F, A), 
-                applicative:applicative(F, A)) -> applicative:applicative(F, A).
-
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
+-export([callCC/1]).
+-export([run/2, eval/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
+pure(A) ->
+    cont_t:pure(A, identity).
 
-empty() ->
-    undetermined:new(fun(Module) -> Module:empty() end).
+return(A) ->
+    cont_t:return(A, identity).
 
-'<|>'(UA, UB) ->
-    undetermined:map_pair(
-      fun(Module, AA, AB) ->
-              Module:'<|>'(AA, AB)
-      end, UA, UB, ?MODULE).
+run(CA, CC) ->
+    identity:run(cont_t:run(CA, CC)).
 
-empty(Alternative) ->
-    monad_trans:apply_fun(empty, [], Alternative).
-    
+eval(CA) ->
+    identity:run(cont_t:eval(CA)).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

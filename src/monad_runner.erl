@@ -9,26 +9,27 @@
 -module(monad_runner).
 
 -callback run_nargs() -> integer().
--callback run(monad:monadic(_M, A), [any()]) -> monad:monadic(_N, A) | A.
+-callback run_m(monad:monadic(_M, A), [any()]) -> monad:monadic(_N, A) | A.
 
 %% API
--export([run/2]).
+-export([run_m/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-run(UA, Args) ->
+run_m(UA, Args) ->
     undetermined:map(
       fun(Module, MA) ->
+              io:format("module is ~p", [Module]),
               N = Module:run_nargs(),
               IsTransformer = lists:member({lift,1}, Module:module_info(exports)),
               case N =< length(Args) of
                   true ->
                       {H, T} = lists:split(N, Args),
-                      Inner = Module:run(MA, H),
+                      Inner = Module:run_m(MA, H),
                       case IsTransformer of
                           true ->
-                              run(Inner, T);
+                              run_m(Inner, T);
                           false ->
                               Inner
                       end;

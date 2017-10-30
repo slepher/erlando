@@ -30,8 +30,8 @@
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
--export([run_nargs/0, run/2]).
--export([run_error/1]).
+-export([run_nargs/0, run_m/2]).
+-export([run/1]).
 
 %% This is really instance (Error e) => Monad (Either e) with 'error'
 %% for Left and 'ok' for Right.
@@ -104,10 +104,10 @@ fail(E) ->
 run_nargs() ->
     0.
 
-run(EA, []) ->
+run_m(EA, []) ->
     EA.
 
-run_error({undetermined, _} = U) ->
-    run_error(undetermined:run(U, ?MODULE));
-run_error(EM) ->
+run({undetermined, _} = U) ->
+    run(undetermined:run(U, ?MODULE));
+run(EM) ->
     EM.
