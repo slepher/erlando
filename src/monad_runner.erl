@@ -20,7 +20,6 @@
 run_m(UA, Args) ->
     undetermined:map(
       fun(Module, MA) ->
-              io:format("module is ~p", [Module]),
               N = Module:run_nargs(),
               IsTransformer = lists:member({lift,1}, Module:module_info(exports)),
               case N =< length(Args) of
