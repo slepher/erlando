@@ -19,6 +19,8 @@
 
 -export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
+-export([gets/1, modify/1]).
+-export([gets/2, modify/2]).
 -export([default_get/1, default_put/2, default_state/2]).
 
 get() ->
@@ -38,6 +40,18 @@ put(S, Module) ->
 
 state(F, Module) ->
     monad_trans:apply_fun(state, [F], Module).
+
+gets(F) ->
+    gets(F, monad_state).
+
+gets(F, MonadState) ->
+    functor:fmap(F, get(MonadState)).
+
+modify(F) ->
+    modify(F, monad_state).
+
+modify(F, Module) ->
+    state(fun(S) -> {ok, F(S)} end, Module).
 
 default_get(MonadState) ->
     state(fun(S) -> {S, S} end, MonadState).

@@ -19,6 +19,7 @@
 -module(list_instance).
 
 -compile({parse_transform, cut}).
+-compile({parse_transform, do}).
 
 -include("op.hrl").
 
@@ -41,7 +42,7 @@
 -export([fail/1]).
 -export([run_nargs/0, run_m/2]).
 -export([fold_map/2]).
--export([traverse/2, sequence_a/1]).
+-export([traverse/2, sequence_a/1, map_m/2, sequence/1]).
 
 -export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
@@ -113,6 +114,19 @@ traverse(_A_FB, []) ->
 sequence_a(TFA) ->
     traversable:default_sequence_a(TFA).
 
+map_m(A_MB, [MH|TM]) ->
+    do([monad ||
+           H <- MH,
+           T <- map_m(A_MB, TM),
+           return([H|T])
+       ]);
+map_m(_A_MB, []) ->
+    monad:return([]).
+
+
+sequence(TMA) ->
+    map_m(function_instance:id(), TMA).
+           
 empty() ->
     mzero().
 
