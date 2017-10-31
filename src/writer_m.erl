@@ -26,16 +26,16 @@
 %%% API
 %%%===================================================================
 pure(A) ->
-    writer_t:pure(A, identity).
+    writer_t:pure(A, ?WRITER).
 
 return(A) ->
-    writer_t:return(A, identity).
+    writer_t:return(A, ?WRITER).
 
 writer({A, Ws}) ->
-    writer_t:writer({A, Ws}, identity).
+    writer_t:writer({A, Ws}, ?WRITER).
 
 tell(Ws) ->
-    writer_t:tell(Ws, identity).
+    writer_t:tell(Ws, ?WRITER).
 
 run(WA) ->
     identity:run(writer_t:run(WA)).

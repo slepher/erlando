@@ -9,7 +9,7 @@
 -module(error_t).
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
--compile({no_auto_import, [get/1, put/2]}).
+-compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
 
@@ -22,22 +22,27 @@
 -behaviour(monad_trans).
 -behaviour(monad_reader).
 -behaviour(monad_state).
+-behaviour(alternative).
+-behaviour(monad_plus).
 -behaviour(monad_runner).
 
--export([type/0]).
 -export([new/1, error_t/1, run_error_t/1]).
+-export([type/0]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export([pure/2]).
 -export(['>>='/2, '>>'/2, return/1]).
--export([return/2]).
--export([lift/1]).
+-export([return/2, lift/1]).
 -export([fail/1]).
 -export([fail/2]).
 -export([ask/0, reader/1, local/2]).
 -export([ask/1, reader/2]).
 -export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
+-export([empty/0, '<|>'/2]).
+-export([empty/1]).
+-export([mzero/0, mplus/2]).
+-export([mzero/1]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1, map/2, with/2]).
 
@@ -77,6 +82,10 @@ fmap(F, ETA) ->
 '<$'(B, ETA) ->
     functor:'default_<$'(B, ETA, ?MODULE).
 
+-spec pure(A) -> error_t(_E, _M, A).
+pure(A) ->
+    return(A).
+
 -spec '<*>'(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
 '<*>'(ETF, ETA) ->
     error_t(
@@ -98,12 +107,8 @@ lift_a2(F, ETA, ETB) ->
 '<*'(ETA, ETB) ->
     applicative:'default_<*'(ETA, ETB, ?MODULE).
 
-pure(A) ->
-    return(A).
-
--spec pure(A, t(M)) -> error_t(_E, M, A).
-pure(A, IM) ->
-    return(A, IM).
+pure(A, {?MODULE, _IM} = ET) ->
+    return(A, ET).
 
 -spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) )) -> error_t(E, M, B).
 '>>='(X, Fun) ->
@@ -120,11 +125,11 @@ pure(A, IM) ->
 '>>'(ETA, ETB) ->
     monad:'default_>>'(ETA, ETB, ?MODULE).
 
+-spec return(A) -> error_t(_E, _M, A).
 return(A) ->
-    return(A, monad).
+    return(A, {?MODULE, monad}).
 
--spec return(A, t(M)) -> error_t(_E, M, A).
-return(A, IM) ->
+return(A, {?MODULE, IM}) ->
     error_t(monad:return(error_instance:pure(A), IM)).
 
 -spec lift(monad:monadic(M, A)) -> error_t(_E, M, A).
@@ -133,24 +138,14 @@ lift(X) ->
 
 -spec fail(E) -> error_t(E, _M, _A).
 fail(E) ->
-    fail(E, monad).
-    
-fail(E, IM) ->
+    fail(E, {?MODULE, monad}).
+
+fail(E, {?MODULE, IM}) ->
     error_t(monad:return(error_instance:fail(E), IM)).
 
+-spec ask() -> error_t(_E, _M, _A).
 ask() ->
-    ask(monad_reader).
-
--spec ask(t(M)) -> error_t(_E, M, _A).
-ask(IM) ->
-    lift(monad_reader:ask(IM)).
-
-reader(F) ->
-    reader(F, monad_reader).
-
--spec reader(fun((_R) -> A), t(M)) -> error_t(_E, M, A).
-reader(F, IM) ->
-    lift(monad_reader:reader(F, IM)).
+    ask({?MODULE, moand_reader}).
 
 -spec local(fun((R) -> R), error_t(E, M, A)) -> error_t(E, M, A).
 local(F, ETA) ->
@@ -159,26 +154,70 @@ local(F, ETA) ->
               monad_reader:local(F, MA)
       end, ETA).
 
-get() ->
-    get(moand_state).
+-spec reader(fun((_R) -> A)) -> error_t(_E, _M, A).
+reader(F) ->
+    reader(F, {?MODULE, monad_reader}).
 
--spec get(t(M)) -> error_t(_E, M, _A).
-get(IM) ->
+ask({?MODULE, IM}) ->
+    lift(monad_reader:ask(IM)).
+
+reader(F, {?MODULE, IM}) ->
+    lift(monad_reader:reader(F, IM)).
+
+-spec get() -> error_t(_E, _M, _A).
+get() ->
+    get({?MODULE, monad_state}).
+
+-spec put(_S) -> error_t(_E, _M, ok).
+put(S) ->
+    put(S, {?MODULE, monad_state}).
+
+-spec state(fun((S) -> {A, S})) -> error_t(_E, _M, A).
+state(F) ->
+    state(F, {?MODULE, monad_state}).
+
+get({?MODULE, IM}) ->
     lift(monad_state:get(IM)).
 
-put(S) ->
-    put(S, monad_state).
-
--spec put(_S, t(M)) -> error_t(_E, M, ok).
-put(S, IM) ->
+put(S, {?MODULE, IM}) ->
     lift(monad_state:put(S, IM)).
 
-state(F) ->
-    state(F, monad_state).
-
--spec state(fun((S) -> {A, S}), t(M)) -> error_t(_E, M, A).
-state(F, IM) ->
+state(F, {?MODULE, IM}) ->
     lift(monad_state:state(F, IM)).
+
+
+empty() ->
+    mzero().
+
+'<|>'(ETA, ETB) ->
+    mplus(ETA, ETB).
+
+empty({?MODULE, _IM} = ET) ->
+    mzero(ET).
+
+mzero() ->
+    mzero({?MODULE, monad}).
+
+mplus(ETA, ETB) ->
+    error_t(
+      do([monad ||
+             EA <- run_error_t(ETA),
+             case EA of
+                 {error, _} ->
+                     run_error_t(ETB);
+                 _ ->
+                     return(EA)
+             end
+         ])).
+
+mzero({?MODULE, IM}) ->
+    error_t(monad:return({error, error}, IM)).
+
+run_nargs() ->
+    0.
+
+run_m(EM, []) ->
+    run(EM).
 
 -spec run(error_t(E, M, A)) -> monad:monadic(M, error_m:error_m(E, A)).
 run(EM) -> 
@@ -195,9 +234,3 @@ with(F, X) ->
       fun(MA) ->
               fun({error, R}) -> {error, F(R)}; (Val) -> Val end /'<$>'/ MA
       end, X).
-
-run_nargs() ->
-    0.
-
-run_m(EM, []) ->
-    run(EM).

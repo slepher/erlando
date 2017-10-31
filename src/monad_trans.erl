@@ -17,6 +17,8 @@
 -export([lift/2]).
 -export([apply_fun/3]).
 
+
+-callback return(A, M) -> monad:monadic(M, A) when M :: monad:monad(). 
 %% Lift a computation form the argument monad to the constructed
 %% monad.
 -callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
@@ -30,7 +32,7 @@ lift(X, {T, _IM} = M) ->
     T:lift(X, M).
 
 apply_fun(F, Args, {T, M}) when is_atom(T) ->
-    erlang:apply(T, F, Args ++ [M]);
+    erlang:apply(T, F, Args ++ [{T, M}]);
 apply_fun(F, Args, M) when is_atom(M) ->
     erlang:apply(M, F, Args).
 

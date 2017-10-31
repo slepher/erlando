@@ -9,7 +9,7 @@
 -module(reader_t).
 
 -compile({parse_transform, do}).
--compile({no_auto_import, [get/1, put/2]}).
+-compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
 
@@ -25,6 +25,8 @@
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
+-define(READER_T_MONAD, {?MODULE, monad}).
+
 -export_type([reader_t/3]).
 
 -export([type/0]).
@@ -37,9 +39,8 @@
 -export([pure/2]).
 % impl of monad
 -export(['>>='/2, '>>'/2, return/1]).
--export([return/2]).
 % impl of monad_trans
--export([lift/1]).
+-export([return/2, lift/1]).
 % impl of monad fail
 -export([fail/1]).
 -export([fail/2]).
@@ -49,19 +50,16 @@
 % impl of monad state
 -export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
-% impl of alternative.
 -export([empty/0, '<|>'/2]).
 -export([empty/1]).
-% impl of monad_plus.
 -export([mzero/0, mplus/2]).
 -export([mzero/1]).
-% impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
 % reader related functions
 -export([run/2, map/2, with/2]).
 
--opaque reader_t(R, M, A) :: {reader_t, inner_t(R, M, A)}.
--type inner_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
+-opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
+-type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
 
 -type t(M) :: {reader_t, M}.
 
@@ -72,11 +70,11 @@ type() ->
 new(M) ->
     {?MODULE, M}.
 
--spec reader_t(inner_t(R, M, A)) -> reader_t(R, M, A).
+-spec reader_t(inner_reader_t(R, M, A)) -> reader_t(R, M, A).
 reader_t(Inner) ->
     {?MODULE, Inner}.
 
--spec run_reader_t(reader_t(R, M, A)) -> inner_t(R, M, A).
+-spec run_reader_t(reader_t(R, M, A)) -> inner_reader_t(R, M, A).
 run_reader_t({?MODULE, Inner}) ->
     Inner;
 run_reader_t({undetermined, _} = U) ->
@@ -96,10 +94,7 @@ fmap(F, RTA) ->
 
 -spec pure(A) -> reader_t(_R, _M, A).
 pure(A) ->
-    reader_t(fun (_) -> applicative:pure(A) end).
-
-pure(A, IM) ->
-    reader_t(fun (_) -> applicative:pure(A, IM) end).
+    pure(A, {?MODULE, applicative}).
 
 -spec '<*>'(reader_t(R, M, fun((A) -> B)), reader_t(R, M, A)) -> reader_t(R, M, B).
 '<*>'(RTAB, RTA) ->
@@ -120,6 +115,10 @@ lift_a2(F, RTA, RTB) ->
 '<*'(RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?MODULE).
 
+pure(A, {?MODULE, IM}) ->
+    reader_t(fun (_) -> applicative:pure(A, IM) end).
+
+
 -spec '>>='(reader_t(R, M, A), fun( (A) -> reader_t(R, M, B) )) -> reader_t(R, M, B).
 '>>='(RTA, KRTB) ->
     reader_t(
@@ -136,10 +135,10 @@ lift_a2(F, RTA, RTB) ->
 
 -spec return(A) -> reader_t(_R, _M, A).
 return(A) ->
-    return(A, applicative).
+    monad:default_return(A, ?MODULE).
 
-return(A, IM) ->
-    monad:default_return(A, {?MODULE, IM}).
+return(A, {?MODULE, IM}) ->
+    reader_t(fun (_) -> monad:return(A, IM) end).
 
 -spec lift(monad:monadic(M, A)) -> reader_t(_R, M, A).
 lift(X) ->
@@ -147,53 +146,50 @@ lift(X) ->
 
 -spec fail(any()) -> reader_t(_R, _M, _A).
 fail(E) ->
-    fail(E, monad_fail).
+    fail(E, {?MODULE, monad_fail}).
 
--spec fail(any(), t(M)) -> reader_t(_R, M, _A).
-fail(E, IM) ->
-    reader_t(fun (_) -> monad_fail:fail(E, IM) end).
+fail(E, {?MODULE, IM}) ->
+    reader_t(fun(_) -> monad_fail:fail(E, IM) end).
 
 -spec ask() -> reader_t(R, _M, R).
 ask() ->
-    ask(monad).
-
-ask(IM) ->
-    reader_t(fun(R) -> monad:return(R, IM) end).
+    ask({?MODULE, monad}).
 
 -spec local(fun( (R) -> R), reader_t(R, M, A)) -> reader_t(R, M, A).
 local(F, RA) ->
     with(F, RA).
 
--spec reader(fun( (R) -> A)) -> reader_t(R, _M, A).
 reader(F) ->
-    reader(F, monad).
+    reader(F, {?MODULE, monad}).
 
-reader(F, IM) ->
+
+ask({?MODULE, IM}) ->
+    reader_t(fun(R) -> monad:return(R, IM) end).
+
+-spec reader(fun( (R) -> A)) -> reader_t(R, _M, A).
+reader(F, {?MODULE, IM}) ->
     reader_t(fun(R) -> monad:return(F(R), IM) end).
 
 get() ->
-    get(monad_state).
-
-get(IM) ->
-    lift(monad_state:get(IM)).
+    get({?MODULE, monad_state}).
 
 put(S) ->
-    put(S, monad_state).
-
-put(S, IM) ->
-    lift(monad_state:put(S, IM)).
+    put(S, {?MODULE, monad_state}).
 
 state(F) ->
-    state(F, monad_state).
+    state(F, {?MODULE, monad_state}).
 
-state(F, IM) ->
+get({?MODULE, IM}) ->
+    lift(monad_state:get(IM)).
+
+put(S, {?MODULE, IM}) ->
+    lift(monad_state:put(S, IM)).
+
+state(F, {?MODULE, IM}) ->
     lift(monad_state:state(F, IM)).
 
 empty() ->
-    empty(alternative).
-
-empty(IM) ->
-    lift(alternative:empty(IM)).
+    empty({?MODULE, alternative}).
 
 '<|>'(RTA, RTB) ->
     reader_t(
@@ -201,19 +197,22 @@ empty(IM) ->
               alternative:'<|>'(run(RTA, R), run(RTB, R))
       end).
 
-mzero() ->
-    mzero(monad_plus).
+empty({?MODULE, IM}) ->
+    lift(alternative:empty(IM)).
 
 -spec mzero() -> reader_t(_R, _M, _A).
-mzero(IM) ->
-    lift(monad_plus:mzero(IM)).
+mzero() ->
+    mzero({?MODULE, monad_plus}).
 
 -spec mplus(reader_t(R, M, A), reader_t(R, M, A)) -> reader_t(R, M, A).
-mplus(RTA, RTB) ->
+mplus(RA, RB) ->
     reader_t(
       fun(R) ->
-              monad_plus:mplus(run(RTA, R), run(RTB, R))
+              monad_plus:mplus(run(RA, R), run(RB, R))
       end).
+
+mzero(IM) ->
+    lift(monad_plus:mzero(IM)).
 
 run_nargs() ->
     1.

@@ -32,16 +32,16 @@
 %%% API
 %%%===================================================================
 pure(A) ->
-    reader_t:pure(A, identity).
+    reader_t:pure(A, ?READER).
 
 return(A) ->
-    reader_t:return(A, identity).
+    reader_t:return(A, ?READER).
 
 ask() ->
-    reader_t:ask(identity).
+    reader_t:ask(?READER).
 
 reader(R) ->
-    reader_t:reader(R, identity).
+    reader_t:reader(R, ?READER).
 
 run(RTA, R) ->
     identity:run(reader_t:run(RTA, R)).

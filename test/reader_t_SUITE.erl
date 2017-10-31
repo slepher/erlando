@@ -243,7 +243,6 @@ test_local(_Config) ->
             ]),
     
     M1 = reader_t:local(fun(X) -> X * 2 end, M0),
-    io:format("~p ~p", [M0, M1]),
     ?assertEqual({ok, 120}, error_instance:run(reader_t:run(M1, 6))).
 
 test_reader(_Config) ->

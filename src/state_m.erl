@@ -15,8 +15,7 @@
 
 -compile({parse_transform, import_as}).
 
--import_as({state_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
-                      '>>='/2, '>>'/2]}).
+-import_as({state_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2, '>>='/2, '>>'/2]}).
 
 -define(STATE, {state_t, identity}).
 
@@ -36,19 +35,19 @@
 %%%===================================================================
 
 pure(A) ->
-    state_t:pure(A, identity).
+    state_t:pure(A, ?STATE).
 
 return(A) ->
-    state_t:return(A, identity).
+    state_t:return(A, ?STATE).
 
 get() ->
-    state_t:get(identity).
+    state_t:get(?STATE).
 
 put(S) ->
-    state_t:put(S, identity).
+    state_t:put(S, ?STATE).
 
 state(F) ->
-    state_t:state(F, identity).
+    state_t:state(F, ?STATE).
 
 eval(SM, S) ->
     identity:run(state_t:eval(SM, S)).

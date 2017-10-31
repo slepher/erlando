@@ -38,7 +38,6 @@
 -callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
 -callback '>>'(monadic(M, _A), monadic(M, B) ) -> monadic(M, B) when M :: monad().
 
-
 -spec '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
 '>>='(X, MK) ->
     undetermined:map(

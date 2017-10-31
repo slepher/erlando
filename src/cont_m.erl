@@ -30,10 +30,10 @@
 %%% API
 %%%===================================================================
 pure(A) ->
-    cont_t:pure(A, identity).
+    cont_t:pure(A, ?CONT).
 
 return(A) ->
-    cont_t:return(A, identity).
+    cont_t:return(A, ?CONT).
 
 run(CA, CC) ->
     identity:run(cont_t:run(CA, CC)).

@@ -10,12 +10,16 @@
 
 -module(monad_state).
 
+-compile({parse_transform, do}).
+-compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
+
 -callback get() -> monad:monadic(M, _S)  when M :: monad:monad().
 -callback put(_S)  -> monad:monadic(M, ok)  when M :: monad:monad().
 -callback state(fun((S) -> {A, S})) -> monad:monadic(M, A)  when M :: monad:monad().
 
 -export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
+-export([default_get/1, default_put/2, default_state/2]).
 
 get() ->
     undetermined:new(fun(Module) -> monad_state:get(Module) end).
@@ -34,3 +38,17 @@ put(S, Module) ->
 
 state(F, Module) ->
     monad_trans:apply_fun(state, [F], Module).
+
+default_get(MonadState) ->
+    state(fun(S) -> {S, S} end, MonadState).
+
+default_put(S, MonadState) ->
+    state(fun(_) -> {ok, S} end, MonadState).
+
+default_state(F, MonadState) ->
+    do([monad ||
+           S <- get(MonadState),
+           {A, NS} = (F(S)),
+           put(NS, MonadState),
+           monad:return(A, MonadState)
+       ]).

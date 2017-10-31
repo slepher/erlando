@@ -7,12 +7,14 @@
 %%% Created : 19 June 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(cont_t).
+
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
--compile({no_auto_import, [get/1, put/2]}).
+-compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
+
 -include("op.hrl").
 
--define(CONT_T_MONAD, monad).
+-define(CONT_T_MONAD, {?MODULE, monad}).
 
 -behaviour(type).
 -behaviour(functor).
@@ -20,24 +22,22 @@
 -behaviour(monad).
 -behaviour(monad_fail).
 -behaviour(monad_trans).
--behaviour(monad_cont).
 -behaviour(monad_state).
 -behaviour(monad_reader).
 -behaviour(monad_runner).
 
 -export_type([cont_t/3]).
 
--export([new/1, cont_t/1, run_cont_t/1]).
 -export([type/0]).
+-export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export([pure/2]).
 -export(['>>='/2, '>>'/2, return/1]).
 -export([return/2]).
--export([fail/1]).
+-export([fail/1, fail/2]).
 -export([lift/1]).
 -export([callCC/1]).
--export([callCC/2]).
 -export([shift/1, reset/1]).
 -export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
@@ -51,12 +51,9 @@
 -type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
 -type t(M) :: {cont_t, M}.
 
-type() ->
-    type:default_type(?MODULE).
-
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
-new(Inner) ->
-    {?MODULE, Inner}.
+new(IM) ->
+    {?MODULE, IM}.
 
 -spec cont_t(inner_t(R, M, A)) -> cont_t(R, M, A).
 cont_t(Inner) ->
@@ -69,6 +66,9 @@ run_cont_t({undetermined, _} = U) ->
     run_cont_t(undetermined:run(U, cont_t));
 run_cont_t(Other) ->
     exit({invalid_monad, Other}).
+
+type() ->
+    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), cont_t(R, M, A)) -> cont_t(R, M, B).
 fmap(F, CTA) ->
@@ -83,11 +83,10 @@ fmap(F, CTA) ->
 
 -spec pure(A) -> cont_t(_R, _M, A).
 pure(A) ->
-    cont_t(fun (K) -> K(A) end).
+   pure(A).
 
--spec pure(A, t(M)) -> cont_t(_R, M, A).
-pure(A, _IM) ->
-    pure(A).
+pure(A, {?MODULE, _IM}) ->
+    return(A).
 
 -spec '<*>'(cont_t(R, M, fun((A) -> B)), cont_t(R, M, A)) -> cont_t(R, M, B).
 '<*>'(CTF, CTA) ->
@@ -124,17 +123,18 @@ lift_a2(F, CTA, CTB) ->
 
 -spec return(A) -> cont_t(_R, _M, A).
 return(A) ->
-    pure(A).
+    cont_t(fun (K) -> K(A) end).
 
 -spec return(A, t(M)) -> cont_t(_R, M, A).
-return(A, _IM) ->
-    pure(A).
+return(A, {?MODULE, _IM}) ->
+    return(A).
 
 fail(E) ->
-    fail(E, monad_fail).
+    fail(E, {?MODULE, monad_fail}).
 
-fail(E, IM) ->
-    cont_t(fun (_) -> monad_fail:fail(E, IM) end).
+-spec fail(any(), t(M)) -> cont_t(_R, M, _A).
+fail(E, {?MODULE, IM}) ->
+    cont_t(fun (_) -> monad:fail(E, IM) end).
 
 lift(X) ->
     cont_t(fun (F) -> monad:'>>='(X, F) end).
@@ -142,9 +142,6 @@ lift(X) ->
 -spec callCC(fun((fun( (A) -> cont_t(R, M, _B) ))-> cont_t(R, M, A))) -> cont_t(R, M, A).
 callCC(F) ->
     cont_t(fun (CC) -> run(F(fun(A) -> cont_t(fun(_) -> CC(A) end) end), CC) end).
-
-callCC(F, _IM) ->
-    callCC(F).
 
 -spec reset(cont_t(R, M, R)) -> cont_t(_NR, M, R).
 reset(X) ->
@@ -154,44 +151,38 @@ reset(X) ->
 shift(F) ->
     cont_t(fun (CC) -> eval(F(CC)) end).
 
-get() ->
-    get(monad_state).
-
-get(IM) ->
-    lift(monad_state:get(IM)).
-
-put(S) ->
-    put(S, monad_state).
-
-put(S, IM) ->
-    lift(monad_state:put(S, IM)).
-
-state(F) ->
-    state(F, monad_state).
-
-state(F, IM) ->
-    lift(monad_state:state(F, IM)).
-
 ask() ->
-    ask(monad_reader).
-
-ask(IM) ->
-    lift(monad_reader:ask(IM)).
-
-reader(F) ->
-    reader(F, monad_reader).
-
-reader(F, IM) ->
-    lift(monad_reader:reader(F, IM)).
+    ask({?MODULE, monad_reader}).
 
 local(F, X) ->
     lift_local(fun() -> monad_reader:ask() end, monad_reader:local(_, _), F, X).
 
-run_nargs() ->
-    1.
+reader(F) ->
+    reader(F, {?MODULE, monad_reader}).
 
-run_m(CTA, [CC]) ->
-    run(CTA, CC).
+ask({?MODULE, IM}) ->
+    lift(monad_reader:ask(IM)).
+
+reader(F, {?MODULE, IM}) ->
+    lift(monad_reader:reader(F, IM)).
+
+get() ->
+    get({?MODULE, monad_state}).
+
+put(S) ->
+    put(S, {?MODULE, monad_state}).
+
+state(F) ->
+    state(F, {?MODULE, monad_state}).
+
+get({?MODULE, IM}) ->
+    lift(monad_state:get(IM)).
+
+put(S, {?MODULE, IM}) ->
+    lift(monad_state:put(S, IM)).
+
+state(F, {?MODULE, IM}) ->
+    lift(monad_state:state(F, IM)).
 
 -spec run(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
 run(X, CC) ->
@@ -210,8 +201,11 @@ map(F, X) ->
 with(F, X) ->
     cont_t(fun (CC) -> run(X, F(CC)) end).
 
+run_nargs() ->
+    1.
 
-
+run_m(CTA, [CC]) ->
+    run(CTA, CC).
 
 lift_local(Ask, Local, F, X) ->
     cont_t(fun (CC) ->
@@ -220,10 +214,3 @@ lift_local(Ask, Local, F, X) ->
                           Local(F, run(X, fun(A) -> Local(fun(_) -> R end, CC(A)) end))
                       ])
            end).
-
-%%----------------------------------------------------------------------------------------
-%%
-%% old style monad transformer functions below
-%%
-%%----------------------------------------------------------------------------------------
-
