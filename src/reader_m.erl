@@ -13,38 +13,16 @@
 -behaviour(monad).
 -behaviour(monad_reader).
 
--compile({parse_transform, import_as}).
+-compile({parse_transform, monad_t_transform}).
 
--import_as({reader_t, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2,
-                       '>>='/2, '>>'/2, local/2]}).
+-transform({reader_t, false, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2, '>>='/2, '>>'/2, local/2]}).
+-transform({reader_t, true,  [pure/1, return/1, ask/0, reader/1]}).
+-transform({reader_t, true, false, [run/2]}).
 
--define(READER, {reader_t, identity}).
-
--export([fmap/2, '<$'/2]).
-% impl of applicative
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
-% impl of monad
--export(['>>='/2, '>>'/2, return/1]).
-% impl of monad reader
--export([ask/0, reader/1, local/2]).
--export([run/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
-pure(A) ->
-    reader_t:pure(A, ?READER).
 
-return(A) ->
-    reader_t:return(A, ?READER).
-
-ask() ->
-    reader_t:ask(?READER).
-
-reader(R) ->
-    reader_t:reader(R, ?READER).
-
-run(RTA, R) ->
-    identity:run(reader_t:run(RTA, R)).
 
 %%--------------------------------------------------------------------
 %% @doc
