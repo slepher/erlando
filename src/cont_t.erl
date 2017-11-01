@@ -10,6 +10,7 @@
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
@@ -31,21 +32,22 @@
 -export([type/0]).
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export([pure/2]).
--export(['>>='/2, '>>'/2, return/1]).
--export([return/2]).
--export([fail/1, fail/2]).
+-export([pure/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/2]).
+-export([fail/2]).
 -export([lift/1]).
 -export([callCC/1]).
 -export([shift/1, reset/1]).
--export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
--export([ask/0, reader/1, local/2]).
--export([ask/1, reader/2]).
+-export([ask/1, reader/2, local/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/2, eval/1, map/2, with/2]).
 -export([lift_local/4]).
+
+-transform({?MODULE, [{?MODULE, any}], [pure/1, return/1]}).
+-transform({?MODULE, [{?MODULE, monad_fail}], [fail/1]}).
+-transform({?MODULE, [{?MODULE, monad_reader}], [ask/0, reader/1]}).
+-transform({?MODULE, [{?MODULE, monad_state}], [get/0, put/1, state/1]}).
 
 -opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
 -type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
@@ -81,12 +83,8 @@ fmap(F, CTA) ->
 '<$'(B, FA) ->
     functor:'default_<$'(B, FA, ?MODULE).
 
--spec pure(A) -> cont_t(_R, _M, A).
-pure(A) ->
-   pure(A).
-
-pure(A, {?MODULE, _IM}) ->
-    return(A).
+pure(A, {?MODULE, _IM} = CT) ->
+    return(A, CT).
 
 -spec '<*>'(cont_t(R, M, fun((A) -> B)), cont_t(R, M, A)) -> cont_t(R, M, B).
 '<*>'(CTF, CTA) ->
@@ -121,16 +119,9 @@ lift_a2(F, CTA, CTB) ->
 '>>'(CTA, CTB) ->
     monad:'default_>>'(CTA, CTB, ?MODULE).
 
--spec return(A) -> cont_t(_R, _M, A).
-return(A) ->
-    cont_t(fun (K) -> K(A) end).
-
 -spec return(A, t(M)) -> cont_t(_R, M, A).
 return(A, {?MODULE, _IM}) ->
-    return(A).
-
-fail(E) ->
-    fail(E, {?MODULE, monad_fail}).
+    cont_t(fun (K) -> K(A) end).
 
 -spec fail(any(), t(M)) -> cont_t(_R, M, _A).
 fail(E, {?MODULE, IM}) ->
@@ -151,29 +142,14 @@ reset(X) ->
 shift(F) ->
     cont_t(fun (CC) -> eval(F(CC)) end).
 
-ask() ->
-    ask({?MODULE, monad_reader}).
-
 local(F, X) ->
     lift_local(fun() -> monad_reader:ask() end, monad_reader:local(_, _), F, X).
-
-reader(F) ->
-    reader(F, {?MODULE, monad_reader}).
 
 ask({?MODULE, IM}) ->
     lift(monad_reader:ask(IM)).
 
 reader(F, {?MODULE, IM}) ->
     lift(monad_reader:reader(F, IM)).
-
-get() ->
-    get({?MODULE, monad_state}).
-
-put(S) ->
-    put(S, {?MODULE, monad_state}).
-
-state(F) ->
-    state(F, {?MODULE, monad_state}).
 
 get({?MODULE, IM}) ->
     lift(monad_state:get(IM)).

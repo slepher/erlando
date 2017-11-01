@@ -50,38 +50,29 @@ insert_exports(Exports, [Form|Forms], Acc) ->
 generate_forms(Line, {Module,Functions}) ->
     generate_forms(Line, {Module, false, Functions});
 generate_forms(Line, {Module, ExtraArgs, Functions}) ->
-    generate_forms(Line, {Module, undefined, ExtraArgs, Functions});
-generate_forms(Line, {Module, ExtraCall, true, Functions}) ->
-    generate_forms(Line, {Module, ExtraCall, [{Module, identity}], Functions});
-generate_forms(Line, {Module, ExtraCall, false, Functions}) ->
-    generate_forms(Line, {Module, ExtraCall, [], Functions});
-generate_forms(Line, {Module, ExtraCall, ExtraArgs, Functions}) ->
-    Exports = Module:module_info(exports),
-    ArgsLen = length(ExtraArgs),
-    GenFunctions = 
-        lists:foldl(
-          fun({FName, Arity}, Acc) ->
-                  NArity = Arity + ArgsLen,
-                  case lists:member({FName, NArity}, Exports) of
-                      true ->
-                          [{FName, Arity}|Acc];
-                      false ->
-                          exit(undefined_function, {Module, FName, NArity})
-                  end
-          end, [], Functions),
+    generate_forms(Line, {Module, ExtraArgs, undefined, Functions});
+generate_forms(Line, {Module, true, ExtraCall, Functions}) ->
+    generate_forms(Line, {Module, [{Module, identity}], ExtraCall, Functions});
+generate_forms(Line, {Module, false, ExtraCall,  Functions}) ->
+    generate_forms(Line, {Module, [], ExtraCall,  Functions});
+generate_forms(Line, {Module, ExtraArgs, false,  Functions}) ->
+    generate_forms(Line, {Module, ExtraArgs, undefined,  Functions});
+generate_forms(Line, {Module, ExtraArgs, true,  Functions}) ->
+    generate_forms(Line, {Module, ExtraArgs, {identity, run},  Functions});
+generate_forms(Line, {Module, ExtraArgs, ExtraCall, Functions}) ->
     GenFunctionsForms = 
         lists:map(
           fun({FName, Arity}) ->
-                  gen_function(Module, FName, Arity, Line, ExtraCall, ExtraArgs)
-          end, GenFunctions),
-    {GenFunctions, GenFunctionsForms}.
+                  gen_function(Module, FName, Arity, Line, ExtraArgs, ExtraCall)
+          end, Functions),
+    {Functions, GenFunctionsForms}.
 
 insert_functions(Functions, [{eof, _Line} = EOF|T], Acc) ->
     lists:reverse(Acc) ++ Functions ++ [EOF|T];
 insert_functions(Functions, [Form|Forms], Acc) ->
     insert_functions(Functions, Forms, [Form|Acc]).
 
-gen_function(Module, FName, Arity, Line, ExtraCall, ExtraArgs) ->
+gen_function(Module, FName, Arity, Line, ExtraArgs, ExtraCall) ->
     {function, Line, FName, Arity, 
      [{clause, Line, 
        lists:map(
@@ -90,16 +81,12 @@ gen_function(Module, FName, Arity, Line, ExtraCall, ExtraArgs) ->
          end, lists:seq(1, Arity))
        ,
        [],
-       [gen_call(Module, FName, Arity, Line, ExtraCall, ExtraArgs)]}]}.
+       [gen_call(Module, FName, Arity, Line, ExtraArgs, ExtraCall)]}]}.
 
-gen_call(Module, FName, Arity, Line, true, ExtraArgs) ->
-    gen_call(Module, FName, Arity, Line, {identity, run}, ExtraArgs);
-gen_call(Module, FName, Arity, Line, ExtraCall, true) ->
-    gen_call(Module, FName, Arity, Line, ExtraCall, [{Module, identity}]);
-gen_call(Module, FName, Arity, Line, {Remote, Function}, ExtraArgs) ->
+gen_call(Module, FName, Arity, Line, ExtraArgs, {Remote, Function}) ->
     {call, Line, {remote, Line, {atom, Line, Remote}, {atom, Line, Function}},
-     [gen_call(Module, FName, Arity, Line, undefined, ExtraArgs)]};
-gen_call(Module, FName, Arity, Line, undefined, ExtraArgs) ->
+     [gen_call(Module, FName, Arity, Line, ExtraArgs, undefined)]};
+gen_call(Module, FName, Arity, Line, ExtraArgs, undefined) ->
     Args = 
         lists:map(
           fun(ExtraArg) ->

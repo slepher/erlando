@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(writer_t).
 -compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
 
 -include("op.hrl").
 
@@ -30,18 +31,22 @@
 -export([new/1, writer_t/1, run_writer_t/1]).
 -export([type/0]).
 -export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export([pure/2]).
--export(['>>='/2, '>>'/2, return/1]).
--export([return/2, lift/1]).
--export([fail/1]).
--export([writer/1, tell/1, listen/1, listens/2, pass/1, censor/2]).
--export([writer/2, tell/2]).
--export([empty/0, '<|>'/2]).
--export([mzero/0, mplus/2]).
+-export([pure/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/2]).
+-export([lift/1]).
+-export([fail/2]).
+-export([writer/2, tell/2, listen/1, listens/2, pass/1, censor/2]).
+-export([empty/1, '<|>'/2]).
+-export([mzero/1, mplus/2]).
 -export([run_nargs/0, run_m/2]).
 -export([exec/1, eval/1, run/1, map/2]).
 
+-transform({?MODULE, [{?MODULE, applicative}], [pure/1]}).
+-transform({?MODULE, [{?MODULE, monad}], [return/1]}).
+-transform({?MODULE, [{?MODULE, monad}], [writer/1, tell/1]}).
+-transform({?MODULE, [{?MODULE, monad_fail}], [fail/1]}).
+-transform({?MODULE, [{?MODULE, alternative}], [empty/0]}).
+-transform({?MODULE, [{?MODULE, monad_plus}], [mzero/0]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -71,10 +76,6 @@ fmap(F, WTA) ->
 
 '<$'(B, FA) ->
     functor:'default_<$'(B, FA, ?MODULE).
-
--spec pure(A) -> writer_t(_W, _M, A).
-pure(A) ->
-    pure(A, {?MODULE, applicative}).
 
 -spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 '<*>'(WTF, WTA) ->
@@ -113,10 +114,6 @@ pure(A, {?MODULE, IM}) ->
 '>>'(WTA, WTB) ->
     monad:'default_>>'(WTA, WTB, ?MODULE).
 
--spec return(A) -> writer_t(_W, _M, A).
-return(A) -> 
-    return(A, {?MODULE, monad}).
-
 return(A, {?MODULE, IM}) ->
     writer_t(monad:return({A, []}, IM)).
 
@@ -125,15 +122,8 @@ lift(MA) ->
     writer_t(fun(A) -> {A, []} end /'<$>'/ MA).
 
 -spec fail(any()) -> writer_t(_W, _M, _A).
-fail(E) ->
-    writer_t(monad_fail:fail(E)).
-
-writer({A, Ws}) ->
-    writer({A, Ws}, {?MODULE, monad}).
-
--spec tell([W]) -> writer_t(W, _M, ok).
-tell(Ws) ->
-    tell(Ws, {?MODULE, monad}).
+fail(E, {?MODULE, IM}) ->
+    writer_t(monad_fail:fail(E, IM)).
 
 -spec listen(writer_t(W, M, A)) -> writer_t(W, M, {A, [W]}).
 listen(WTA) ->
@@ -166,9 +156,6 @@ writer({A, Ws}, {?MODULE, IM}) ->
 tell(Ws, {?MODULE, IM}) ->
     writer_t(monad:return({ok, Ws}, IM)).
 
-empty() ->
-    empty({?MODULE, alternative}).
-
 '<|>'(WTA, WTB) ->
     writer_t(
       alternative:'<|>'(run_writer_t(WTA), run_writer_t(WTB))
@@ -176,10 +163,6 @@ empty() ->
 
 empty({?MODULE, IM}) ->
     writer_t(alternative:empty(IM)).
-
--spec mzero() -> writer_t(_W, _M, _A).
-mzero() ->
-    mzero({?MODULE, monad_plus}).
 
 -spec mplus(writer_t(W, M, A), writer_t(W, M, A)) -> writer_t(W, M, A).
 mplus(WTA, WTB) ->
