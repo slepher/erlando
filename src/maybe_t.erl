@@ -15,16 +15,17 @@
 
 -include("op.hrl").
 
--define(MAYBE_T_MONAD, {?MODULE, monad}).
-
 -behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_fail).
+-behaviour(monad_fail_trans).
 -behaviour(monad_reader).
+-behaviour(monad_reader_trans).
 -behaviour(monad_state).
+-behaviour(monad_state_trans).
 -behaviour(monad_runner).
 
 -export_type([maybe_t/2]).
@@ -38,30 +39,33 @@
 % imple of type.
 -export([type/0]).
 % impl of functor.
--export([fmap/2, '<$'/2]).
+-export([fmap/3, '<$'/3]).
 % impl of applicative.
--export([pure/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 % impl of monad.
--export(['>>='/2, '>>'/2, return/2]).
+-export(['>>='/3, '>>'/3, return/2]).
 % impl of monad_trans.
--export([lift/1]).
+-export([lift/2]).
 % impl of monad_fail.
 -export([fail/2]).
 % impl of monad_reader.
--export([ask/1, reader/2, local/2]).
+-export([ask/1, reader/2, local/3]).
 % impl of monad_state.
 -export([get/1, put/2, state/2]).
--export([empty/1, '<|>'/2]).
--export([mzero/1, mplus/2]).
+-export([empty/1, '<|>'/3]).
+-export([mzero/1, mplus/3]).
 % impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
 % maybe_t functions.
 -export([run/1, map/2]).
 
--transform({?MODULE, [{?MODULE, monad}], [pure/1, return/1]}).
+-transform({?MODULE, [{?MODULE, functor}], [fmap/2, '<$'/2]}).
+-transform({?MODULE, [{?MODULE, monad}], [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({?MODULE, [{?MODULE, monad}], ['>>='/2, '>>'/2, return/1]}).
+-transform({?MODULE, [{?MODULE, monad}], [lift/1]}).
 -transform({?MODULE, [{?MODULE, monad}], [fail/1]}).
--transform({?MODULE, [{?MODULE, monad}], [empty/0, mzero/0]}).
--transform({?MODULE, [{?MODULE, monad_reader}], [ask/0, reader/1]}).
+-transform({?MODULE, [{?MODULE, monad}], [empty/0, '<|>'/2, mzero/0, mplus/2]}).
+-transform({?MODULE, [{?MODULE, monad_reader}], [ask/0, reader/1, local/2]}).
 -transform({?MODULE, [{?MODULE, monad_state}], [get/0, put/1, state/1]}).
 
 -spec new(M) -> t(M).
@@ -84,42 +88,42 @@ type() ->
     type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), maybe_t(M, A)) -> maybe_t(M, B).
-fmap(F, MTA) ->
+fmap(F, MTA, {?MODULE, IM}) ->
     map(
       fun(FA) ->
-              F /'<$>'/ FA
+              functor:fmap(F, FA, IM)
       end, MTA).
 
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA, ?MODULE).
+'<$'(B, FA, {?MODULE, _IM} = MT) ->
+    functor:'default_<$'(B, FA, MT).
 
 -spec '<*>'(maybe_t(M, fun((A) -> B)), maybe_t(M, A)) -> maybe_t(M, B).
-'<*>'(MTF, MTA) ->
+'<*>'(MTF, MTA, {?MODULE, IM}) ->
     maybe_t(
-      do([monad ||
+      do([IM ||
              MF <- run_maybe_t(MTF),
              maybe:'>>='(MF, fun(F) -> maybe:fmap(F, _) /'<$>'/ run_maybe_t(MTA) end)
          ])).
 
 -spec lift_a2(fun((A, B) -> C), maybe_t(M, A), maybe_t(M, B)) -> maybe_t(M, C).
-lift_a2(F, MTA, MTB) ->
-    applicative:default_lift_a2(F, MTA, MTB, ?MODULE).
+lift_a2(F, MTA, MTB, {?MODULE, _IM} = MT) ->
+    applicative:default_lift_a2(F, MTA, MTB, MT).
 
 -spec '*>'(maybe_t(M, _A), maybe_t(M, B)) -> maybe_t(M, B).
-'*>'(MTA, MTB) ->
-    applicative:'default_*>'(MTA, MTB, ?MODULE).
+'*>'(MTA, MTB, {?MODULE, _IM} = MT) ->
+    applicative:'default_*>'(MTA, MTB, MT).
 
 -spec '<*'(maybe_t(M, A), maybe_t(M, _B)) -> maybe_t(M, A).
-'<*'(MTA, MTB) ->
-    applicative:'default_<*'(MTA, MTB, ?MODULE).
+'<*'(MTA, MTB, {?MODULE, _IM} = MT) ->
+    applicative:'default_<*'(MTA, MTB, MT).
 
 pure(A, {?MODULE, _IM} = MT) ->
     return(A, MT).
 
--spec '>>='(maybe_t(M, A), fun((A) -> maybe_t(M, B))) -> maybe_t(M, B).
-'>>='(MTA, KMTB) ->
+-spec '>>='(maybe_t(M, A), fun((A) -> maybe_t(M, B)), t(M)) -> maybe_t(M, B).
+'>>='(MTA, KMTB, {?MODULE, IM}) ->
     maybe_t(
-      do([monad ||
+      do([IM ||
              M <- run_maybe_t(MTA),
              case M of
                  nothing ->
@@ -129,52 +133,56 @@ pure(A, {?MODULE, _IM} = MT) ->
              end
          ])).
 
--spec '>>'(maybe_t(M, _A), maybe_t(M, B)) -> maybe_t(M, B).
-'>>'(MTA, MTB) ->
-    monad:'default_>>'(MTA, MTB, ?MODULE).
+-spec '>>'(maybe_t(M, _A), maybe_t(M, B), t(M)) -> maybe_t(M, B).
+'>>'(MTA, MTB, {?MODULE, _IM} = MT) ->
+    monad:'default_>>'(MTA, MTB, MT).
 
 return(A, {?MODULE, IM}) ->
     maybe_t(monad:return(maybe:pure(A), IM)).
 
 -spec lift(monad:monadic(M, A)) -> maybe_t(M, A).
-lift(X) ->
-    maybe_t(maybe:return(_) /'<$>'/ X).
+lift(MA, {?MODULE, IM}) ->
+    maybe_t(monad:lift_m(maybe:return(_), MA, IM)).
 
 fail(E, {?MODULE, IM}) ->
     maybe_t(monad:return(maybe:fail(E), IM)).
 
 -spec local(fun((R) -> R), maybe_t(M, A)) -> maybe_t(M, A).
-local(F, ETA) ->
+local(F, ETA, {?MODULE, IM}) ->
     map(
       fun(MA) ->
-              monad_reader:local(F, MA)
+              monad_reader:local(F, MA, IM)
       end, ETA).
 
-ask({?MODULE, IM}) ->
-    lift(monad_reader:ask(IM)).
+ask({?MODULE, IM} = MT) ->
+    lift(monad_reader:ask(IM), MT).
 
-reader(F, {?MODULE, IM}) ->
-    lift(monad_reader:reader(F, IM)).
+reader(F, {?MODULE, IM} = MT) ->
+    lift(monad_reader:reader(F, IM), MT).
 
-get({?MODULE, IM}) ->
-    lift(monad_state:get(IM)).
+get({?MODULE, IM} = MT) ->
+    lift(monad_state:get(IM), MT).
 
-put(S, {?MODULE, IM}) ->
-    lift(monad_state:put(S, IM)).
+put(S, {?MODULE, IM} = MT) ->
+    lift(monad_state:put(S, IM), MT).
 
-state(F, {?MODULE, IM}) ->
-    lift(monad_state:state(F, IM)).
-
-'<|>'(MTA, MTB) ->
-    mplus(MTA, MTB).
+state(F, {?MODULE, IM} = MT) ->
+    lift(monad_state:state(F, IM), MT).
 
 empty({?MODULE, _IM} = MT) ->
     mzero(MT).
 
+'<|>'(MTA, MTB, {?MODULE, _IM} = MT) ->
+    mplus(MTA, MTB, MT).
+
+-spec mzero(t(M)) -> maybe_t(M, _A).
+mzero({?MODULE, IM}) ->
+    maybe_t(monad:return(maybe:mzero(), IM)).
+
 -spec mplus(maybe_t(M, A), maybe_t(M, A)) -> maybe_t(M, A).
-mplus(MTA, MTB) ->
+mplus(MTA, MTB, {?MODULE, IM}) ->
     maybe_t(
-      do([monad ||
+      do([IM ||
              MA <- run_maybe_t(MTA),
              %% could be
              %% A <- run_maybe_t(MA),
@@ -189,10 +197,6 @@ mplus(MTA, MTB) ->
                      return(MA)
              end
        ])).
-
--spec mzero(t(M)) -> maybe_t(M, _A).
-mzero({?MODULE, IM}) ->
-    maybe_t(monad:return(maybe:mzero(), IM)).
 
 run_nargs() ->
     0.

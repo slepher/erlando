@@ -1,0 +1,2 @@
+-transform({functor, [fmap/2, '<$'/2]}).
+-transform({functor, [fmap/3, '<$'/3]}).

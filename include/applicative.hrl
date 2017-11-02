@@ -1,0 +1,2 @@
+-transform({applicative, [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
+-transform({applicative, [pure/2, '<*>'/3, lift_a2/4, '<*'/3, '*>'/3]}).

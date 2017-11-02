@@ -4,27 +4,21 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created :  9 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  1 Nov 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(monad_fail).
+-module(monad_writer_trans).
+
+-callback writer({A, [_W]}, M) -> monad:monadic(M, A).
+-callback tell([_W], M) -> monad:monadic(M, _A).
+-callback listen(monad:monadic(M, A), M) -> monad:monadic(M, {A, [_W]}).
+-callback pass(monad:monadic(M, {A, fun(([W]) -> [W])}), M) -> monad:monadic(M, A). 
 
 %% API
--export([fail/1]).
--export([fail/2]).
-
--callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
+-export([]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-fail(E) ->
-    undetermined:new(fun(MonadFail) -> fail(E, MonadFail) end).
-
-fail(E, monad) ->
-    fail(E);
-fail(E, MonadFail) ->
-    typeclass_trans:apply(fail, [E], MonadFail).
 
 %%--------------------------------------------------------------------
 %% @doc

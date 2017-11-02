@@ -4,28 +4,23 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created :  9 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  1 Nov 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(monad_fail).
+-module(typeclass_trans).
 
+-export_type([trans/2]).
+
+-type trans(T, M) :: {T, M}.
 %% API
--export([fail/1]).
--export([fail/2]).
-
--callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
+-export([apply/3]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-fail(E) ->
-    undetermined:new(fun(MonadFail) -> fail(E, MonadFail) end).
-
-fail(E, monad) ->
-    fail(E);
-fail(E, MonadFail) ->
-    typeclass_trans:apply(fail, [E], MonadFail).
-
+apply(F, Args, {T, M}) when is_atom(T) ->
+    erlang:apply(T, F, Args ++ [{T, M}]);
+apply(F, Args, M) when is_atom(M) ->
+    erlang:apply(M, F, Args).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

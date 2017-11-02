@@ -15,23 +15,30 @@
 %%
 
 -module(monad).
+
 -compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
+
+-include("functor.hrl").
+-include("applicative.hrl").
+
 -export_type([monad/0, monadic/2]).
 
 -export(['>>='/2, '>>'/2, return/1]).
--export([default_return/2, 'default_>>'/3]).
-%% bind is same as >>=, then is same as >> 
--export([bind/2, then/2]).
+-export(['>>='/3, '>>'/3, return/2]).
+-export(['default_>>'/3, default_return/2]).
+%% monad utility functions
+-export([bind/3, then/3, join/2, lift_m/3]).
 %% utility function join
--export([join/1, lift_m/2]).
 -export([as/2, empty/1, run/2, id/1]).
 
 % depricated functions
--export([sequence/2, map_m/3, lift_m/3]).
--export(['>>='/3, return/2, fail/2]).
+-export([sequence/2, map_m/3]).
 
 -type monad()         :: module() | {module(), monad()}.
 -type monadic(_M, _A) :: any().
+
+-transform({?MODULE, [monad], [bind/2, then/2, join/1, lift_m/2]}).
 
 %% Monad primitives
 -callback return(A) -> monadic(M, A) when M :: monad(). 
@@ -39,63 +46,84 @@
 -callback '>>'(monadic(M, _A), monadic(M, B) ) -> monadic(M, B) when M :: monad().
 
 -spec '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-'>>='(X, MK) ->
+'>>='(UA, KUB) ->
     undetermined:map(
-      fun(Module, MA) ->
-              Module:'>>='(MA, fun(A) -> undetermined:run(MK(A), Module) end)
-      end, X, ?MODULE).
+      fun(Monad, MA) ->
+              KMB = fun(A) -> undetermined:run(KUB(A), Monad) end,
+              'do_>>='(MA, KMB, Monad)
+      end, UA, ?MODULE).
 
 -spec '>>'(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
 '>>'(UA, UB) ->
     undetermined:map_pair(
-      fun(Module, MA, MB) ->
-              Module:'>>'(MA, MB)
+      fun(Monad, MA, MB) ->
+              typeclass_trans:apply('>>', [MA, MB], Monad)
       end, UA, UB, ?MODULE).
 
 -spec return(A) -> monad:monadic(M, A) when M :: monad().
 return(A) ->
     undetermined:new(fun(Monad) -> return(A, Monad) end).
 
+'>>='(UA, KUB, monad) ->
+    '>>='(UA, KUB);
+'>>='(UA, KUB, Monad) ->
+    MA = undetermined:run(UA, Monad),
+    KMB = fun(A) -> undetermined:run(KUB(A), Monad) end,
+    'do_>>='(MA, KMB, Monad).
+
+'>>'(UA, UB, Monad) ->
+    undetermined:run('>>'(UA, UB), Monad).
+
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
 return(A, Monad) ->
-    monad_trans:apply_fun(return, [A], Monad).
+    typeclass_trans:apply(return, [A], Monad).
 
 -spec 'default_>>'(monadic(M, _A), monadic(M, B), module()) -> monadic(M, B).
-'default_>>'(MA, MB, Module) ->
-    Module:'>>='(MA, fun(_) -> MB end).
+'default_>>'(MA, MB, Monad) ->
+    'do_>>='(MA, fun(_) -> MB end, Monad).
 
--spec default_return(A, module()) -> monad:monadic(M, A) when M :: monad().
-default_return(A, Module) ->
-    monad_trans:apply_fun(pure, [A], Module).
+default_return(A, Monad) ->
+    applicative:pure(A, Monad).
 
--spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-bind(X, F) ->
-    '>>='(X, F).
+-spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B)), M) -> monad:monadic(M, B) when M :: monad:monad().
+bind(X, F, Monad) ->
+    '>>='(X, F, Monad).
 
--spec then(monad:monadic(M, _A), monad:monadic(M, B)) -> monad:monadic(M, B).
-then(X, F) ->
-    '>>'(X, F).
+-spec then(monad:monadic(M, _A), monad:monadic(M, B), M) -> monad:monadic(M, B).
+then(X, F, Monad) ->
+    '>>'(X, F, Monad).
 
 -spec join(monadic(M, monadic(M, A))) -> monadic(M, A).
-join(MMA) ->
-    bind(MMA, fun(MA) -> MA end).
+join(MMA, Monad) ->
+    bind(MMA, fun(MA) -> MA end, Monad).
 
-lift_m(F, X) ->
-    lift_m(F, X, monad).
+-spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
+lift_m(F, MA, Monad) ->
+    do([Monad || 
+           A <- MA,
+           return(F(A))
+       ]).
 
 as(A, {T, M}) ->
     T:lift(as(A, M));
 as(A, M) ->
     M:return(A).
 
-id(M) ->
-    as(fun(A) -> A end, M).
+id(Monad) ->
+    as(fun(A) -> A end, Monad).
 
-empty(M) ->
-    as(ok, M).
+empty(Monad) ->
+    as(ok, Monad).
 
 run(M, Monad) ->
     applicative:ap(id(Monad), M).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+'do_>>='(MA, KMB, Monad) ->
+    typeclass_trans:apply('>>=', [MA, KMB], Monad).
+
 
 %% traversable functions
 -spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).
@@ -112,21 +140,3 @@ map_m(Monad, F, [X|Xs]) ->
 map_m(Monad, _F, []) ->
     return(Monad, []).
 
--spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
-lift_m(F, X, Monad) ->
-    do([Monad || 
-           A <- X,
-           return(F(A))
-       ]).
-
-%% functions for do transform
--spec '>>='(M, monad:monadic(M, A), fun((A) -> monad:monadic(M, B))) -> monad:monadic(M, B).
-'>>='(X, K, monad) ->
-    monad:'>>='(X, K);
-'>>='(UX, K, {T, _} = M) ->
-    T:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end);
-'>>='(UX, K, M) ->
-    M:'>>='(undetermined:run(UX, M), fun(A) -> undetermined:run(K(A), M) end).
-
-fail(E, MonadFail) ->
-    monad_fail:fail(E, MonadFail).

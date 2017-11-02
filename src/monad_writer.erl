@@ -8,19 +8,24 @@
 %%%-------------------------------------------------------------------
 -module(monad_writer).
 
--compile({parse_transform, do}).
-
--include("op.hrl").
-
 -callback writer({A, [_W]}) -> monad:monadic(_M, A).
 -callback tell([_W]) -> monad:monadic(_M, _A).
 -callback listen(monad:monadic(M, A)) -> monad:monadic(M, {A, [_W]}).
 -callback pass(monad:monadic(M, {A, fun(([W]) -> [W])})) -> monad:monadic(M, A). 
 
-%% API
+-compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
+
+-include("op.hrl").
+-include("functor.hrl").
+-include("applicative.hrl").
+-include("monad.hrl").
+
 -export([writer/1, tell/1, listen/1, pass/1]).
--export([writer/2, tell/2]).
--export([listens/2, censor/2]).
+-export([writer/2, tell/2, listen/2, pass/2]).
+-export([listens/3, censor/3]).
+
+-transform({?MODULE, [monad_writer], [listens/2, censor/2]}).
 
 %%%===================================================================
 %%% API
@@ -33,29 +38,35 @@ tell(Ws) ->
 
 listen(UA) ->
     undetermined:map(
-      fun(Module, WA) ->
-              Module:listen(WA)
+      fun(MonadWriter, MWA) ->
+              typeclass_trans:apply(listen, [MWA], MonadWriter)
       end, UA, ?MODULE).
 
 pass(UA) ->
     undetermined:map(
-      fun(Module, WA) ->
-              Module:pass(WA)
+      fun(MonadWriter, MWA) ->
+              typeclass_trans:apply(pass, [MWA], MonadWriter)
       end, UA, ?MODULE).
 
 writer({A, Ws}, MonadWriter) ->
-    monad_trans:apply_fun(writer, [{A, Ws}], MonadWriter).
+    typeclass_trans:apply(writer, [{A, Ws}], MonadWriter).
 
 tell(Ws, MonadWriter) ->
-    monad_trans:apply_fun(tell, [Ws], MonadWriter).
+    typeclass_trans:apply(tell, [Ws], MonadWriter).
 
--spec listens(fun(([_W]) -> B), monad:monadic(M, A)) -> monad:monadic(M, {A, B}).
-listens(F, MWA) ->
+listen(MA, MonadWriter) ->
+    undetermined:run(listen(MA), MonadWriter).
+
+pass(MA, MonadWriter) ->
+    undetermined:run(pass(MA), MonadWriter).
+
+-spec listens(fun(([_W]) -> B), monad:monadic(M, A), M) -> monad:monadic(M, {A, B}).
+listens(F, MWA, MonadWriter) ->
     NF = fun({A, Ws}) -> {A, F(Ws)} end,
-    NF /'<$>'/ listen(MWA).
+    monad:lift_m(NF,listen(MWA), MonadWriter).
 
-censor(F, MWA) ->
-    pass(fun(A) -> {A, F} end /'<$>'/ MWA).
+censor(F, MWA, MonadWriter) ->
+    pass(monad:lift_m(fun(A) -> {A, F} end, MWA, MonadWriter), MonadWriter).
     
 %%--------------------------------------------------------------------
 %% @doc

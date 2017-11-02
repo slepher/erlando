@@ -2,40 +2,22 @@
 %%% @author Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2017, Chen Slepher
 %%% @doc
-%%%
+%%%-callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
+
 %%% @end
-%%% Created : 15 Oct 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  1 Nov 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(alternative).
+-module(monad_fail_trans).
 
--compile({parse_transform, cut}).
 %% API
--export([empty/0, '<|>'/2]).
--export([empty/1, '<|>'/3]).
+-export([]).
 
--callback empty() -> applicative:applicative(_F, _A).
--callback '<|>'(applicative:applicative(F, A), 
-                applicative:applicative(F, A)) -> applicative:applicative(F, A).
+-callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-empty() ->
-    undetermined:new(fun(Module) -> Module:empty() end).
-
-'<|>'(UA, UB) ->
-    undetermined:map_pair(
-      fun(Module, AA, AB) ->
-              Module:'<|>'(AA, AB)
-      end, UA, UB, ?MODULE).
-
-empty(Alternative) ->
-    typeclass_trans:apply(empty, [], Alternative).
-
-'<|>'(FA, FB, Alternative) ->
-    typeclass_trans:apply('<|>', [FA, FB], Alternative).
-    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

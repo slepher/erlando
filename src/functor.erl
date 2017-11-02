@@ -8,12 +8,19 @@
 %%%-------------------------------------------------------------------
 -module(functor).
 
+-compile({parse_transform, monad_t_transform}).
+
 -include("op.hrl").
 
 -export_type([functor/2]).
 %% API
--export([fmap/1, fmap/2, '<$>'/2, '<$'/2]).
+-export([fmap/1]).
+-export([fmap/2, '<$'/2]).
+-export([fmap/3, '<$'/3]).
+-export(['<$>'/3]).
 -export(['default_<$'/3]).
+
+-transform({?MODULE, [functor], ['<$>'/2]}).
 
 -type functor(_F, _A) :: any().
 
@@ -31,23 +38,29 @@ fmap(F) ->
 -spec fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
 fmap(F, UA) ->
     undetermined:map(
-      fun(Module, FA) ->
-              Module:fmap(F, FA)
+      fun(Functor, FA) ->
+              do_fmap(F, FA, Functor)
       end, UA, ?MODULE).
-
--spec '<$>'(fun((A) -> B), functor(F, A)) -> functor(F, B).
-'<$>'(F, FA) ->
-    fmap(F, FA).
 
 -spec '<$'(B, functor(F, _A)) -> functor(F, B).
-'<$'(F, UA) ->
-    undetermined:map(
-      fun(Module, FA) ->
-              Module:'<$'(F, FA)
-      end, UA, ?MODULE).
+'<$'(UB, UA) ->
+    undetermined:map_pair(
+      fun(Functor, FB, FA) ->
+              typeclass_trans:apply('<$', [FB, FA], Functor)
+      end, UB, UA, ?MODULE).
 
-'default_<$'(B, FA, Module) ->
-    Module:fmap(function_instance:const(B), FA).
+fmap(F, UA, Functor) ->
+    undetermined:run(fmap(F, UA), Functor).
+
+'<$'(UB, UA, Functor) ->
+    undetermined:run('<$'(UB, UA), Functor).
+
+-spec '<$>'(fun((A) -> B), functor(F, A), F) -> functor(F, B).
+'<$>'(F, FA, Functor) ->
+    fmap(F, FA, Functor).
+
+'default_<$'(B, FA, Functor) ->
+    do_fmap(function_instance:const(B), FA, Functor).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -57,3 +70,5 @@ fmap(F, UA) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_fmap(F, FA, Functor) ->
+    typeclass_trans:apply(fmap, [F, FA], Functor).

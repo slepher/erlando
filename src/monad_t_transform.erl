@@ -52,12 +52,16 @@ generate_forms(Line, {Module,Functions}) ->
 generate_forms(Line, {Module, ExtraArgs, Functions}) ->
     generate_forms(Line, {Module, ExtraArgs, undefined, Functions});
 generate_forms(Line, {Module, true, ExtraCall, Functions}) ->
-    generate_forms(Line, {Module, [{Module, identity}], ExtraCall, Functions});
+    generate_forms(Line, {Module, identity, ExtraCall, Functions});
 generate_forms(Line, {Module, false, ExtraCall,  Functions}) ->
     generate_forms(Line, {Module, [], ExtraCall,  Functions});
+generate_forms(Line, {Module, Monad, ExtraCall,  Functions}) when is_atom(Monad) ->
+    generate_forms(Line, {Module, [{Module, Monad}], ExtraCall,  Functions});
 generate_forms(Line, {Module, ExtraArgs, false,  Functions}) ->
     generate_forms(Line, {Module, ExtraArgs, undefined,  Functions});
 generate_forms(Line, {Module, ExtraArgs, true,  Functions}) ->
+    generate_forms(Line, {Module, ExtraArgs, {identity, run},  Functions});
+generate_forms(Line, {Module, ExtraArgs, identity_run,  Functions}) ->
     generate_forms(Line, {Module, ExtraArgs, {identity, run},  Functions});
 generate_forms(Line, {Module, ExtraArgs, ExtraCall, Functions}) ->
     GenFunctionsForms = 

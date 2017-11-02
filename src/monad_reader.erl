@@ -1,46 +1,63 @@
-%% The contents of this file are subject to the Mozilla Public License
-%% Version 1.1 (the "License"); you may not use this file except in
-%% compliance with the License. You may obtain a copy of the License
-%% at http://www.mozilla.org/MPL/
-%%
-%% Software distributed under the License is distributed on an "AS IS"
-%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-%% the License for the specific language governing rights and
-%% limitations under the License.
-
+%%%-------------------------------------------------------------------
+%%% @author Chen Slepher <slepheric@gmail.com>
+%%% @copyright (C) 2017, Chen Slepher
+%%% @doc
+%%%
+%%% @end
+%%% Created :  2 Nov 2017 by Chen Slepher <slepheric@gmail.com>
+%%%-------------------------------------------------------------------
 -module(monad_reader).
-
--compile({parse_transform, do}).
-
--export([ask/0, reader/1, local/2, asks/1]).
--export([ask/1, reader/2]).
 
 -callback ask() -> monad:monadic(M, _R) when M :: monad:monad().
 -callback local(fun((R) -> R), monad:monadic(M, R)) -> monad:monadic(M, R) when M :: monad:monad().
 -callback reader(fun((_R) -> A)) -> monad:monadic(M, A) when M :: monad:monad().
 
+-compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
 
+-include("functor.hrl").
+-include("applicative.hrl").
+-include("monad.hrl").
+
+-export([ask/0, local/2, reader/1]).
+-export([ask/1, local/3, reader/2]).
+-export([default_ask/1, default_reader/2]).
+-export([asks/2]).
+
+-transform({?MODULE, [monad_reader], [asks/1]}).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
 ask() ->
-    undetermined:new(fun(Module) -> ask(Module) end).
+    undetermined:new(fun(MonadReader) -> ask(MonadReader) end).
+
+local(F, URA) ->
+    undetermined:map(
+      fun(MonadReader, MRA) ->
+              typeclass_trans:apply(local, [F, MRA], MonadReader)
+      end, URA, ?MODULE).
 
 reader(F) ->
-    undetermined:new(fun(Module) -> reader(F, Module) end).
+    undetermined:new(fun(MonadReader) -> reader(F, MonadReader) end).
 
-local(F, UA) ->
-    undetermined:map(
-      fun(Module, MA) ->
-              Module:local(F, MA)
-      end, UA, ?MODULE).
+ask(MonadReader) ->
+    typeclass_trans:apply(ask, [], MonadReader).
 
-asks(F) ->
-    do([monad || 
-           A <- ask(),
-           return(F(A))
-       ]).
+local(F, URA, MonadReader) ->
+    undetermined:run(local(F, URA), MonadReader).
 
-ask(MonadTrans) ->
-    monad_trans:apply_fun(ask, [], MonadTrans).
+reader(F, MonadReader) ->
+    typeclass_trans:apply(reader, [F], MonadReader).
 
-reader(F, MonadTrans) ->
-    monad_trans:apply_fun(reader, [F], MonadTrans).
-    
+default_ask(MonadReader) ->
+    reader(function_instance:id(), MonadReader).
+
+default_reader(F, MonadReader) ->
+    monad:lift_m(F, MonadReader).
+
+asks(F, MonadReader) ->
+    monad:lift_m(F, ask(MonadReader), MonadReader).
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================

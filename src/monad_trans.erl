@@ -17,19 +17,20 @@
 -export([lift/2]).
 -export([apply_fun/3]).
 
-
+-callback '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B)), M) -> monad:monadic(M, B) when M :: monad:monad().
+-callback '>>'(monad:monadic(M, _A), monad:monadic(M, B), M) -> monad:monadic(M, B) when M :: monad:monad().
 -callback return(A, M) -> monad:monadic(M, A) when M :: monad:monad(). 
-%% Lift a computation form the argument monad to the constructed
-%% monad.
 -callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
+-callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
 -spec lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
 lift(MA) ->
     undetermined:new(fun(MonadTrans) -> lift(MA, MonadTrans) end).
 
 -spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
-lift(X, {T, _IM} = M) ->
-    T:lift(X, M).
+lift(UA, {T, IM} = MonadTrans) ->
+    MA = undetermined:run(UA, IM),
+    T:lift(MA, MonadTrans).
 
 apply_fun(F, Args, {T, M}) when is_atom(T) ->
     erlang:apply(T, F, Args ++ [{T, M}]);

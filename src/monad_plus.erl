@@ -18,7 +18,7 @@
 -compile({parse_transform, do}).
 
 -export([mzero/0, mplus/2]).
--export([mzero/1]).
+-export([mzero/1, mplus/3]).
 -export([guard/1, msum/1, mfilter/2]).
 
 %% MonadPlus primitives
@@ -35,7 +35,10 @@ mplus(UA, UB) ->
       end, UA, UB, ?MODULE).
 
 mzero(MPlus) ->
-    monad_trans:apply_fun(mzero, [], MPlus).
+    typeclass_trans:apply(mzero, [], MPlus).
+
+mplus(MA, MB, MonadPlus) ->
+    typeclass_trans:apply(mplus, [MA, MB], MonadPlus).
 
 %% Utility functions
 -spec guard(boolean()) -> monad:monadic(_M, _A).
