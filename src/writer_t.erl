@@ -48,15 +48,15 @@
 -export([run_nargs/0, run_m/2]).
 -export([exec/2, eval/2, run/1, map/2]).
 
--transform({?MODULE, [{?MODULE, fucntor}], [fmap/2, '<$'/2]}).
--transform({?MODULE, [{?MODULE, applicative}], [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, [{?MODULE, monad}], ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, [{?MODULE, monad}], [lift/1]}).
--transform({?MODULE, [{?MODULE, monad}], [writer/1, tell/1, listen/1, pass/1]}).
--transform({?MODULE, [{?MODULE, monad_fail}], [fail/1]}).
--transform({?MODULE, [{?MODULE, alternative}], [empty/0, '<|>'/2]}).
--transform({?MODULE, [{?MODULE, monad_plus}], [mzero/0, mplus/2]}).
--transform({?MODULE, [{?MODULE, monad}], [exec/1, eval/1]}).
+-transform({?MODULE, fucntor, [fmap/2, '<$'/2]}).
+-transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
+-transform({?MODULE, monad, [lift/1]}).
+-transform({?MODULE, monad, [writer/1, tell/1, listen/1, pass/1]}).
+-transform({?MODULE, monad_fail, [fail/1]}).
+-transform({?MODULE, alternative, [empty/0, '<|>'/2]}).
+-transform({?MODULE, monad_plus, [mzero/0, mplus/2]}).
+-transform({?MODULE, monad, [exec/1, eval/1]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

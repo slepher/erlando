@@ -10,41 +10,32 @@
 
 -superclass([applicative]).
 
--compile({parse_transform, cut}).
-
-%% API
--export([empty/0, '<|>'/2]).
--export([empty/1, '<|>'/3]).
-
 -callback empty() -> applicative:applicative(_F, _A).
 -callback '<|>'(applicative:applicative(F, A), 
                 applicative:applicative(F, A)) -> applicative:applicative(F, A).
 
+-compile({parse_transform, cut}).
+-compile({parse_transform, monad_t_transform}).
+
+%% API
+-export([empty/1, '<|>'/3]).
+
+-transform({?MODULE, [?MODULE], [empty/0, '<|>'/2]}).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
+empty(UAlternative) ->
+    undetermined:new(
+      fun(Alternative) -> 
+              typeclass_trans:apply(empty, [], Alternative)
+      end, UAlternative).
 
-empty() ->
-    undetermined:new(fun(Module) -> Module:empty() end).
-
-'<|>'(UA, UB) ->
+'<|>'(UA, UB, UAlternative) ->
     undetermined:map_pair(
-      fun(Module, AA, AB) ->
-              Module:'<|>'(AA, AB)
-      end, UA, UB, ?MODULE).
-
-empty(Alternative) ->
-    typeclass_trans:apply(empty, [], Alternative).
-
-'<|>'(FA, FB, Alternative) ->
-    typeclass_trans:apply('<|>', [FA, FB], Alternative).
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-
+      fun(Alternative, FA, FB) ->
+              typeclass_trans:apply('<|>', [FA, FB], Alternative)
+      end, UA, UB, UAlternative).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

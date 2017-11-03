@@ -55,15 +55,15 @@
 % reader related functions
 -export([run/2, map/2, with/2]).
 
--transform({?MODULE, [{?MODULE, fucntor}], [fmap/2, '<$'/2]}).
--transform({?MODULE, [{?MODULE, applicative}], [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, [{?MODULE, monad}], ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, [{?MODULE, monad}], [lift/1]}).
--transform({?MODULE, [{?MODULE, monad}], [ask/0, reader/1, local/2]}).
--transform({?MODULE, [{?MODULE, monad_fail}], [fail/1]}).
--transform({?MODULE, [{?MODULE, monad_state}], [get/0, put/1, state/1]}).
--transform({?MODULE, [{?MODULE, alternative}], [empty/0, '<|>'/2]}).
--transform({?MODULE, [{?MODULE, monad_plus}], [mzero/0, mplus/2]}).
+-transform({?MODULE, fucntor, [fmap/2, '<$'/2]}).
+-transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
+-transform({?MODULE, monad, [lift/1]}).
+-transform({?MODULE, monad, [ask/0, reader/1, local/2]}).
+-transform({?MODULE, monad_fail, [fail/1]}).
+-transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
+-transform({?MODULE, alternative, [empty/0, '<|>'/2]}).
+-transform({?MODULE, monad_plus, [mzero/0, mplus/2]}).
 
 -opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
 -type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).

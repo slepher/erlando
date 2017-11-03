@@ -15,9 +15,11 @@
 -behaviour(monad).
 -behaviour(monad_state).
 
--transform({state_t, false, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2, '>>='/2, '>>'/2]}).
--transform({state_t, true,  [pure/1, return/1, get/0, put/1, state/1]}).
--transform({state_t, false, true, [eval/2, exec/2, run/2]}).
+-transform({state_t, identity, [fmap/2, '<$'/2]}).
+-transform({state_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({state_t, identity, ['>>='/2, '>>'/2, return/1]}).
+-transform({state_t, identity, [get/0, put/1, state/1]}).
+-transform({state_t, [], identity_run, [eval/2, exec/2, run/2]}).
 
 %%%===================================================================
 %%% API

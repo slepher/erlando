@@ -51,16 +51,16 @@
 -export([run/2, eval/2, map/2, with/2]).
 -export([lift_local/5]).
 
--transform({?MODULE, [{?MODULE, any}], [fmap/2, '<$'/2]}).
--transform({?MODULE, [{?MODULE, any}], [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, [{?MODULE, any}], ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, [{?MODULE, monad}], [lift/1]}).
--transform({?MODULE, [{?MODULE, monad_cont}], [callCC/1]}).
--transform({?MODULE, [{?MODULE, monad_fail}], [fail/1]}).
--transform({?MODULE, [{?MODULE, monad_reader}], [ask/0, reader/1, local/2]}).
--transform({?MODULE, [{?MODULE, monad_state}], [get/0, put/1, state/1]}).
--transform({?MODULE, [{?MODULE, monad}], [shift/1, reset/1]}).
--transform({?MODULE, [{?MODULE, monad}], [eval/1, lift_local/4]}).
+-transform({?MODULE, any, [fmap/2, '<$'/2]}).
+-transform({?MODULE, any, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({?MODULE, any, ['>>='/2, '>>'/2, return/1]}).
+-transform({?MODULE, monad, [lift/1]}).
+-transform({?MODULE, monad_cont, [callCC/1]}).
+-transform({?MODULE, monad_fail, [fail/1]}).
+-transform({?MODULE, monad_reader, [ask/0, reader/1, local/2]}).
+-transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
+-transform({?MODULE, monad, [shift/1, reset/1]}).
+-transform({?MODULE, monad, [eval/1, lift_local/4]}).
 
 -opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
 -type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).

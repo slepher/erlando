@@ -15,9 +15,11 @@
 -behaviour(monad).
 -behaviour(monad_reader).
 
--transform({reader_t, false, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2, '>>='/2, '>>'/2, local/2]}).
--transform({reader_t, true,  [pure/1, return/1, ask/0, reader/1]}).
--transform({reader_t, false, true, [run/2]}).
+-transform({reader_t, identity, [fmap/2, '<$'/2]}).
+-transform({reader_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({reader_t, identity, ['>>='/2, '>>'/2, return/1]}).
+-transform({reader_t, identity, [ask/0, local/2, reader/1]}).
+-transform({reader_t, [], identity_run, [run/2]}).
 
 %%%===================================================================
 %%% API

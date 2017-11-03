@@ -59,14 +59,14 @@
 % maybe_t functions.
 -export([run/1, map/2]).
 
--transform({?MODULE, [{?MODULE, functor}], [fmap/2, '<$'/2]}).
--transform({?MODULE, [{?MODULE, monad}], [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, [{?MODULE, monad}], ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, [{?MODULE, monad}], [lift/1]}).
--transform({?MODULE, [{?MODULE, monad}], [fail/1]}).
--transform({?MODULE, [{?MODULE, monad}], [empty/0, '<|>'/2, mzero/0, mplus/2]}).
--transform({?MODULE, [{?MODULE, monad_reader}], [ask/0, reader/1, local/2]}).
--transform({?MODULE, [{?MODULE, monad_state}], [get/0, put/1, state/1]}).
+-transform({?MODULE, functor, [fmap/2, '<$'/2]}).
+-transform({?MODULE, monad, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
+-transform({?MODULE, monad, [lift/1]}).
+-transform({?MODULE, monad, [fail/1]}).
+-transform({?MODULE, monad, [empty/0, '<|>'/2, mzero/0, mplus/2]}).
+-transform({?MODULE, monad_reader, [ask/0, reader/1, local/2]}).
+-transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
 
 -spec new(M) -> t(M).
 new(IM) ->

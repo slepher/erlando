@@ -15,9 +15,11 @@
 -behaviour(monad).
 -behaviour(monad_cont).
 
--transform({cont_t, false, [fmap/2, '<$'/2, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2, '>>='/2, '>>'/2, callCC/1]}).
--transform({cont_t, true,  [pure/1, return/1]}).
--transform({cont_t, false, true, [run/2, eval/1]}).
+-transform({cont_t, identity, [fmap/2, '<$'/2]}).
+-transform({cont_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
+-transform({cont_t, identity, ['>>='/2, '>>'/2, return/1]}).
+-transform({cont_t, identity, [callCC/1]}).
+-transform({cont_t, [], identity_run, [run/2, eval/1]}).
 
 %%%===================================================================
 %%% API

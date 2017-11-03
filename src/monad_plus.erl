@@ -10,40 +10,44 @@
 
 -superclass([monad]).
 
--compile({parse_transform, do}).
+-include("functor.hrl").
+-include("applicative.hrl").
+-include("monad.hrl").
 
--export([mzero/0, mplus/2]).
--export([mzero/1, mplus/3]).
--export([guard/1, msum/1, mfilter/2]).
-
-%% MonadPlus primitives
 -callback mzero() -> monad:monadic(_M, _A).
 -callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
 
-mzero() ->
-    undetermined:new(fun(MPlus) -> mzero(MPlus) end).
+-compile({parse_transform, do}).
+-compile({parse_transform, cut}).
+-compile({parse_transform, monad_t_transform}).
 
-mplus(UA, UB) ->
+-export([mzero/1, mplus/3]).
+-export([guard/2, msum/2, mfilter/3]).
+
+-transform({?MODULE, [?MODULE], [mzero/0, mplus/2]}).
+-transform({?MODULE, [?MODULE], [guard/1, msum/1, mfilter/2]}).
+
+mzero(UMonadPlus) ->
+    undetermined:new(
+      fun(MonadPlus) ->
+              typeclass_trans:apply(mzero, [], MonadPlus)
+      end, UMonadPlus).
+
+mplus(UA, UB, UMonadPlus) ->
     undetermined:map_pair(
-      fun(Module, MA, MB) ->
-              Module:mplus(MA, MB)
-      end, UA, UB, ?MODULE).
-
-mzero(MPlus) ->
-    typeclass_trans:apply(mzero, [], MPlus).
-
-mplus(MA, MB, MonadPlus) ->
-    typeclass_trans:apply(mplus, [MA, MB], MonadPlus).
+      fun(MonadPlus, MA, MB) ->
+              typeclass_trans:apply(mplus, [MA, MB], MonadPlus)
+      end, UA, UB, UMonadPlus).
 
 %% Utility functions
--spec guard(boolean()) -> monad:monadic(_M, _A).
-guard(true)  -> monad:return(ok);
-guard(false) -> mzero().
+-spec guard(boolean(), M) -> monad:monadic(M, _A).
+guard(true, MonadPlus)  -> monad:return(ok, MonadPlus);
+guard(false, MonadPlus) -> mzero(MonadPlus).
 
--spec msum([monad:monadic(M, A)]) -> monad:monadic(M, A).
-msum(List) ->
-    lists:foldr(fun mplus/2, mzero(), List).
+-spec msum([monad:monadic(M, A)], M) -> monad:monadic(M, A).
+msum(List, MonadPlus) ->
+    lists:foldr(mplus(_, _, MonadPlus), mzero(MonadPlus), List).
 
--spec mfilter(fun( (A) -> boolean() ), monad:monadic(M, A)) -> monad:monadic(M, A).
-mfilter(Pred, X) ->
-    do([monad || A <- X, guard(Pred(A))]).
+-spec mfilter(fun( (A) -> boolean() ), monad:monadic(M, A), M) -> monad:monadic(M, A).
+mfilter(Pred, X, MonadPlus) ->
+    do([MonadPlus || A <- X, guard(Pred(A), MonadPlus)]).
