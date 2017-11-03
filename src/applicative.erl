@@ -8,20 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(applicative).
 
--compile({parse_transform, monad_t_transform}).
-
--include("op.hrl").
--include("functor.hrl").
+-superclass([functor]).
 
 -export_type([applicative_module/0, f/1, applicative/2]).
-
-%% API
--export([pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]).
--export([pure/2, '<*>'/3, lift_a2/4, '<*'/3, '*>'/3]).
--export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
--export([ap/3, '<**>'/3, lift_a3/5]).
-
--transform({?MODULE, [applicative], [ap/2, '<**>'/2, lift_a3/4]}).
 
 -type applicative_module() :: {module(), applicative_module()} | module().
 -type f(_A) :: any().
@@ -33,54 +22,55 @@
 -callback '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
 -callback '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
 
+-compile({parse_transform, monad_t_transform}).
+
+-include("op.hrl").
+-include("functor.hrl").
+
+%% API
+-export([pure/2, '<*>'/3, lift_a2/4, '<*'/3, '*>'/3]).
+-export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
+-export([ap/3, '<**>'/3, lift_a3/5]).
+
+-transform({?MODULE, [?MODULE], [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
+-transform({?MODULE, [?MODULE], [ap/2, '<**>'/2, lift_a3/4]}).
+
+
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec pure(A) -> applicative:applicative(_F, A).
-pure(A) ->
-    undetermined:new(fun(Applicative) -> pure(A, Applicative) end).
+pure(A, UApplicative) ->
+    undetermined:new(
+      fun(Applicative) ->
+              typeclass_trans:apply(pure, [A], Applicative)
+      end, UApplicative).
 
--spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
-'<*>'(UF, UA) ->
+-spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
+'<*>'(UF, UA, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AF, AA) ->
               'do_<*>'(AF, AA, Applicative)
-      end, UF, UA, ?MODULE).
+      end, UF, UA, UApplicative).
 
-lift_a2(F, UA, UB) ->
+lift_a2(F, UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
               do_lift_a2(F, AA, AB, Applicative)
-      end, UA, UB, ?MODULE).
+      end, UA, UB, UApplicative).
 
 -spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
-'*>'(UA, UB) ->
+'*>'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
               typeclass_trans:apply('*>', [AA, AB], Applicative)
-      end, UA, UB, ?MODULE).
+      end, UA, UB, UApplicative).
 
 -spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
-'<*'(UA, UB) ->
+'<*'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
               typeclass_trans:apply('<*', [AB, AA], Applicative)
-      end, UA, UB, ?MODULE).
-
-pure(A, Applicative) ->
-    typeclass_trans:apply(pure, [A], Applicative).
-
-'<*>'(UF, UA, Applicative) ->
-    undetermined:run('<*>'(UF, UA), Applicative).
-
-lift_a2(F, UA, UB, Applicative) ->
-    undetermined:run(lift_a2(F, UA, UB), Applicative).
-
-'*>'(UA, UB, Applicative) ->
-    undetermined:run('*>'(UA, UB), Applicative).
-
-'<*'(UB, UA, Applicative) ->
-    undetermined:run('<*'(UB, UA), Applicative).
+      end, UA, UB, UApplicative).
 
 'default_<*>'(AF, AA, Applicative) ->
     FA = 

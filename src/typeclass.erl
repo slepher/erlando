@@ -9,11 +9,14 @@
 -module(typeclass).
 
 %% API
--export([module/2]).
+-export([is_typeclass/1, module/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+is_typeclass(_A) ->
+    false.
+
 module(A, B) ->
     exit({unregisted_module, {A, B}}).
 

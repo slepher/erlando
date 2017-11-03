@@ -21,7 +21,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {behaviour_modules = maps:new()}).
+-record(state, {behaviour_modules = maps:new(), typeclasses = []}).
 
 %%%===================================================================
 %%% API
@@ -67,7 +67,6 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    load_module(maps:new()),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -84,7 +83,19 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({register_modules, Modules}, _From, #state{behaviour_modules = BehaviourModules} = State) ->
+handle_call({register_modules, Modules}, _From, 
+            #state{behaviour_modules = BehaviourModules, typeclasses = Typeclasses} = State) ->
+    NTypeclasses = 
+        lists:foldl(
+          fun(Module, Acc) ->
+                  Classes = superclasses(Module),
+                  case Classes of
+                      [] ->
+                          Acc;
+                      _ ->
+                          ordsets:add_element(Module, Acc)
+                  end
+          end, Typeclasses, Modules),
     NBehaviourModules = 
         lists:foldl(
           fun(Module, Acc0) ->
@@ -94,14 +105,19 @@ handle_call({register_modules, Modules}, _From, #state{behaviour_modules = Behav
                           Type = Module:type(),
                           lists:foldl(
                             fun(Behaviour, Acc1) ->
-                                    maps:put({Type, Behaviour}, Module, Acc1)
+                                    case ordsets:is_element(Behaviour, NTypeclasses) of
+                                        true ->
+                                            maps:put({Type, Behaviour}, Module, Acc1);
+                                        false ->
+                                            Acc1
+                                    end
                             end, Acc0, Behaviours -- [type]);
                       false ->
                           Acc0
                   end
           end, BehaviourModules, Modules),
-    load_module(NBehaviourModules),
-    {reply, ok, State#state{behaviour_modules = NBehaviourModules}};
+    do_load_module(NTypeclasses, NBehaviourModules),
+    {reply, ok, State#state{behaviour_modules = NBehaviourModules, typeclasses = NTypeclasses}};
 
 handle_call({module, Type, Behaviour}, _From, #state{behaviour_modules = BehaviourModules} = State) ->
     Reply = 
@@ -171,28 +187,14 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-load_module(BehaviourModules) ->
-    Module = generate_module(BehaviourModules),
-    {ok, Mod, Bin} = compile:forms(Module),
-    code:load_binary(Mod, [], Bin).
-
-generate_module(BehaviourModules) ->
-    TypeclassModule = {attribute,0,module,typeclass},
-    Export = {attribute,0,export,[{module,2}]},
-    Clauses = 
-        maps:fold(
-          fun({Type, Behaviour}, Module, Acc) ->
-                  [module_clause(0, Type, Behaviour, Module)|Acc]
-          end, [], BehaviourModules),
-    LastClause = {clause, 0, [{var, 0, 'A'}, {var, 0, 'B'}], [], 
-                  [{call, 0, {atom, 0, exit}, 
-                    [{tuple, 0, [{atom, 0, unregisted_module}, {tuple, 0, [{var, 0, 'A'}, {var, 0, 'B'}]}]}]}]},
-    Function = {function, 0, module, 2, lists:reverse([LastClause|Clauses])},
-    [TypeclassModule, Export, Function].
-
-module_clause(Line, Type, Behaviour, Module) ->
-    {clause, 1, [{atom, Line, Type}, {atom, Line, Behaviour}], [],
-     [{atom, Line, Module}]}.
+superclasses(Module) ->
+    Attributes = Module:module_info(attributes),
+    lists:foldl(
+      fun({superclass, Behaviours}, Acc) ->
+              [Behaviours|Acc];
+         (_Other, Acc) ->
+              Acc
+      end, [], Attributes).
 
 behaviours(Module) ->
     Attributes = Module:module_info(attributes),
@@ -202,3 +204,38 @@ behaviours(Module) ->
          (_Other, Acc) ->
               Acc
       end, [], Attributes).
+
+do_load_module(Typeclasses, BehaviourModules) ->
+    TypeclassModule = {attribute,0,module,typeclass},
+    Export = {attribute,0,export,[{module,2}, {is_typeclass, 1}]},
+    IsTypeClass = generate_is_typeclass(Typeclasses),
+    Module = generate_module(BehaviourModules),
+    {ok, Mod, Bin} = compile:forms([TypeclassModule, Export, IsTypeClass, Module]),
+    code:load_binary(Mod, [], Bin).
+
+generate_is_typeclass(Typeclasses) ->
+   Clauses = 
+        lists:foldl(
+          fun(Typeclass, Acc) ->
+                  [is_typeclass_clause(0, Typeclass)|Acc]
+          end, [], Typeclasses),
+    LastClause = {clause, 0, [{var, 0, '_A'}], [], [{atom, 0, false}]},
+    {function, 0, is_typeclass, 1, lists:reverse([LastClause|Clauses])}.
+
+generate_module(BehaviourModules) ->
+    Clauses = 
+        maps:fold(
+          fun({Type, Behaviour}, Module, Acc) ->
+                  [module_clause(0, Type, Behaviour, Module)|Acc]
+          end, [], BehaviourModules),
+    LastClause = {clause, 0, [{var, 0, 'A'}, {var, 0, 'B'}], [], 
+                  [{call, 0, {atom, 0, exit}, 
+                    [{tuple, 0, [{atom, 0, unregisted_module}, {tuple, 0, [{var, 0, 'A'}, {var, 0, 'B'}]}]}]}]},
+    {function, 0, module, 2, lists:reverse([LastClause|Clauses])}.
+   
+is_typeclass_clause(Line, Typeclass) ->
+    {clause, Line, [{atom, Line, Typeclass}], [], [{atom, Line, true}]}.
+
+module_clause(Line, Type, Behaviour, Module) ->
+    {clause, 1, [{atom, Line, Type}, {atom, Line, Behaviour}], [],
+     [{atom, Line, Module}]}.

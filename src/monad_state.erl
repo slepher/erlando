@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(monad_state).
 
+-superclass([monad]).
+
 -callback get() -> monad:monadic(M, _S)  when M :: monad:monad().
 -callback put(_S)  -> monad:monadic(M, ok)  when M :: monad:monad().
 -callback state(fun((S) -> {A, S})) -> monad:monadic(M, A)  when M :: monad:monad().
@@ -20,33 +22,33 @@
 -include("applicative.hrl").
 -include("monad.hrl").
 
--export([get/0, put/1, state/1]).
 -export([get/1, put/2, state/2]).
 -export([gets/2, modify/2]).
 -export([default_get/1, default_put/2, default_state/2]).
 
+-transform({?MODULE, [monad_state], [get/0, put/1, state/1]}).
 -transform({?MODULE, [monad_state], [gets/1, modify/1]}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-get() ->
-    undetermined:new(fun(Module) -> monad_state:get(Module) end).
+get(UMonadState) ->
+    undetermined:new(
+      fun(MonadState) -> 
+              typeclass_trans:apply(get, [], MonadState)
+      end, UMonadState).
 
-put(S) ->
-    undetermined:new(fun(Module) -> monad_state:put(S, Module) end).
+put(S, UMonadState) ->
+    undetermined:new(
+      fun(MonadState) -> 
+              typeclass_trans:apply(put, [S], MonadState)
+      end, UMonadState).
 
-state(F) ->
-    undetermined:new(fun(Module) -> monad_state:state(F, Module) end).
-
-get(MonadState) ->
-    typeclass_trans:apply(get, [], MonadState).
-
-put(S, MonadState) ->
-    typeclass_trans:apply(put, [S], MonadState).
-
-state(F, MonadState) ->
-    typeclass_trans:apply(state, [F], MonadState).
+state(F, UMonadState) ->
+    undetermined:new(
+      fun(MonadState) ->
+              typeclass_trans:apply(state, [F], MonadState)
+      end, UMonadState).
 
 default_get(MonadState) ->
     state(fun(S) -> {S, S} end, MonadState).

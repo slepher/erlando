@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(monad_runner).
 
+-superclass([]).
+
 -callback run_nargs() -> integer().
 -callback run_m(monad:monadic(_M, A), [any()]) -> monad:monadic(_N, A) | A.
 

@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(traversable).
 
+-superclass([functor, foldable]).
+
 %% API
 -export([sequence_a/1, traverse/2, sequence/1, map_m/2]).
 -export([default_traverse/2, default_sequence_a/1, default_map_m/2, default_sequence/1]).

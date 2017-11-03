@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(monad_cont).
 
+-superclass([monad]).
+
 -callback callCC(fun((fun( (A) -> monad:monadic(M, _B) ))-> monad:monadic(M, A))) -> monad:monadic(M, A) when M :: monad:monad().
 
 -compile({parse_transform, monad_t_transform}).
@@ -16,24 +18,22 @@
 -include("applicative.hrl").
 -include("monad.hrl").
 
-%%%===================================================================
+%%%===================================================================        
 %%% API
 %%%===================================================================
--export([callCC/1]).
 -export([callCC/2]).
 
-callCC(F) ->
-    undetermined:new(
-      fun(MonadCont) -> 
-              callCC(F, MonadCont)
-      end).
+-transform({?MODULE, [?MODULE], [callCC/1]}).
 
-callCC(F, MonadCont) ->
-    NF = fun(CC) -> 
-                 NCC = fun(A) -> undetermined:run(CC(A), MonadCont) end,
-                 undetermined:run(F(NCC), MonadCont)
-         end,
-    monad_trans:apply_fun(callCC, [NF], MonadCont).
+callCC(F, UMonadCont) ->
+    undetermined:new(
+      fun(MonadCont) ->
+              NF = fun(CC) -> 
+                           NCC = fun(A) -> undetermined:run(CC(A), MonadCont) end,
+                           undetermined:run(F(NCC), MonadCont)
+                   end,
+              typeclass_trans:apply(callCC, [NF], MonadCont)
+      end, UMonadCont).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

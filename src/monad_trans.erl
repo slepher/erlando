@@ -9,13 +9,12 @@
 %% limitations under the License.
 
 -module(monad_trans).
+
+-superclass([monad]).
+
 -export_type([monad_trans/2]).
 
 -type monad_trans(T, M) :: {T, M}.
-
--export([lift/1]).
--export([lift/2]).
--export([apply_fun/3]).
 
 -callback '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B)), M) -> monad:monadic(M, B) when M :: monad:monad().
 -callback '>>'(monad:monadic(M, _A), monad:monadic(M, B), M) -> monad:monadic(M, B) when M :: monad:monad().
@@ -23,17 +22,18 @@
 -callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 -callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
--spec lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
-lift(MA) ->
-    undetermined:new(fun(MonadTrans) -> lift(MA, MonadTrans) end).
+-export([lift/2]).
+
+-transform({?MODULE, [?MODULE], [lift/1]}).
 
 -spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
-lift(UA, {T, IM} = MonadTrans) ->
-    MA = undetermined:run(UA, IM),
-    T:lift(MA, MonadTrans).
-
-apply_fun(F, Args, {T, M}) when is_atom(T) ->
-    erlang:apply(T, F, Args ++ [{T, M}]);
-apply_fun(F, Args, M) when is_atom(M) ->
-    erlang:apply(M, F, Args).
-
+lift(UA, UMonadTrans) ->
+    undetermined:new(
+      fun(MonadTrans) when is_atom(MonadTrans) ->
+              MonadTrans:lift(UA);
+         ({MonadTrans, UMonad}) ->
+              undetermined:map(
+                fun(Monad, MA) ->
+                        MonadTrans:lift(MA, {MonadTrans, Monad})
+                end, UA, UMonad)
+      end, UMonadTrans).

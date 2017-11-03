@@ -9,12 +9,20 @@
 -module(undetermined).
 
 %% API
--export([new/1, run/2, map/2, map/3, map_pair/3, map_pair/4]).
+-export([new/1, new/2, run/2, map/2, map/3, map_pair/3, map_pair/4]).
 %%%===================================================================
 %%% API
 %%%===================================================================
 new(Inner) ->
     {?MODULE, Inner}.
+
+new(F, Typeclass) ->
+    case typeclass:is_typeclass(Typeclass) of
+        true ->
+            {?MODULE, F};
+        false ->
+            F(Typeclass)
+    end.
 
 run({?MODULE, R}, TypeModule) ->
     R(TypeModule);
@@ -24,14 +32,24 @@ run(A, _TypeModule) ->
 map(F, Undetermined) ->
     map(F, Undetermined, undefined).
 
-map(F, {undetermined, FI}, _TypeClass) ->
-    new(
-      fun(Module) ->
-              F(Module, FI(Module))
-      end);
+map(F, {?MODULE, FI}, Typeclass) ->
+    case typeclass:is_typeclass(Typeclass) of
+        true ->
+            new(
+              fun(Module) ->
+                      F(Module, FI(Module))
+              end);
+        false ->
+            F(Typeclass, FI(Typeclass))
+    end;
 map(F, M, Typeclass) ->
-    Module = type:module(Typeclass, M),
-    F(Module, M).
+    case typeclass:is_typeclass(Typeclass) of
+        true ->
+            Module = type:module(Typeclass, M),
+            F(Module, M);
+        false ->
+            F(Typeclass, M)
+    end.
 
 map_pair(F, UA, UB) ->
     map_pair(F, UA, UB, undefined).

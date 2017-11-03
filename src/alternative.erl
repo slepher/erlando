@@ -8,7 +8,10 @@
 %%%-------------------------------------------------------------------
 -module(alternative).
 
+-superclass([applicative]).
+
 -compile({parse_transform, cut}).
+
 %% API
 -export([empty/0, '<|>'/2]).
 -export([empty/1, '<|>'/3]).

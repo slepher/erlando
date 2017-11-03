@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(foldable).
 
+-superclass([]).
+
 -export_type([foldable/2]).
 
 -type foldable(_F, _A) :: any().

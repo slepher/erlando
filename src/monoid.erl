@@ -7,6 +7,9 @@
 %%% Created : 10 Oct 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(monoid).
+
+-superclass([]).
+
 -export_type([monoid/1]).
 
 -type monoid(_M) :: any().
