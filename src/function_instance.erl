@@ -8,9 +8,10 @@
 %%%-------------------------------------------------------------------
 -module(function_instance).
 
+-erlando_type(function).
+
 -include("op.hrl").
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -18,7 +19,6 @@
 -behaviour(monad_runner).
 
 %% API
--export([type/0]).
 % functor instance.
 -export([fmap/2, '<$'/2]).
 % applicative instance.
@@ -37,9 +37,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-type() ->
-    function.
-
 -spec fmap(fun((A) -> B), fun((R) -> A)) -> fun((R) -> B).
 fmap(F, FA) ->
     '.'(F, FA).

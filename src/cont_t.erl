@@ -8,6 +8,14 @@
 %%%-------------------------------------------------------------------
 -module(cont_t).
 
+-erlando_type(?MODULE).
+
+-export_type([cont_t/3]).
+
+-opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
+-type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
+-type t(M) :: {cont_t, M}.
+
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
@@ -15,9 +23,6 @@
 
 -include("op.hrl").
 
--define(CONT_T_MONAD, {?MODULE, monad}).
-
--behaviour(type).
 -behaviour(functor).
 -behaviour(functor_trans).
 -behaviour(applicative).
@@ -34,9 +39,7 @@
 -behaviour(monad_state_trans).
 -behaviour(monad_runner).
 
--export_type([cont_t/3]).
 
--export([type/0]).
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
@@ -62,9 +65,7 @@
 -transform({?MODULE, monad, [shift/1, reset/1]}).
 -transform({?MODULE, monad, [eval/1, lift_local/4]}).
 
--opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
--type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
--type t(M) :: {cont_t, M}.
+
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(IM) ->
@@ -81,9 +82,6 @@ run_cont_t({undetermined, _} = U) ->
     run_cont_t(undetermined:run(U, cont_t));
 run_cont_t(Other) ->
     exit({invalid_monad, Other}).
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), cont_t(R, M, A)) -> cont_t(R, M, B).
 fmap(F, CTA, {?MODULE, _IM}) ->

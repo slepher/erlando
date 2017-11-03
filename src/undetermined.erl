@@ -9,7 +9,7 @@
 -module(undetermined).
 
 %% API
--export([new/1, new/2, run/2, map/2, map/3, map_pair/3, map_pair/4]).
+-export([new/1, new/2, run/2, map/3, map_pair/3, map_pair/4]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -33,9 +33,6 @@ run({?MODULE, R}, Typeclass) ->
     end;
 run(A, _TypeModule) ->
     A.
-
-map(F, Undetermined) ->
-    map(F, Undetermined, undefined).
 
 map(F, {?MODULE, FI}, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of

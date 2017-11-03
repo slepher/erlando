@@ -8,15 +8,15 @@
 %%%-------------------------------------------------------------------
 -module(either).
 
+-erlando_type(?MODULE).
+
 -compile({parse_transform, cut}).
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 
 %% API
--export([type/0]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
@@ -27,9 +27,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-type() ->
-    type:default_type(?MODULE).
-
 fmap(_, {left, L}) ->
     {left, L};
 fmap(F, {right, R}) ->

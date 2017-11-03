@@ -16,9 +16,12 @@
 
 -module(maybe).
 
+-erlando_type(?MODULE).
+
 -export_type([maybe/1]).
 
--behaviour(type).
+-type maybe(A) :: {just, A} | nothing.
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -27,7 +30,6 @@
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
--export([type/0]).
 %% impl of functor.
 -export([fmap/2, '<$'/2]).
 %% impl of applicative.
@@ -42,11 +44,6 @@
 -export([mzero/0, mplus/2]).
 %% impl of monad runner.
 -export([run_nargs/0, run_m/2]).
-
--type maybe(A) :: {just, A} | nothing.
-
-type() ->
-    maybe.
 
 -spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
 fmap(F, {just, X}) ->

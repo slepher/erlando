@@ -8,10 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(type).
 
--callback type() -> atom().
-
 %% API
--export([type/1, module/2, default_type/1]).
+-export([type/1, module/2]).
 
 %%%===================================================================
 %%% API
@@ -41,9 +39,6 @@ type({Module, _Instance}) ->
 module(Typeclass, Instance) ->
     Type = type(Instance),
     typeclass:module(Type, Typeclass).
-
-default_type(Module) ->
-    Module.
 
 %%--------------------------------------------------------------------
 %% @doc

@@ -35,19 +35,19 @@
 get(UMonadState) ->
     undetermined:new(
       fun(MonadState) -> 
-              typeclass_trans:apply(get, [], MonadState)
+              typeclass_trans:apply(get, [], MonadState, ?MODULE)
       end, UMonadState).
 
 put(S, UMonadState) ->
     undetermined:new(
       fun(MonadState) -> 
-              typeclass_trans:apply(put, [S], MonadState)
+              typeclass_trans:apply(put, [S], MonadState, ?MODULE)
       end, UMonadState).
 
 state(F, UMonadState) ->
     undetermined:new(
       fun(MonadState) ->
-              typeclass_trans:apply(state, [F], MonadState)
+              typeclass_trans:apply(state, [F], MonadState, ?MODULE)
       end, UMonadState).
 
 default_get(MonadState) ->
@@ -65,7 +65,7 @@ default_state(F, MonadState) ->
        ]).
 
 gets(F, MonadState) ->
-    functor:fmap(F, get(MonadState)).
+    functor:fmap(F, get(MonadState), MonadState).
 
 modify(F, MonadState) ->
     state(fun(S) -> {ok, F(S)} end, MonadState).

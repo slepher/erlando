@@ -18,12 +18,13 @@
 
 -module(list_instance).
 
+-erlando_type(list).
+
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
 
 -include("op.hrl").
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -35,7 +36,6 @@
 -behaviour(monad_plus).
 -behaviour(monoid).
 
--export([type/0]).
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
@@ -47,9 +47,6 @@
 -export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
 -export([mempty/0, mappend/2]).
-
-type() ->
-    list.
 
 fmap(F, Xs) ->
     [F(X) || X <- Xs].
@@ -122,7 +119,6 @@ map_m(A_MB, [MH|TM]) ->
        ]);
 map_m(_A_MB, []) ->
     monad:return([]).
-
 
 sequence(TMA) ->
     map_m(function_instance:id(), TMA).

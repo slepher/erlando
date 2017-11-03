@@ -16,7 +16,8 @@
 
 -module(state_t).
 
--behaviour(type).
+-erlando_type(?MODULE).
+
 -behaviour(functor).
 -behaviour(functor_trans).
 -behaviour(applicative).
@@ -44,8 +45,6 @@
 -compile({no_auto_import, [get/1, put/2]}).
 
 -export([new/1, state_t/1, run_state_t/1]).
-% impl of type.
--export([type/0]).
 % impl of functor.
 -export([fmap/3, '<$'/3]).
 % impl of applcative.
@@ -98,9 +97,6 @@ run_state_t({undetermined, _} = U) ->
     run_state_t(undetermined:run(U, ?MODULE));
 run_state_t(Other) ->
     exit({invalid_t, Other}).
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), state_t(S, M, A), t(M)) -> state_t(S, M, B).
 fmap(F, STA, {?MODULE, IM}) ->

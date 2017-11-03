@@ -7,6 +7,9 @@
 %%% Created : 11 Aug 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(writer_t).
+
+-erlando_type(?MODULE).
+
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
 
@@ -18,7 +21,6 @@
 -type inner_writer_t(W, M, A) :: monad:monadic(M, {A, [W]}).
 -type t(M) :: {writer_t, M}.
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -29,7 +31,6 @@
 -behaviour(monad_runner).
 
 -export([new/1, writer_t/1, run_writer_t/1]).
--export([type/0]).
 -export([fmap/3, '<$'/3]).
 % impl of applicative
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
@@ -48,7 +49,7 @@
 -export([run_nargs/0, run_m/2]).
 -export([exec/2, eval/2, run/1, map/2]).
 
--transform({?MODULE, fucntor, [fmap/2, '<$'/2]}).
+-transform({?MODULE, functor, [fmap/2, '<$'/2]}).
 -transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
 -transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
 -transform({?MODULE, monad, [lift/1]}).
@@ -73,9 +74,6 @@ run_writer_t({undetermined, _} = U) ->
     run_writer_t(undetermined:run(U, ?MODULE));
 run_writer_t(Other) ->
     exit({invalid_t, Other}).
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), writer_t(W, M, A)) -> writer_t(W, M, B).
 fmap(F, WTA, {?MODULE, IM}) ->

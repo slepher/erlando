@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(state_m).
 
+-erlando_type(?MODULE).
+
 -compile({parse_transform, monad_t_transform}).
 
 -behaviour(functor).

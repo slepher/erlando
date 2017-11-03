@@ -100,21 +100,19 @@ handle_call({register_modules, Modules}, _From,
         lists:foldl(
           fun(Module, Acc0) ->
                   Behaviours = behaviours(Module),
-                  case lists:member(type, Behaviours) of
-                      true ->
-                          Type = Module:type(),
-                          lists:foldl(
-                            fun(Behaviour, Acc1) ->
-                                    case ordsets:is_element(Behaviour, NTypeclasses) of
-                                        true ->
-                                            maps:put({Type, Behaviour}, Module, Acc1);
-                                        false ->
-                                            Acc1
-                                    end
-                            end, Acc0, Behaviours -- [type]);
-                      false ->
-                          Acc0
-                  end
+                  Types = types(Module),
+                  lists:foldl(
+                    fun(Type, Acc1) ->
+                            lists:foldl(
+                              fun(Behaviour, Acc2) ->
+                                      case ordsets:is_element(Behaviour, NTypeclasses) of
+                                          true ->
+                                              maps:put({Type, Behaviour}, Module, Acc2);
+                                          false ->
+                                              Acc2
+                                      end
+                              end, Acc1, Behaviours -- [type])
+                    end, Acc0, Types)
           end, BehaviourModules, Modules),
     do_load_module(NTypeclasses, NBehaviourModules),
     {reply, ok, State#state{behaviour_modules = NBehaviourModules, typeclasses = NTypeclasses}};
@@ -188,19 +186,19 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 superclasses(Module) ->
-    Attributes = Module:module_info(attributes),
-    lists:foldl(
-      fun({superclass, Behaviours}, Acc) ->
-              [Behaviours|Acc];
-         (_Other, Acc) ->
-              Acc
-      end, [], Attributes).
+    attributes(superclass, Module).
+
+types(Module) ->
+    lists:flatten(attributes(erlando_type, Module)).
 
 behaviours(Module) ->
+    lists:flatten(attributes(behaviour, Module)).
+
+attributes(Attribute, Module) ->
     Attributes = Module:module_info(attributes),
     lists:foldl(
-      fun({behaviour, Behaviours}, Acc) ->
-              Behaviours ++ Acc;
+      fun({Attr, Value}, Acc) when Attr == Attribute ->
+              [Value|Acc];
          (_Other, Acc) ->
               Acc
       end, [], Attributes).

@@ -7,6 +7,15 @@
 %%% Created : 11 Aug 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
 -module(error_t).
+
+-erlando_type(?MODULE).
+
+-export_type([error_t/3]).
+
+-opaque error_t(E, M, A) :: {error_t, inner_t(E, M, A)}.
+-type inner_t(E, M, A) :: monad:monadic(M, error_m:error_m(E, A)).
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
 -compile({parse_transform, monad_t_transform}).
@@ -14,9 +23,7 @@
 
 -include("op.hrl").
 
--export_type([error_t/3]).
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -28,7 +35,6 @@
 -behaviour(monad_runner).
 
 -export([new/1, error_t/1, run_error_t/1]).
--export([type/0]).
 % impl of functor.
 -export([fmap/3, '<$'/3]).
 % impl of applicative.
@@ -57,16 +63,6 @@
 -transform({?MODULE, monad, [empty/0, '<|>'/2, mzero/0, mplus/2]}).
 -transform({?MODULE, monad_reader, [ask/0, reader/1, local/2]}).
 -transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
-
-
--opaque error_t(E, M, A) :: {error_t, inner_t(E, M, A)}.
-
--type inner_t(E, M, A) :: monad:monadic(M, error_m:error_m(E, A)).
-
--type t(M) :: monad_trans:monad_trans(?MODULE, M).
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

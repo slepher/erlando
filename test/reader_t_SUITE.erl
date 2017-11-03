@@ -124,7 +124,8 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_reader_t_ask, test_monad_laws, test_monad_fail, test_local, test_monad_lift, test_reader].
+    [test_reader_t_ask, test_monad_laws, test_monad_fail, test_local, test_monad_lift,
+     test_reader, test_monad_state1, test_monad_state2].
 
 
 %%--------------------------------------------------------------------
@@ -256,3 +257,21 @@ test_reader(_Config) ->
     M1 = reader_t:reader(fun(R) -> identity:run(reader_t:run(M0, R)) end),
 
     ?assertEqual({ok, 3}, error_instance:run(reader_t:run(M1, [1,2,3]))).
+
+test_monad_state1(_Config) ->
+    Monad = reader_t:new(state_t:new(identity)),
+    M0 = do([Monad ||
+                A <- monad_reader:ask(),
+                S <- monad_state:get(),
+                monad_state:put(S + A)
+            ]),
+
+    ?assertEqual(4, identity:run(state_t:exec(reader_t:run(M0, 3), 1))).
+
+test_monad_state2(_Config) ->
+    M0 = do([monad ||
+                A <- monad_reader:ask(),
+                S <- monad_state:get(),
+                monad_state:put(S + A)
+            ]),
+    ?assertEqual(4, identity:run(state_t:exec(reader_t:run(M0, 3), 1))).

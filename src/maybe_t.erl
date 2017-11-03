@@ -8,6 +8,14 @@
 %%%-------------------------------------------------------------------
 -module(maybe_t).
 
+-erlando_type(?MODULE).
+
+-export_type([maybe_t/2]).
+
+-opaque maybe_t(M, A) :: {maybe_t, inner_t(M, A)}.
+-type inner_t(M, A) :: monad:monadic(M, maybe:maybe(A)).
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
@@ -15,7 +23,6 @@
 
 -include("op.hrl").
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -28,16 +35,8 @@
 -behaviour(monad_state_trans).
 -behaviour(monad_runner).
 
--export_type([maybe_t/2]).
-
--opaque maybe_t(M, A) :: {maybe_t, inner_t(M, A)}.
--type inner_t(M, A) :: monad:monadic(M, maybe:maybe(A)).
--type t(M) :: monad_trans:monad_trans(?MODULE, M).
-
 %% API
 -export([new/1, maybe_t/1, run_maybe_t/1]).
-% imple of type.
--export([type/0]).
 % impl of functor.
 -export([fmap/3, '<$'/3]).
 % impl of applicative.
@@ -83,9 +82,6 @@ run_maybe_t({undetermined, _} = U) ->
     run_maybe_t(undetermined:run(U, maybe_t));
 run_maybe_t(Other) ->
     exit({invalid_t, Other}).
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec fmap(fun((A) -> B), maybe_t(M, A)) -> maybe_t(M, B).
 fmap(F, MTA, {?MODULE, IM}) ->

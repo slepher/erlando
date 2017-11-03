@@ -8,13 +8,19 @@
 %%%-------------------------------------------------------------------
 -module(reader_t).
 
+-erlando_type(?MODULE).
+
+-opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
+-type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
+
+-type t(M) :: {reader_t, M}.
+
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
 
--behaviour(type).
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -29,8 +35,6 @@
 -define(READER_T_MONAD, {?MODULE, monad}).
 
 -export_type([reader_t/3]).
-
--export([type/0]).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
@@ -55,7 +59,7 @@
 % reader related functions
 -export([run/2, map/2, with/2]).
 
--transform({?MODULE, fucntor, [fmap/2, '<$'/2]}).
+-transform({?MODULE, functor, [fmap/2, '<$'/2]}).
 -transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
 -transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
 -transform({?MODULE, monad, [lift/1]}).
@@ -65,13 +69,6 @@
 -transform({?MODULE, alternative, [empty/0, '<|>'/2]}).
 -transform({?MODULE, monad_plus, [mzero/0, mplus/2]}).
 
--opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
--type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
-
--type t(M) :: {reader_t, M}.
-
-type() ->
-    type:default_type(?MODULE).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
