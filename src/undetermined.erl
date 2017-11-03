@@ -24,8 +24,13 @@ new(F, Typeclass) ->
             F(Typeclass)
     end.
 
-run({?MODULE, R}, TypeModule) ->
-    R(TypeModule);
+run({?MODULE, R}, Typeclass) ->
+    case typeclass:is_typeclass(Typeclass) of
+        true ->
+            {?MODULE, R};
+        false ->
+            R(Typeclass)
+    end;
 run(A, _TypeModule) ->
     A.
 
