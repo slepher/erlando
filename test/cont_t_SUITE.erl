@@ -175,7 +175,7 @@ test_t(_Config) ->
                R1 <- monad:return(2),
                R2 <- monad:return(3),
                return(R1 + R2)]),
-    ?assertEqual({ok, 5}, monad:run(cont_t:eval(R), error_instance)),
+    ?assertEqual({ok, 5}, monad:run(cont_t:eval(R), error)),
     ok.
 
 test_cont_t_lift(_Config) ->
@@ -282,7 +282,7 @@ test_cont_t_shift_reset1(_Config) ->
                    cont_t:eval(M),
                    10),
                  0),
-                error_instance),
+                error),
     ?assertEqual({{10, 0}, hello}, Result1),
     ?assertEqual({ok, {{10, 0}, hello}}, Result2).
 

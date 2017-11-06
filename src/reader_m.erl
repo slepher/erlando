@@ -21,9 +21,9 @@
 
 -transform({reader_t, [], identity_run, [run/2]}).
 
--transform_behaviour({state_t, [], [?READER], [functor, applicative, monad, monad_reader]}).
+-transform_behaviour({reader_t, [], [?READER], [functor, applicative, monad, monad_reader]}).
 
--transform_behaviour({state_t, [?MODULE], [?READER], [functor, applicative, monad, monad_reader]}).
+-transform_behaviour({reader_t, [?MODULE], [?READER], [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API

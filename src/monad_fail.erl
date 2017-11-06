@@ -8,11 +8,13 @@
 %%%-------------------------------------------------------------------
 -module(monad_fail).
 
+-superclass([monad]).
+
+-callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
+
 %% API
 -export([fail/1]).
 -export([fail/2]).
-
--callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %%%===================================================================
 %%% API
@@ -24,7 +26,7 @@ fail(E) ->
 fail(E, monad) ->
     fail(E);
 fail(E, MonadFail) ->
-    typeclass_trans:apply(fail, [E], MonadFail).
+    typeclass_trans:apply(fail, [E], MonadFail, ?MODULE).
 
 %%--------------------------------------------------------------------
 %% @doc

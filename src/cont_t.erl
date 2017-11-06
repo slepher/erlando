@@ -44,15 +44,18 @@
 -export([run/2, eval/2, map/2, with/2]).
 -export([lift_local/5]).
 
--transform({?MODULE, any, [fmap/2, '<$'/2]}).
--transform({?MODULE, any, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, any, ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, monad, [lift/1]}).
--transform({?MODULE, monad_cont, [callCC/1]}).
--transform({?MODULE, monad_fail, [fail/1]}).
+
+
 -transform({?MODULE, monad, [shift/1, reset/1]}).
 -transform({?MODULE, monad, [eval/1, lift_local/4]}).
 
+-transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_cont]}).
+
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], functor}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], applicative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], monad}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_cont}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(IM) ->

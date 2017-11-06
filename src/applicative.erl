@@ -42,7 +42,7 @@
 pure(A, UApplicative) ->
     undetermined:new(
       fun(Applicative) ->
-              typeclass_trans:apply(pure, [A], Applicative)
+              typeclass_trans:apply(pure, [A], Applicative, ?MODULE)
       end, UApplicative).
 
 -spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
@@ -62,14 +62,14 @@ lift_a2(F, UA, UB, UApplicative) ->
 '*>'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
-              typeclass_trans:apply('*>', [AA, AB], Applicative)
+              typeclass_trans:apply('*>', [AA, AB], Applicative, ?MODULE)
       end, UA, UB, UApplicative).
 
 -spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
 '<*'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
-              typeclass_trans:apply('<*', [AB, AA], Applicative)
+              typeclass_trans:apply('<*', [AB, AA], Applicative, ?MODULE)
       end, UA, UB, UApplicative).
 
 'default_<*>'(AF, AA, Applicative) ->
@@ -128,7 +128,7 @@ lift_a3(F, AA, AB, AC, Applicative) ->
 %%% Internal functions
 %%%===================================================================
 'do_<*>'(AF, AA, Applicative) ->
-    typeclass_trans:apply('<*>', [AF, AA], Applicative).
+    typeclass_trans:apply('<*>', [AF, AA], Applicative, ?MODULE).
 
 do_lift_a2(F, AA, AB, Applicative) ->
-    typeclass_trans:apply(lift_a2, [F, AA, AB], Applicative).
+    typeclass_trans:apply(lift_a2, [F, AA, AB], Applicative, ?MODULE).

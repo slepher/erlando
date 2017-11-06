@@ -33,7 +33,7 @@ callCC(F, UMonadCont) ->
                            NCC = fun(A) -> undetermined:run(CC(A), MonadCont) end,
                            undetermined:run(F(NCC), MonadCont)
                    end,
-              typeclass_trans:apply(callCC, [NF], MonadCont)
+              typeclass_trans:apply(callCC, [NF], MonadCont, ?MODULE)
       end, UMonadCont).
 %%%===================================================================
 %%% Internal functions

@@ -57,14 +57,14 @@
 '>>'(UA, UB, UMonad) ->
     undetermined:map_pair(
       fun(Monad, MA, MB) ->
-              typeclass_trans:apply('>>', [MA, MB], Monad)
+              typeclass_trans:apply('>>', [MA, MB], Monad, ?MODULE)
       end, UA, UB, UMonad).
 
 -spec return(M, A) -> monad:monadic(M, A) when M :: monad().
 return(A, UMonad) ->
     undetermined:new(
       fun(Monad) ->
-              typeclass_trans:apply(return, [A], Monad)
+              typeclass_trans:apply(return, [A], Monad, ?MODULE)
       end, UMonad).
 
 -spec 'default_>>'(monadic(M, _A), monadic(M, B), module()) -> monadic(M, B).
@@ -94,9 +94,9 @@ lift_m(F, MA, Monad) ->
        ]).
 
 as(A, {T, M}) ->
-    T:lift(as(A, M));
+    monad_trans:lift(as(A, M), {T, M});
 as(A, M) ->
-    M:return(A).
+    monad:return(A, M).
 
 id(Monad) ->
     as(fun(A) -> A end, Monad).
@@ -111,7 +111,7 @@ run(M, Monad) ->
 %%% Internal functions
 %%%===================================================================
 'do_>>='(MA, KMB, Monad) ->
-    typeclass_trans:apply('>>=', [MA, KMB], Monad).
+    typeclass_trans:apply('>>=', [MA, KMB], Monad, ?MODULE).
 
 
 %% traversable functions

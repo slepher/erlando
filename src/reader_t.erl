@@ -25,7 +25,6 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_trans).
--behaviour(monad_fail).
 -behaviour(monad_reader).
 -behaviour(alternative).
 -behaviour(monad_plus).
@@ -46,8 +45,6 @@
 -export([lift/2]).
 % impl of monad_reader
 -export([ask/1, reader/2, local/3]).
-% impl of monad_fail
--export([fail/2]).
 % impl of monad_state
 -export([get/1, put/2, state/2]).
 % impl of alternative
@@ -58,15 +55,16 @@
 % reader related functions
 -export([run/2, map/2, with/2]).
 
--transform({?MODULE, functor, [fmap/2, '<$'/2]}).
--transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, monad, [lift/1]}).
--transform({?MODULE, monad, [ask/0, reader/1, local/2]}).
--transform({?MODULE, monad_fail, [fail/1]}).
--transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
--transform({?MODULE, alternative, [empty/0, '<|>'/2]}).
--transform({?MODULE, monad_plus, [mzero/0, mplus/2]}).
+-transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_reader, 
+                                               alternative, monad_plus]}).
+
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, applicative}], applicative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_reader}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, alternative}], alternative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad_plus}], monad_plus}).
 
 
 -spec new(M) -> t(M) when M :: monad:monad().
@@ -137,9 +135,6 @@ return(A, {?MODULE, IM}) ->
 -spec lift(monad:monadic(M, A)) -> reader_t(_R, M, A).
 lift(X, {?MODULE, _IM}) ->
     reader_t(fun(_) -> X end).
-
-fail(E, {?MODULE, IM}) ->
-    reader_t(fun(_) -> monad_fail:fail(E, IM) end).
 
 -spec local(fun( (R) -> R), reader_t(R, M, A)) -> reader_t(R, M, A).
 local(F, RA, {?MODULE, _IM}) ->

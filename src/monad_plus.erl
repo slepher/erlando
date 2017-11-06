@@ -30,13 +30,13 @@
 mzero(UMonadPlus) ->
     undetermined:new(
       fun(MonadPlus) ->
-              typeclass_trans:apply(mzero, [], MonadPlus)
+              typeclass_trans:apply(mzero, [], MonadPlus, ?MODULE)
       end, UMonadPlus).
 
 mplus(UA, UB, UMonadPlus) ->
     undetermined:map_pair(
       fun(MonadPlus, MA, MB) ->
-              typeclass_trans:apply(mplus, [MA, MB], MonadPlus)
+              typeclass_trans:apply(mplus, [MA, MB], MonadPlus, ?MODULE)
       end, UA, UB, UMonadPlus).
 
 %% Utility functions

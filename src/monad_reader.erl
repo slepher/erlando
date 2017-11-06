@@ -26,7 +26,7 @@
 -export([asks/2]).
 
 -transform({?MODULE, [?MODULE], [ask/0, local/2, reader/1]}).
--transform({?MODULE, [monad_reader], [asks/1]}).
+-transform({?MODULE, [?MODULE], [asks/1]}).
 
 %%%===================================================================
 %%% API
@@ -34,19 +34,19 @@
 ask(UMonadReader) ->
     undetermined:new(
       fun(MonadReader) -> 
-              typeclass_trans:apply(ask, [], MonadReader)
+              typeclass_trans:apply(ask, [], MonadReader, ?MODULE)
       end, UMonadReader).
 
 local(F, URA, UMonadReader) ->
     undetermined:map(
       fun(MonadReader, MRA) ->
-              typeclass_trans:apply(local, [F, MRA], MonadReader)
+              typeclass_trans:apply(local, [F, MRA], MonadReader, ?MODULE)
       end, URA, UMonadReader).
 
 reader(F, UMonadReader) ->
     undetermined:new(
       fun(MonadReader) ->
-              typeclass_trans:apply(reader, [F], MonadReader)
+              typeclass_trans:apply(reader, [F], MonadReader, ?MODULE)
       end, UMonadReader).
 
 default_ask(MonadReader) ->

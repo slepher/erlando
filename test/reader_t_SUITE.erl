@@ -125,7 +125,7 @@ end_per_testcase(_TestCase, _Config) ->
 %%--------------------------------------------------------------------
 all() -> 
     [test_reader_t_ask, test_monad_laws, test_monad_fail, test_local, test_monad_lift,
-     test_reader, test_monad_state1, test_monad_state2].
+     test_reader, test_monad_state0, test_monad_state1, test_monad_state2].
 
 
 %%--------------------------------------------------------------------
@@ -165,7 +165,7 @@ test_reader_t_ask(_Config) ->
 
 
 test_monad_laws(_Config) ->
-    Monad = reader_t:new(error_instance),
+    Monad = reader_t:new(error),
 
     F = fun(A) -> do([Monad || 
                          Value <- reader_t:ask(),
@@ -219,7 +219,7 @@ test_monad_laws(_Config) ->
     ?assertEqual({ok, 97}, error_instance:run(reader_t:run(M7, 10))).
 
 test_monad_fail(_Config) ->
-    Monad = reader_t:new(error_instance),
+    Monad = reader_t:new(error),
     M0 = do([Monad ||
                 Value <- reader_t:ask(),
                 fail(Value + 3)
@@ -228,7 +228,7 @@ test_monad_fail(_Config) ->
     ?assertEqual({error, 13}, error_instance:run(reader_t:run(M0, 10))).
 
 test_monad_lift(_Config) ->
-    Monad = reader_t:new(error_instance),
+    Monad = reader_t:new(error),
     M0 = do([Monad ||
                 X <- reader_t:ask(),
                 Y <- reader_t:lift(error_instance:return(10)),
@@ -238,7 +238,7 @@ test_monad_lift(_Config) ->
     ?assertEqual({ok, 60}, error_instance:run(reader_t:run(M0, 6))).
 
 test_local(_Config) ->
-    Monad = reader_t:new(error_instance),
+    Monad = reader_t:new(error),
     M0 = do([Monad ||
                 X <- reader_t:ask(),
                 Y <- reader_t:lift(error_instance:return(10)),
@@ -257,6 +257,12 @@ test_reader(_Config) ->
     M1 = reader_t:reader(fun(R) -> identity:run(reader_t:run(M0, R)) end),
 
     ?assertEqual({ok, 3}, error_instance:run(reader_t:run(M1, [1,2,3]))).
+
+test_monad_state0(_Config) ->
+    M0 = do([monad ||
+                monad_state:get()
+            ]),
+    ?assertEqual(2, state_m:eval(reader_t:run(M0, 3), 2)).
 
 test_monad_state1(_Config) ->
     Monad = reader_t:new(state_t:new(identity)),

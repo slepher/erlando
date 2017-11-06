@@ -44,7 +44,7 @@ fmap(F, UA, UFunctor) ->
 '<$'(UB, UA, UFunctor) ->
     undetermined:map_pair(
       fun(Functor, FB, FA) ->
-              typeclass_trans:apply('<$', [FB, FA], Functor)
+              typeclass_trans:apply('<$', [FB, FA], Functor, ?MODULE)
       end, UB, UA, UFunctor).
 
 -spec '<$>'(fun((A) -> B), functor(F, A), F) -> functor(F, B).
@@ -57,4 +57,4 @@ fmap(F, UA, UFunctor) ->
 %%% Internal functions
 %%%===================================================================
 do_fmap(F, FA, Functor) ->
-    typeclass_trans:apply(fmap, [F, FA], Functor).
+    typeclass_trans:apply(fmap, [F, FA], Functor, ?MODULE).

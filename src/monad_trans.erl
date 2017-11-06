@@ -16,6 +16,7 @@
 
 -type monad_trans(T, M) :: {T, M}.
 
+-callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 -callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
 -export([lift/2]).
@@ -26,10 +27,7 @@
 lift(UA, UMonadTrans) ->
     undetermined:new(
       fun(MonadTrans) when is_atom(MonadTrans) ->
-              MonadTrans:lift(UA);
+              MonadTrans:lift(UA, MonadTrans);
          ({MonadTrans, UMonad}) ->
-              undetermined:map(
-                fun(Monad, MA) ->
-                        MonadTrans:lift(MA, {MonadTrans, Monad})
-                end, UA, UMonad)
+              MonadTrans:lift(UA, {MonadTrans, UMonad})
       end, UMonadTrans).

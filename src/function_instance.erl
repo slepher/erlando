@@ -10,7 +10,11 @@
 
 -erlando_type(function).
 
+-compile({parse_transform, monad_t_transform}).
+
 -include("op.hrl").
+
+-define(TYPE, function).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -19,14 +23,11 @@
 -behaviour(monad_runner).
 
 %% API
-% functor instance.
--export([fmap/2, '<$'/2]).
-% applicative instance.
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
-% monad instance.
--export(['>>='/2, '>>'/2, return/1]).
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
+-export(['>>='/3, '>>'/3, return/2]).
 % monad reader instance.
--export([ask/0, reader/1, local/2]).
+-export([ask/1, local/3, reader/2]).
 % monad runner instance.
 -export([run_nargs/0, run_m/2]).
 
@@ -34,57 +35,62 @@
 -export([const/1]).
 -export([id/0, id/1]).
 
+-transform_behaviour({?MODULE, [], [?TYPE], functor}).
+-transform_behaviour({?MODULE, [], [?TYPE], applicative}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad_reader}).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 -spec fmap(fun((A) -> B), fun((R) -> A)) -> fun((R) -> B).
-fmap(F, FA) ->
+fmap(F, FA, ?TYPE) ->
     '.'(F, FA).
 
 -spec '<$'(B, fun((R) -> _A)) -> fun((R) -> B).
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA, ?MODULE).
+'<$'(B, FA, ?TYPE) ->
+    functor:'default_<$'(B, FA, ?TYPE).
 
 -spec '<*>'(fun((R) -> fun((A) -> B)), fun((R) -> A)) -> fun((R) -> B).
-'<*>'(FF, FA) ->
+'<*>'(FF, FA, ?TYPE) ->
     fun(R) -> (FF(R))(FA(R)) end.
 
 -spec pure(A) -> fun((_R) -> A).
-pure(A) ->
+pure(A, ?TYPE) ->
     const(A).
 
 -spec lift_a2(fun((A, B) -> C), fun((R) -> A), fun((R) -> B)) -> fun((R) -> C).
-lift_a2(F, RTA, RTB) ->
+lift_a2(F, RTA, RTB, ?TYPE) ->
     applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
 
 -spec '*>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
-'*>'(RTA, RTB) ->
-    applicative:'default_*>'(RTA, RTB, ?MODULE).
+'*>'(RTA, RTB, ?TYPE) ->
+    applicative:'default_*>'(RTA, RTB, ?TYPE).
 
 -spec '<*'(fun((R) -> A), fun((R) -> _B)) -> fun((R) -> A).
-'<*'(RTA, RTB) ->
-    applicative:'default_<*'(RTA, RTB, ?MODULE).
+'<*'(RTA, RTB, ?TYPE) ->
+    applicative:'default_<*'(RTA, RTB, ?TYPE).
            
 -spec '>>='(fun((R) -> A), fun((A) -> fun((R) -> B))) -> fun((R) -> B).  
-'>>='(FA, KFB) ->
+'>>='(FA, KFB, ?TYPE) ->
     fun(X) -> (KFB(FA(X)))(X) end.
 
 -spec '>>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
-'>>'(FA, FB) ->
-    monad:'default_>>'(FA, FB, ?MODULE).
+'>>'(FA, FB, ?TYPE) ->
+    monad:'default_>>'(FA, FB, ?TYPE).
 
 -spec return(A) -> fun((_R) -> A).
-return(A) ->
-    monad:default_return(A, ?MODULE).
+return(A, ?TYPE) ->
+    monad:default_return(A, ?TYPE).
 
-ask() ->
+ask(?TYPE) ->
     id().
 
-reader(F) ->
-    id(F).
-
-local(F, FI) ->
+local(F, FI, ?TYPE) ->
     '.'(FI, F).
+
+reader(F, ?TYPE) ->
+    id(F).
 
 run_nargs() ->
     1.

@@ -18,6 +18,13 @@
 
 -erlando_type(?MODULE).
 
+-export_type([state_t/3]).
+
+-type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
+-type inner_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
+
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -29,12 +36,9 @@
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
+-compile({no_auto_import, [get/1, put/2]}).
 
 -include("op.hrl").
-
--export_type([state_t/3]).
-
--compile({no_auto_import, [get/1, put/2]}).
 
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
@@ -56,17 +60,16 @@
 %% state related functions
 -export([eval/2, exec/2, run/2, map/2, with/2]).
 
--transform({?MODULE, functor, [fmap/2, '<$'/2]}).
--transform({?MODULE, monad, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, monad, [lift/1]}).
--transform({?MODULE, monad, [get/0, put/1, state/1]}).
--transform({?MODULE, monad_plus, [empty/0, '<|>'/2, mzero/0, mplus/2]}).
+-transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_state,
+                                               alternative, monad_plus]}).
 
--type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
--type inner_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
-
--type t(M) :: monad_trans:monad_trans(?MODULE, M).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], applicative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_state}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], alternative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_plus}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(Inner) ->

@@ -47,8 +47,8 @@ map(F, {?MODULE, FI}, Typeclass) ->
 map(F, M, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
-            Module = type:module(Typeclass, M),
-            F(Module, M);
+            Type = type:type(M),
+            F(Type, M);
         false ->
             F(Typeclass, M)
     end.

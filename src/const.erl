@@ -10,14 +10,19 @@
 
 -erlando_type(?MODULE).
 
+-compile({parse_transform, monad_t_transform}).
+
 -behaviour(functor).
 -behaviour(applicative).
 
 %% API
 -export([const/1]).
--export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 -export([run_const/1]).
+
+-transform_behaviour({?MODULE, [], [?MODULE], functor}).
+-transform_behaviour({?MODULE, [], [?MODULE], applicative}).
 
 %%%===================================================================
 %%% API
@@ -25,25 +30,25 @@
 const(R) ->
     {?MODULE, R}.
 
-fmap(_F, CA) ->
+fmap(_F, CA, ?MODULE) ->
     CA. 
 
-'<$'(_B, CA) ->
+'<$'(_B, CA, ?MODULE) ->
     CA.
 
-pure(_A) ->
+pure(_A, ?MODULE) ->
     {const, monoid:mempty()}.
 
-'<*>'({?MODULE, MA}, {?MODULE, MB}) ->
+'<*>'({?MODULE, MA}, {?MODULE, MB}, ?MODULE) ->
     const(monoid:mappend(MA, MB)).
 
-lift_a2(F, CA, CB) ->
+lift_a2(F, CA, CB, ?MODULE) ->
     applicative:default_lift_a2(F, CA, CB, ?MODULE).
 
-'*>'(CA, CB) ->
+'*>'(CA, CB, ?MODULE) ->
     applicative:'default_*>'(CA, CB, ?MODULE).
 
-'<*'(CA, CB) ->
+'<*'(CA, CB, ?MODULE) ->
     applicative:'default_<*'(CA, CB, ?MODULE).
 
 run_const({undetermined, _} = UA) ->

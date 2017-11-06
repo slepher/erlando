@@ -25,7 +25,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_trans).
--behaviour(monad_fail).
+-behaviour(monad_writer).
 -behaviour(alternative).
 -behaviour(monad_plus).
 -behaviour(monad_runner).
@@ -40,8 +40,6 @@
 -export([lift/2]).
 % impl of monad_writer
 -export([writer/2, tell/2, listen/2, pass/2]).
-% impl of monad_fail
--export([fail/2]).
 % impl of alternative
 -export([empty/1, '<|>'/3]).
 % impl of monad_plus
@@ -49,15 +47,18 @@
 -export([run_nargs/0, run_m/2]).
 -export([exec/2, eval/2, run/1, map/2]).
 
--transform({?MODULE, functor, [fmap/2, '<$'/2]}).
--transform({?MODULE, applicative, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, monad, [lift/1]}).
--transform({?MODULE, monad, [writer/1, tell/1, listen/1, pass/1]}).
--transform({?MODULE, monad_fail, [fail/1]}).
--transform({?MODULE, alternative, [empty/0, '<|>'/2]}).
--transform({?MODULE, monad_plus, [mzero/0, mplus/2]}).
 -transform({?MODULE, monad, [exec/1, eval/1]}).
+
+-transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_writer,
+                                               alternative, monad_plus]}).
+
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, applicative}], applicative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_fail}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, alternative}], alternative}).
+-transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad_plus}], monad_plus}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -128,10 +129,6 @@ return(A, {?MODULE, IM}) ->
 -spec lift(monad:monadic(M, A)) -> writer_t(_W, M, A).
 lift(MA, {?MODULE, IM}) ->
     writer_t(monad:lift_m(fun(A) -> {A, []} end, MA, IM)).
-
--spec fail(any()) -> writer_t(_W, _M, _A).
-fail(E, {?MODULE, IM}) ->
-    writer_t(monad_fail:fail(E, IM)).
 
 writer({A, Ws}, {?MODULE, IM}) ->
     writer_t(monad:return({A, Ws}, IM)).

@@ -35,25 +35,25 @@
 writer({A, Ws}, UMonadWriter) ->
     undetermined:new(
       fun(MonadWriter) ->
-              typeclass_trans:apply(writer, [{A, Ws}], MonadWriter)
+              typeclass_trans:apply(writer, [{A, Ws}], MonadWriter, ?MODULE)
       end, UMonadWriter).
 
 tell(Ws, UMonadWriter) ->
     undetermined:new(
       fun(MonadWriter) ->
-              typeclass_trans:apply(writer, [Ws], MonadWriter)
+              typeclass_trans:apply(writer, [Ws], MonadWriter, ?MODULE)
       end, UMonadWriter).
 
 listen(UA, UMonadWriter) ->
     undetermined:map(
       fun(MonadWriter, MWA) ->
-              typeclass_trans:apply(listen, [MWA], MonadWriter)
+              typeclass_trans:apply(listen, [MWA], MonadWriter, ?MODULE)
       end, UA, UMonadWriter).
 
 pass(UA, UMonadWriter) ->
     undetermined:map(
       fun(MonadWriter, MWA) ->
-              typeclass_trans:apply(pass, [MWA], MonadWriter)
+              typeclass_trans:apply(pass, [MWA], MonadWriter, ?MODULE)
       end, UA, UMonadWriter).
 
 -spec listens(fun(([_W]) -> B), monad:monadic(M, A), M) -> monad:monadic(M, {A, B}).

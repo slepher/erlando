@@ -21,9 +21,10 @@
 %%% API
 %%%===================================================================
 ask(MonadTrans) when is_atom(MonadTrans) ->
-    ask({MonadTrans, monad_reader});
-ask({MonadTrans, MonadState}) ->
-    monad_trans:lift(monad_state:get(MonadState), {MonadTrans, MonadState}).
+    monad_trans:lift(monad_reader:ask(), MonadTrans);
+    %ask({MonadTrans, monad_reader});
+ask({MonadTrans, MonadReader}) ->
+    monad_trans:lift(monad_reader:ask(MonadReader), {MonadTrans, MonadReader}).
 
 local(F, MRA, cont_t) ->
     local(F, MRA, {cont, monad_reader});

@@ -12,22 +12,18 @@
 
 -compile({parse_transform, monad_t_transform}).
 
+-define(CONT, {cont_t, identity}).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_cont).
 
--transform({cont_t, identity, [fmap/2, '<$'/2]}).
--transform({cont_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({cont_t, identity, ['>>='/2, '>>'/2, return/1]}).
--transform({cont_t, identity, [callCC/1]}).
-
--transform({cont_t, [fmap/3, '<$'/3]}).
--transform({cont_t, [pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]}).
--transform({cont_t, ['>>='/3, '>>'/3, return/2]}).
--transform({cont_t, [callCC/2]}).
-
 -transform({cont_t, [], identity_run, [run/2, eval/1]}).
+
+-transform_behaviour({cont_t, [], [?CONT], [functor, applicative, monad, monad_cont]}).
+
+-transform_behaviour({cont_t, [?MODULE], [?CONT], [functor, applicative, monad, monad_cont]}).
 
 %%%===================================================================
 %%% API

@@ -21,17 +21,17 @@
 %%% API
 %%%===================================================================
 get(MonadTrans) when is_atom(MonadTrans) ->
-    monad_trans:lift(monad_state:get(), MonadTrans);
+    get({MonadTrans, monad_state});
 get({MonadTrans, MonadState}) ->
     monad_trans:lift(monad_state:get(MonadState), {MonadTrans, MonadState}).
 
 put(S, MonadTrans) when is_atom(MonadTrans) ->
-    monad_trans:lift(monad_state:put(S), MonadTrans);
+    put(S, {MonadTrans, monad_state});
 put(S, {MonadTrans, MonadState}) ->
     monad_trans:lift(monad_state:put(S, MonadState), {MonadTrans, MonadState}).
 
 state(F, MonadTrans) when is_atom(MonadTrans) ->
-    monad_trans:lift(monad_state:state(F), MonadTrans);
+    state(F, {MonadTrans, monad_state});
 state(F, {MonadTrans, MonadState}) ->
     monad_trans:lift(monad_state:state(F, MonadState), {MonadTrans, MonadState}).
 %%--------------------------------------------------------------------

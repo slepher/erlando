@@ -28,13 +28,13 @@
 empty(UAlternative) ->
     undetermined:new(
       fun(Alternative) -> 
-              typeclass_trans:apply(empty, [], Alternative)
+              typeclass_trans:apply(empty, [], Alternative, ?MODULE)
       end, UAlternative).
 
 '<|>'(UA, UB, UAlternative) ->
     undetermined:map_pair(
       fun(Alternative, FA, FB) ->
-              typeclass_trans:apply('<|>', [FA, FB], Alternative)
+              typeclass_trans:apply('<|>', [FA, FB], Alternative, ?MODULE)
       end, UA, UB, UAlternative).
 %%%===================================================================
 %%% Internal functions
