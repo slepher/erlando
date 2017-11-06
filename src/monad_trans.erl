@@ -16,7 +16,6 @@
 
 -type monad_trans(T, M) :: {T, M}.
 
--callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 -callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
 -export([lift/2]).

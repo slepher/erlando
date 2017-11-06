@@ -60,8 +60,8 @@
 %% state related functions
 -export([eval/2, exec/2, run/2, map/2, with/2]).
 
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_state,
-                                               alternative, monad_plus]}).
+-transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans,
+                                               monad_state, alternative, monad_plus]}).
 
 -transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
 -transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], applicative}).

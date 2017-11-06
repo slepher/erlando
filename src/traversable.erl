@@ -10,17 +10,21 @@
 
 -superclass([functor, foldable]).
 
+-compile({parse_transform, monad_t_transform}).
+
 %% API
--export([sequence_a/1, traverse/2, sequence/1, map_m/2]).
--export([default_traverse/2, default_sequence_a/1, default_map_m/2, default_sequence/1]).
+-export([sequence_a/2, traverse/3, sequence/2, map_m/3]).
+-export([default_traverse/3, default_sequence_a/2, default_map_m/3, default_sequence/2]).
 
 -type traversable(_A) :: any().
 
--callback traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A)) -> applicative:applicate(traversable(B)).
--callback sequence_a(traversable(applicative:applicate(A))) -> applicative:applicate(traversable(A)).
--callback map_m(fun((A) -> monad:monadic(M, B)), monad:monadic(M, A)) -> monad:monadic(M, traversable(B)).
--callback sequence(traversable(monad:monadic(M, A))) -> monad:monadic(M, traversable(A)).
+-callback traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A), _F) -> applicative:applicate(traversable(B)).
+-callback sequence_a(traversable(applicative:applicate(A)), _F) -> applicative:applicate(traversable(A)).
+-callback map_m(fun((A) -> monad:monadic(M, B)), monad:monadic(M, A), M) -> monad:monadic(M, traversable(B)).
+-callback sequence(traversable(monad:monadic(M, A)), M) -> monad:monadic(M, traversable(A)).
 
+
+-transform({?MODULE, [?MODULE], [traverse/2, sequence_a/1, map_m/2, sequence/1]}).
 
 %%%===================================================================
 %%% API
@@ -29,35 +33,43 @@
 %% some traversable could not check type by instance
 -spec traverse(fun((A) -> applicative:applicate(B)), applicative:applicate(A)) ->
                       applicative:applicate(traversable(B)).
-traverse(A_FB, TA) ->
-    Module = type:module(traversable, TA),
-    Module:traverse(A_FB, TA).
+traverse(A_FB, UA, UTraversable) ->
+    undetermined:map(
+      fun(Traversable, TA) ->
+              typeclass_trans:apply(traverse, [A_FB, TA], Traversable, ?MODULE)
+      end, UA, UTraversable).
 
 -spec sequence_a(traversable(applicative:applicate(A))) -> 
                         applicative:applicate(traversable(A)).
-sequence_a(TFA) ->
-    Module = type:module(traversable, TFA),
-    Module:sequence_a(TFA).
+sequence_a(UFA, UTraversable) ->
+    undetermined:map(
+      fun(Traversable, TFA) ->
+              typeclass_trans:apply(sequence_a, [TFA], Traversable, ?MODULE)
+      end, UFA, UTraversable).
 
-map_m(A_MB, TA) ->
-    Module = type:module(traversable, TA),
-    Module:map_m(A_MB, TA).
+map_m(A_MB, UA, UTraversable) ->
+    undetermined:map(
+      fun(Traversable, TA) ->
+              typeclass_trans:apply(map_m, [A_MB, TA], Traversable, ?MODULE)
+      end, UA, UTraversable).
 
-sequence(TMA) ->
-    Module = type:module(traversable, TMA),
-    Module:sequence(TMA).
+sequence(UMA, UTraversable) ->
+    undetermined:map(
+      fun(Traversable, TMA) ->
+              typeclass_trans:apply(sequence_a, [TMA], Traversable, ?MODULE)
+      end, UMA, UTraversable).
 
-default_traverse(AF_B, TA) ->
-    sequence_a(functor:fmap(AF_B, TA)).
+default_traverse(AF_B, TA, Traversable) ->
+    sequence_a(functor:fmap(AF_B, TA, Traversable), Traversable).
 
-default_sequence_a(TFA) ->
-    traverse(fun(A) -> A end, TFA).
+default_sequence_a(TFA, Traversable) ->
+    traverse(fun(A) -> A end, TFA, Traversable).
 
-default_map_m(A_MB, TA) ->
-    traverse(A_MB, TA).
+default_map_m(A_MB, TA, Traversable) ->
+    traverse(A_MB, TA, Traversable).
 
-default_sequence(TMA) ->
-    sequence_a(TMA).
+default_sequence(TMA, Traversable) ->
+    sequence_a(TMA, Traversable).
     
 %%--------------------------------------------------------------------
 %% @doc

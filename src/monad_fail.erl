@@ -13,20 +13,18 @@
 -callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %% API
--export([fail/1]).
 -export([fail/2]).
+
+-transform({?MODULE, [?MODULE], [fail/1]}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-fail(E) ->
-    undetermined:new(fun(MonadFail) -> fail(E, MonadFail) end).
-
-fail(E, monad) ->
-    fail(E);
-fail(E, MonadFail) ->
-    typeclass_trans:apply(fail, [E], MonadFail, ?MODULE).
+fail(E, UMonadFail) ->
+    undetermined:new(
+      fun(MonadFail) ->
+              typeclass_trans:apply(fail, [E], MonadFail, ?MODULE)
+      end, UMonadFail).
 
 %%--------------------------------------------------------------------
 %% @doc

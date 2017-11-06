@@ -44,10 +44,7 @@
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--transform_behaviour({?MODULE, [], [?TYPE], functor}).
--transform_behaviour({?MODULE, [], [?TYPE], applicative}).
--transform_behaviour({?MODULE, [], [?TYPE], monad}).
--transform_behaviour({?MODULE, [], [?TYPE], monad_fail}).
+-transform_behaviour({?MODULE, [], [?TYPE], [functor, applicative, monad, monad_fail]}).
 
 -spec fmap(fun((A) -> B), error_instance(E, A)) -> error_instance(E, B).
 fmap(F, E, ?TYPE) ->

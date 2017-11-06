@@ -35,10 +35,7 @@
 -export([const/1]).
 -export([id/0, id/1]).
 
--transform_behaviour({?MODULE, [], [?TYPE], functor}).
--transform_behaviour({?MODULE, [], [?TYPE], applicative}).
--transform_behaviour({?MODULE, [], [?TYPE], monad}).
--transform_behaviour({?MODULE, [], [?TYPE], monad_reader}).
+-transform_behaviour({?MODULE, [], [?TYPE], [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API

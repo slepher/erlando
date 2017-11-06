@@ -44,19 +44,16 @@
 -export(['>>='/3, '>>'/3, return/2]).
 -export([fail/2]).
 -export([run_nargs/0, run_m/2]).
--export([fold_map/2]).
--export([traverse/2, sequence_a/1, map_m/2, sequence/1]).
+-export([fold_map/3]).
+-export([traverse/3, sequence_a/2, map_m/3, sequence/2]).
 
 -export([empty/1, '<|>'/3]).
 -export([mzero/1, mplus/3]).
--export([mempty/0, mappend/2]).
+-export([mempty/1, mappend/3]).
 
--transform_behaviour({?MODULE, [], [?TYPE], functor}).
--transform_behaviour({?MODULE, [], [?TYPE], applicative}).
--transform_behaviour({?MODULE, [], [?TYPE], monad}).
--transform_behaviour({?MODULE, [], [?TYPE], monad_fail}).
--transform_behaviour({?MODULE, [], [?TYPE], alternative}).
--transform_behaviour({?MODULE, [], [?TYPE], monad_plus}).
+-transform_behaviour({?MODULE, [], [?TYPE], [functor, applicative, monad, monad_fail]}).
+-transform_behaviour({?MODULE, [], [?TYPE], [foldable, traversable]}).
+-transform_behaviour({?MODULE, [], [?TYPE], [alternative, monad_plus, monoid]}).
 
 fmap(F, Xs, ?TYPE) ->
     [F(X) || X <- Xs].
@@ -107,31 +104,31 @@ run_nargs() ->
 run_m(As, []) ->
     As.
 
-fold_map(F, As) ->
+fold_map(F, As, ?TYPE) ->
     lists:foldr(
       fun(A, Acc) ->
               monoid:mappend(Acc, F(A))
       end, monoid:mempty(), As).
 
-traverse(A_FB, [H|T]) ->
-    applicative:lift_a2([_|_], A_FB(H), traverse(A_FB, T));
-traverse(_A_FB, []) ->
+traverse(A_FB, [H|T], ?TYPE) ->
+    applicative:lift_a2([_|_], A_FB(H), traverse(A_FB, T, ?TYPE));
+traverse(_A_FB, [], ?TYPE) ->
     applicative:pure([]).
 
-sequence_a(TFA) ->
-    traversable:default_sequence_a(TFA).
+sequence_a(TFA, ?TYPE) ->
+    traversable:default_sequence_a(TFA, ?TYPE).
 
-map_m(A_MB, [MH|TM]) ->
+map_m(A_MB, [MH|TM], ?TYPE) ->
     do([monad ||
            H <- MH,
-           T <- map_m(A_MB, TM),
+           T <- map_m(A_MB, TM, ?TYPE),
            return([H|T])
        ]);
-map_m(_A_MB, []) ->
+map_m(_A_MB, [], ?TYPE) ->
     monad:return([]).
 
-sequence(TMA) ->
-    map_m(function_instance:id(), TMA).
+sequence(TMA, ?TYPE) ->
+    map_m(function_instance:id(), TMA, ?TYPE).
            
 empty(?TYPE) ->
     mzero(?TYPE).
@@ -146,6 +143,6 @@ mzero(?TYPE) -> [].
 mplus(X, Y, ?TYPE) ->
     lists:append(X, Y).
 
-mempty() -> [].
+mempty(?TYPE) -> [].
 
-mappend(X, Y) -> mplus(X, Y).
+mappend(X, Y, ?TYPE) -> mplus(X, Y).

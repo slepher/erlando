@@ -10,19 +10,26 @@
 
 -superclass([]).
 
+-compile({parse_transform, monad_t_transform}).
+
 -export_type([foldable/2]).
 
 -type foldable(_F, _A) :: any().
 
--callback fold_map(fun((A) -> monoid:monoid(M)), foldable(_F, A)) -> monoid:monoid(M).
+-callback fold_map(fun((A) -> monoid:monoid(M)), foldable(F, A), F) -> monoid:monoid(M).
 %% API
--export([fold_map/2]).
+-export([fold_map/3]).
+
+-transform({?MODULE, [?MODULE], [fold_map/2]}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-fold_map(F, TA) ->
-    undetermined:new(fun(Module) -> Module:foldmap(F, TA) end).
+fold_map(F, UA, UFoldable) ->
+    undetermined:map(
+      fun(Foldable, TA) -> 
+              typeclass_trans:apply(foldmap, [F, TA], Foldable, ?MODULE)
+      end, UA, UFoldable).
 
 %%--------------------------------------------------------------------
 %% @doc

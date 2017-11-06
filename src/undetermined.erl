@@ -9,13 +9,10 @@
 -module(undetermined).
 
 %% API
--export([new/1, new/2, type/2, run/2, map0/3, map/3, map_pair/3, map_pair/4]).
+-export([new/2, type/2, run/2, map0/3, map/3, map_pair/3, map_pair/4]).
 %%%===================================================================
 %%% API
 %%%===================================================================
-new(Inner) ->
-    {?MODULE, Inner}.
-
 new(F, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
@@ -24,15 +21,11 @@ new(F, Typeclass) ->
             F(Typeclass)
     end.
 
-type({?MODULE, _R}, Typeclass) ->
-    Typeclass;
-type(A, Typeclass) ->
-    case typeclass:is_typeclass(Typeclass) of
-        true ->
-            type:type(A);
-        false ->
-            Typeclass
-    end.
+type(UA, Typeclass) ->
+    map0(
+      fun(Type, _MA) ->
+              Type
+      end, UA, Typeclass).
 
 run(UA, Typeclass) ->
     map0(
@@ -56,7 +49,7 @@ map(F, {?MODULE, UF}, Typeclass) ->
             new(
               fun(Module) ->
                       F(Module, UF(Module))
-              end);
+              end, Typeclass);
         false ->
             F(Typeclass, UF(Typeclass))
     end;

@@ -10,28 +10,33 @@
 
 -superclass([]).
 
+-compile({parse_transform, monad_t_transform}).
+
 -export_type([monoid/1]).
 
 -type monoid(_M) :: any().
 
--callback mempty() -> monoid(_M).
--callback mappend(monoid(M), monoid(M)) -> monoid(M).
+-callback mempty(M) -> monoid(M).
+-callback mappend(monoid(M), monoid(M), M) -> monoid(M).
 
 %% API
--export([mempty/0, mappend/2]).
+-export([mempty/1, mappend/3]).
 
+-transform({?MODULE, [?MODULE], [mempty/0, mappend/2]}).
 %%%===================================================================
 %%% API
 %%%===================================================================
+mempty(UMonoid) ->
+    undetermined:new(
+      fun(Monoid) ->
+              typeclass_trans:apply(mempty, [], Monoid, ?MODULE)
+      end, UMonoid).
 
-mempty() ->
-    undetermined:new(fun(Module) -> Module:mempty() end).
-
-mappend(UA, UB) ->
+mappend(UA, UB, UMonoid) ->
     undetermined:map_pair(
-      fun(Module, MA, MB) ->
-              Module:mappend(MA, MB)
-      end, UA, UB, ?MODULE).
+      fun(Monoid, MA, MB) ->
+              typeclass_trans:apply(mappend, [MA, MB], Monoid, ?MODULE)
+      end, UA, UB, UMonoid).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
