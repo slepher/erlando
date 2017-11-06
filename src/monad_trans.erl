@@ -28,6 +28,6 @@ lift(UA, UMonadTrans) ->
     undetermined:new(
       fun(MonadTrans) when is_atom(MonadTrans) ->
               MonadTrans:lift(UA, MonadTrans);
-         ({MonadTrans, UMonad}) ->
-              MonadTrans:lift(UA, {MonadTrans, UMonad})
+         ({MonadTrans, Monad}) ->
+              MonadTrans:lift(undetermined:run(UA, Monad), {MonadTrans, Monad})
       end, UMonadTrans).
