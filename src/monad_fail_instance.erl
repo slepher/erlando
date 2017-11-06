@@ -4,32 +4,26 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created :  1 Nov 2017 by Chen Slepher <slepheric@gmail.com>
+%%% Created :  6 Nov 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(typeclass_trans).
+-module(monad_fail_instance).
 
--export_type([trans/2]).
+-erlando_type([state_t, cont_t, reader_t, writer_t]).
 
--type trans(T, M) :: {T, M}.
+-behaviour(monad_fail).
+
 %% API
--export([apply/3, apply/4]).
+-export([fail/2]).
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-apply(F, Args, {T, M}) when is_atom(T) ->
-    erlang:apply(T, F, Args ++ [{T, M}]);
-apply(F, Args, M) when is_atom(M) ->    
-    erlang:apply(M, F, Args).
+fail(E, MonadTrans) when is_atom(MonadTrans) ->
+    fail(E, {MonadTrans, monad_fail});
+fail(E, {MonadTrans, MonadFail}) ->
+    monad_trans:lift(monad_fail:fail(E, MonadFail), {MonadTrans, MonadFail}).
 
-apply(F, Args, {T, M}, Typeclass) ->
-    Module = typeclass:module(T, Typeclass),
-    erlang:apply(Module, F, Args ++ [{T, M}]);
-apply(F, Args, M, Typeclass) when is_atom(M) ->
-    Module = typeclass:module(M, Typeclass),
-    erlang:apply(Module, F, Args ++ [M]).
-
-    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

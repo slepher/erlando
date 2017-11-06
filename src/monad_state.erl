@@ -10,9 +10,9 @@
 
 -superclass([monad]).
 
--callback get() -> monad:monadic(M, _S)  when M :: monad:monad().
--callback put(_S)  -> monad:monadic(M, ok)  when M :: monad:monad().
--callback state(fun((S) -> {A, S})) -> monad:monadic(M, A)  when M :: monad:monad().
+-callback get(M) -> monad:monadic(M, _S)  when M :: monad:monad().
+-callback put(_S, M)  -> monad:monadic(M, ok)  when M :: monad:monad().
+-callback state(fun((S) -> {A, S}), M) -> monad:monadic(M, A)  when M :: monad:monad().
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).

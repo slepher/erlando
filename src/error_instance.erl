@@ -20,19 +20,6 @@
 
 -export_type([error_instance/2, ok/1, error/1]).
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(monad_runner).
-
--export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, '>>'/2, return/1]).
--export([fail/1]).
--export([run_nargs/0, run_m/2]).
--export([run/1]).
-
 %% This is really instance (Error e) => Monad (Either e) with 'error'
 %% for Left and 'ok' for Right.
 -type error_instance(E, A) :: ok(A) | error(E).
@@ -40,8 +27,30 @@
 -type ok(A) :: ok | {ok, A}.
 -type error(E) :: {error, E}.
 
+-compile({parse_transform, monad_t_transform}).
+
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_fail).
+-behaviour(monad_runner).
+
+-define(TYPE, error).
+
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
+-export(['>>='/3, '>>'/3, return/2]).
+-export([fail/2]).
+-export([run_nargs/0, run_m/2]).
+-export([run/1]).
+
+-transform_behaviour({?MODULE, [], [?TYPE], functor}).
+-transform_behaviour({?MODULE, [], [?TYPE], applicative}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad_fail}).
+
 -spec fmap(fun((A) -> B), error_instance(E, A)) -> error_instance(E, B).
-fmap(F, E) ->
+fmap(F, E, ?TYPE) ->
     case E of
         {ok, V} ->
             {ok, F(V)};
@@ -52,50 +61,50 @@ fmap(F, E) ->
     end.
 
 -spec '<$'(B, error_instance(E, _A)) -> error_instance(E, B).
-'<$'(B, FA) ->
-    functor:'default_<$'(B, FA, ?MODULE).
+'<$'(B, FA, ?TYPE) ->
+    functor:'default_<$'(B, FA, ?TYPE).
 
 -spec pure(A) -> error_instance(_E, A).
-pure(A) ->
+pure(A, ?TYPE) ->
     {ok, A}.
 
 -spec '<*>'(error_instance(E, fun((A) -> B)), error_instance(E, A)) -> error_instance(E, B).
-'<*>'({ok, F}, {ok, A}) ->
+'<*>'({ok, F}, {ok, A}, ?TYPE) ->
     {ok, F(A)};
-'<*>'({ok, F}, ok) ->
+'<*>'({ok, F}, ok, ?TYPE) ->
     {ok, F(ok)};
-'<*>'({ok, _F}, {error, R}) ->
+'<*>'({ok, _F}, {error, R}, ?TYPE) ->
     {error, R};
-'<*>'({error, R}, _) ->
+'<*>'({error, R}, _, ?TYPE) ->
     {error, R}.
 
 -spec lift_a2(fun((A, B) -> C), error_instance(E, A), error_instance(E, B)) -> error_instance(E, C).
-lift_a2(F, EA, EB) ->
-    applicative:default_lift_a2(F, EA, EB, ?MODULE).
+lift_a2(F, EA, EB, ?TYPE) ->
+    applicative:default_lift_a2(F, EA, EB, ?TYPE).
 
 -spec '*>'(error_instance(E, _A), error_instance(E, B)) -> error_instance(E, B).
-'*>'(EA, EB) ->
-    applicative:'default_*>'(EA, EB, ?MODULE).
+'*>'(EA, EB, ?TYPE) ->
+    applicative:'default_*>'(EA, EB, ?TYPE).
 
 -spec '<*'(error_instance(E, A), error_instance(E, _B)) -> error_instance(E, A).
-'<*'(EA, EB) ->
-    applicative:'default_<*'(EA, EB, ?MODULE).
+'<*'(EA, EB, ?TYPE) ->
+    applicative:'default_<*'(EA, EB, ?TYPE).
 
 -spec '>>='(error_instance(E, A), fun( (A) -> error_instance(E, B) )) -> error_instance(E, B).
-'>>='({error, _Err} = Error, _KEB) -> Error;
-'>>='({ok, A},                KEB) -> KEB(A);
-'>>='(ok,                     KEB) -> KEB(ok).
+'>>='({error, _Err} = Error, _KEB, ?TYPE) -> Error;
+'>>='({ok, A},                KEB, ?TYPE) -> KEB(A);
+'>>='(ok,                     KEB, ?TYPE) -> KEB(ok).
 
 -spec '>>'(error_instance(E, _A), error_instance(E, B)) -> error_instance(E, B).
-'>>'(EA, EB) ->
-    monad:'default_>>'(EA, EB, ?MODULE).
+'>>'(EA, EB, ?TYPE) ->
+    monad:'default_>>'(EA, EB, ?TYPE).
 
 -spec return(A) -> error_instance(_E, A).
-return(A) ->
-    monad:default_return(A, ?MODULE).
+return(A, ?TYPE) ->
+    monad:default_return(A, ?TYPE).
 
 -spec fail(E) -> error_instance(E, _A).
-fail(E) ->
+fail(E, ?TYPE) ->
     {error, E}.
 
 run_nargs() ->
@@ -105,6 +114,6 @@ run_m(EA, []) ->
     EA.
 
 run({undetermined, _} = U) ->
-    run(undetermined:run(U, ?MODULE));
+    run(undetermined:run(U, ?TYPE));
 run(EM) ->
     EM.

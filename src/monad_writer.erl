@@ -10,10 +10,10 @@
 
 -superclass([monad]).
 
--callback writer({A, [_W]}) -> monad:monadic(_M, A).
--callback tell([_W]) -> monad:monadic(_M, _A).
--callback listen(monad:monadic(M, A)) -> monad:monadic(M, {A, [_W]}).
--callback pass(monad:monadic(M, {A, fun(([W]) -> [W])})) -> monad:monadic(M, A). 
+-callback writer({A, [_W]}, M) -> monad:monadic(M, A).
+-callback tell([_W], M) -> monad:monadic(M, _A).
+-callback listen(monad:monadic(M, A), M) -> monad:monadic(M, {A, [_W]}).
+-callback pass(monad:monadic(M, {A, fun(([W]) -> [W])}), M) -> monad:monadic(M, A). 
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).

@@ -10,9 +10,9 @@
 
 -superclass([monad]).
 
--callback ask() -> monad:monadic(M, _R) when M :: monad:monad().
--callback local(fun((R) -> R), monad:monadic(M, R)) -> monad:monadic(M, R) when M :: monad:monad().
--callback reader(fun((_R) -> A)) -> monad:monadic(M, A) when M :: monad:monad().
+-callback ask(M) -> monad:monadic(M, _R) when M :: monad:monad().
+-callback local(fun((R) -> R), monad:monadic(M, R), M) -> monad:monadic(M, R) when M :: monad:monad().
+-callback reader(fun((_R) -> A), M) -> monad:monadic(M, A) when M :: monad:monad().
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).

@@ -12,16 +12,24 @@
 
 -compile({parse_transform, monad_t_transform}).
 
+-define(STATE, {state_t, identity}).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_state).
 
--transform({state_t, identity, [fmap/2, '<$'/2]}).
--transform({state_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({state_t, identity, ['>>='/2, '>>'/2, return/1]}).
--transform({state_t, identity, [get/0, put/1, state/1]}).
 -transform({state_t, [], identity_run, [eval/2, exec/2, run/2]}).
+
+-transform_behaviour({state_t, [], [?STATE], functor}).
+-transform_behaviour({state_t, [], [?STATE], applicative}).
+-transform_behaviour({state_t, [], [?STATE], monad}).
+-transform_behaviour({state_t, [], [?STATE], monad_state}).
+
+-transform_behaviour({state_t, [?MODULE], [?STATE], functor}).
+-transform_behaviour({state_t, [?MODULE], [?STATE], applicative}).
+-transform_behaviour({state_t, [?MODULE], [?STATE], monad}).
+-transform_behaviour({state_t, [?MODULE], [?STATE], monad_state}).
 
 %%%===================================================================
 %%% API

@@ -14,20 +14,29 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    case ast_traverse:attributes_with_line(transform, Forms) of
-        [] ->
-            exit(no_transformers_defined);
-        MFs ->
-            {AllExports, AllFunctions} = 
-                lists:foldl(
-                  fun({Line, Transform}, {GAcc, FAcc}) ->
-                          {GExports, GForms} = generate_forms(Line, Transform),
-                          {[{Line, GExports}|GAcc], GForms ++ FAcc}
-                  end, {[], []}, MFs),
-            GenFunctionExports = export_funs(AllExports),
-            NForms = insert_exports(GenFunctionExports, Forms, []),
-            insert_functions(AllFunctions, NForms, [])
-    end.
+    NForms = transform_functions(Forms),
+    transform_behaviours(NForms).
+
+transform_functions(Forms) ->
+    MFs = ast_traverse:attributes_with_line(transform, Forms),
+    {AllExports, AllFunctions} = 
+        lists:foldl(
+          fun({Line, Transform}, {GAcc, FAcc}) ->
+                  {GExports, GForms} = generate_forms(Line, Transform),
+                  {[{Line, GExports}|GAcc], GForms ++ FAcc}
+          end, {[], []}, MFs),
+    GenFunctionExports = export_funs(AllExports),
+    NForms = insert_exports(GenFunctionExports, Forms, []),
+    insert_functions(AllFunctions, NForms, []).
+
+transform_behaviours(Forms) ->
+    BFs = ast_traverse:attributes_with_line(transform_behaviour, Forms),
+    lists:foldl(
+      fun({Line, Transform}, FormsAcc) ->
+              BForms = generate_behaviour_forms(Line, Transform),
+              insert_bforms(BForms, FormsAcc)
+      end, Forms, BFs).
+    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -38,6 +47,53 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+generate_behaviour_forms(Line, {Module, BehaviourPatterns, ExtraArgs, Behaviour}) when is_atom(Behaviour) ->
+    generate_behaviour_forms(Line, {Module, BehaviourPatterns, ExtraArgs, [Behaviour]});
+generate_behaviour_forms(Line, {Module, BehaviourPatterns, ExtraArgs, Behaviours}) ->
+    lists:foldl(
+      fun(Behaviour, Acc) ->
+              Callbacks = Behaviour:behaviour_info(callbacks),
+              Forms = 
+                  lists:map(
+                    fun({FName, Arity}) ->
+                            NArity = Arity - length(ExtraArgs),
+                            UArity = NArity + length(BehaviourPatterns),
+                            Patterns = 
+                                lists:map(
+                                  fun(N) ->
+                                          {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
+                                  end, lists:seq(1, NArity)),
+                            BPatterns = 
+                                lists:map(
+                                  fun(BehaviourPattern) ->
+                                          ast_traverse:from_value(Line, BehaviourPattern)
+                                  end, BehaviourPatterns),
+                            GPatterns = Patterns ++ BPatterns,
+                            GGuards = [],
+                            GCall = [gen_call(Module, FName, NArity, Line, ExtraArgs, undefined)],
+                            
+                            {function, Line, FName, UArity,
+                             [{clause, Line, GPatterns, GGuards, GCall}]}
+                    end, Callbacks),
+              Forms ++ Acc
+      end, [], Behaviours).
+                
+insert_bforms(BForms, Forms) ->
+    lists:foldl(fun insert_bform/2, Forms, BForms).
+
+insert_bform(BForm, Forms) ->
+    insert_bform(BForm, Forms, []).
+
+insert_bform({function, _Line, FName, Arity, Clauses}, [{function, Line, FName, Arity, FClauses}|T], Heads) ->
+    lists:reverse(Heads) ++ [{function, Line, FName, Arity, Clauses ++ FClauses}|T];
+insert_bform({function, Line, FName, Arity, _Clauses} = BForm, [{eof, _ELine} = EOF|T], Heads) ->
+    Exports = [{Line, [{FName, Arity}]}],
+    GExports = export_funs(Exports),
+    NForm = lists:reverse(Heads) ++ [BForm, EOF|T],
+    insert_exports(GExports, NForm, []);
+insert_bform(BForm, [H|T], Heads) ->
+    insert_bform(BForm, T, [H|Heads]).
+
 export_funs(FWithLines) ->
     [{attribute,Line,export,[{F,A} || {F,A} <- Functions]} || {Line, Functions} <- FWithLines].
 
@@ -45,7 +101,6 @@ insert_exports(Exports, [{attribute,_Line,module,_Mod} = Module|T], Acc) ->
     lists:reverse(Acc) ++ [Module|Exports] ++ T;
 insert_exports(Exports, [Form|Forms], Acc) ->
     insert_exports(Exports, Forms, [Form|Acc]).
-
 
 generate_forms(Line, {Module,Functions}) ->
     generate_forms(Line, {Module, false, Functions});

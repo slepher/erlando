@@ -22,8 +22,11 @@
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
 
 -include("op.hrl").
+
+-define(TYPE, list).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -36,40 +39,47 @@
 -behaviour(monad_plus).
 -behaviour(monoid).
 
--export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, '>>'/2, return/1]).
--export([fail/1]).
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
+-export(['>>='/3, '>>'/3, return/2]).
+-export([fail/2]).
 -export([run_nargs/0, run_m/2]).
 -export([fold_map/2]).
 -export([traverse/2, sequence_a/1, map_m/2, sequence/1]).
 
--export([empty/0, '<|>'/2]).
--export([mzero/0, mplus/2]).
+-export([empty/1, '<|>'/3]).
+-export([mzero/1, mplus/3]).
 -export([mempty/0, mappend/2]).
 
-fmap(F, Xs) ->
+-transform_behaviour({?MODULE, [], [?TYPE], functor}).
+-transform_behaviour({?MODULE, [], [?TYPE], applicative}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad_fail}).
+-transform_behaviour({?MODULE, [], [?TYPE], alternative}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad_plus}).
+
+fmap(F, Xs, ?TYPE) ->
     [F(X) || X <- Xs].
 
-'<$'(B, As) ->
-    functor:'default_<$'(B, As, ?MODULE).
+'<$'(B, As, ?TYPE) ->
+    functor:'default_<$'(B, As, ?TYPE).
 
-pure(A) -> [A].
+pure(A, ?TYPE) -> [A].
 
 -spec '<*>'([fun((A) -> B)], [A]) -> [B].
-'<*>'(LF, LA) ->
+'<*>'(LF, LA, ?TYPE) ->
     [F(A) || F <- LF, A <- LA].
 
 -spec lift_a2(fun((A, B) -> C), [A], [B]) -> [C].
-lift_a2(F, As, Bs) ->
+lift_a2(F, As, Bs, ?TYPE) ->
     applicative:default_lift_a2(F, As, Bs, ?MODULE).
 
 -spec '<*'([_A], [B]) -> [B].
-'*>'(As, Bs) ->
+'*>'(As, Bs, ?TYPE) ->
     applicative:'default_*>'(As, Bs, ?MODULE).
 
 -spec '*>'([A], [_B]) -> [A].
-'<*'(As, Bs) ->
+'<*'(As, Bs, ?TYPE) ->
     applicative:'default_<*'(As, Bs, ?MODULE).
 
 %% Note that using a list comprehension is (obviously) cheating, but
@@ -77,19 +87,19 @@ lift_a2(F, As, Bs) ->
 %% completeness.
 
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
-'>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
+'>>='(X, Fun, ?TYPE) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).
 
 -spec '>>'([_A], [B]) -> [B].
-'>>'(As, Bs) ->
+'>>'(As, Bs, ?TYPE) ->
     monad:'default_>>'(As, Bs, ?MODULE).
 
 -spec return(A) -> [A].
-return(A) -> 
+return(A, ?TYPE) -> 
     monad:default_return(A, ?MODULE).
 
 -spec fail(any()) -> [_A].
-fail(_E) -> [].
+fail(_E, ?TYPE) -> [].
 
 run_nargs() ->
     0.
@@ -123,17 +133,17 @@ map_m(_A_MB, []) ->
 sequence(TMA) ->
     map_m(function_instance:id(), TMA).
            
-empty() ->
-    mzero().
+empty(?TYPE) ->
+    mzero(?TYPE).
 
-'<|>'(LA, LB) ->
-    mplus(LA, LB).
+'<|>'(LA, LB, ?TYPE) ->
+    mplus(LA, LB, ?TYPE).
 
 -spec mzero() -> [_A].
-mzero() -> [].
+mzero(?TYPE) -> [].
 
 -spec mplus([A], [A]) -> [A].
-mplus(X, Y) ->
+mplus(X, Y, ?TYPE) ->
     lists:append(X, Y).
 
 mempty() -> [].

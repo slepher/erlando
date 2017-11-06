@@ -21,7 +21,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {behaviour_modules = maps:new(), typeclasses = []}).
+-record(state, {behaviour_modules = maps:new(), typeclasses = [], type_aliases = []}).
 
 %%%===================================================================
 %%% API
@@ -85,6 +85,16 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({register_modules, Modules}, _From, 
             #state{behaviour_modules = BehaviourModules, typeclasses = Typeclasses} = State) ->
+    TypeAlias = 
+        lists:foldl(
+          fun(Module, Acc) ->
+                  case aliases(Module) of
+                      [] ->
+                          Acc;
+                      [Alias|_T] ->
+                          maps:put(Module, Alias, Acc)
+                  end
+          end, maps:new(), Modules),
     NTypeclasses = 
         lists:foldl(
           fun(Module, Acc) ->
@@ -111,10 +121,10 @@ handle_call({register_modules, Modules}, _From,
                                           false ->
                                               Acc2
                                       end
-                              end, Acc1, Behaviours -- [type])
+                              end, Acc1, Behaviours)
                     end, Acc0, Types)
           end, BehaviourModules, Modules),
-    do_load_module(NTypeclasses, NBehaviourModules),
+    do_load_module(TypeAlias, NTypeclasses, NBehaviourModules),
     {reply, ok, State#state{behaviour_modules = NBehaviourModules, typeclasses = NTypeclasses}};
 
 handle_call({module, Type, Behaviour}, _From, #state{behaviour_modules = BehaviourModules} = State) ->
@@ -185,6 +195,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+aliases(Module) ->
+    lists:flatten(attributes(erlando_type_alias, Module)).
+
 superclasses(Module) ->
     attributes(superclass, Module).
 
@@ -203,13 +216,23 @@ attributes(Attribute, Module) ->
               Acc
       end, [], Attributes).
 
-do_load_module(Typeclasses, BehaviourModules) ->
+do_load_module(Aliases, Typeclasses, BehaviourModules) ->
     TypeclassModule = {attribute,0,module,typeclass},
-    Export = {attribute,0,export,[{module,2}, {is_typeclass, 1}]},
+    Export = {attribute,0,export,[{module,2}, {is_typeclass, 1}, {alias, 1}]},
+    AliasesFun = generate_alias(Aliases),
     IsTypeClass = generate_is_typeclass(Typeclasses),
     Module = generate_module(BehaviourModules),
-    {ok, Mod, Bin} = compile:forms([TypeclassModule, Export, IsTypeClass, Module]),
+    {ok, Mod, Bin} = compile:forms([TypeclassModule, Export, AliasesFun, IsTypeClass, Module]),
     code:load_binary(Mod, [], Bin).
+
+generate_alias(Aliases) ->
+    Clauses = 
+        maps:fold(
+          fun(Module, Alias, Acc) ->
+                  [alias_clause(0, Module, Alias)|Acc]
+          end, [], Aliases),
+    LastClause = {clause, 0, [{var, 0, 'Type'}], [], [{var, 0, 'Type'}]},
+    {function, 0, alias, 1, lists:reverse([LastClause|Clauses])}.
 
 generate_is_typeclass(Typeclasses) ->
    Clauses = 
@@ -230,6 +253,9 @@ generate_module(BehaviourModules) ->
                   [{call, 0, {atom, 0, exit}, 
                     [{tuple, 0, [{atom, 0, unregisted_module}, {tuple, 0, [{var, 0, 'A'}, {var, 0, 'B'}]}]}]}]},
     {function, 0, module, 2, lists:reverse([LastClause|Clauses])}.
+
+alias_clause(Line, Module, Alias) ->
+    {clause, Line, [{atom, Line, Module}], [], [ast_traverse:from_value(Line, Alias)]}.
    
 is_typeclass_clause(Line, Typeclass) ->
     {clause, Line, [{atom, Line, Typeclass}], [], [{atom, Line, true}]}.

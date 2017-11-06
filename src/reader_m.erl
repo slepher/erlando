@@ -12,16 +12,18 @@
 
 -compile({parse_transform, monad_t_transform}).
 
+-define(READER, {reader_t, identity}).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_reader).
 
--transform({reader_t, identity, [fmap/2, '<$'/2]}).
--transform({reader_t, identity, [pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]}).
--transform({reader_t, identity, ['>>='/2, '>>'/2, return/1]}).
--transform({reader_t, identity, [ask/0, local/2, reader/1]}).
 -transform({reader_t, [], identity_run, [run/2]}).
+
+-transform_behaviour({state_t, [], [?READER], [functor, applicative, monad, monad_reader]}).
+
+-transform_behaviour({state_t, [?MODULE], [?READER], [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API

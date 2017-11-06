@@ -27,7 +27,6 @@
 -behaviour(monad_trans).
 -behaviour(monad_fail).
 -behaviour(monad_reader).
--behaviour(monad_state).
 -behaviour(alternative).
 -behaviour(monad_plus).
 -behaviour(monad_runner).

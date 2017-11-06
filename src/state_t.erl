@@ -19,20 +19,12 @@
 -erlando_type(?MODULE).
 
 -behaviour(functor).
--behaviour(functor_trans).
 -behaviour(applicative).
--behaviour(applicative_trans).
 -behaviour(monad).
 -behaviour(monad_trans).
--behaviour(monad_fail).
 -behaviour(monad_state).
--behaviour(monad_state_trans).
--behaviour(monad_reader).
--behaviour(monad_reader_trans).
 -behaviour(alternative).
--behaviour(alternative_trans).
 -behaviour(monad_plus).
--behaviour(monad_plus_trans).
 -behaviour(monad_runner).
 
 -compile({parse_transform, do}).
@@ -55,10 +47,6 @@
 -export([lift/2]).
 % impl of monad_state.
 -export([get/1, put/2, state/2]).
-% impl of monad_fail.
--export([fail/2]).
-% impl of monad_reader.
--export([ask/1, local/3, reader/2]).
 % impl of alternative.
 -export([empty/1, '<|>'/3]).
 % impl of monad_plus.
@@ -73,8 +61,6 @@
 -transform({?MODULE, monad, ['>>='/2, '>>'/2, return/1]}).
 -transform({?MODULE, monad, [lift/1]}).
 -transform({?MODULE, monad, [get/0, put/1, state/1]}).
--transform({?MODULE, monad_fail, [fail/1]}).
--transform({?MODULE, monad_reader, [ask/0, local/2, reader/1]}).
 -transform({?MODULE, monad_plus, [empty/0, '<|>'/2, mzero/0, mplus/2]}).
 
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
@@ -160,9 +146,6 @@ lift(MA, {?MODULE, IM}) ->
               monad:lift_m(fun(A) -> {A, S} end, MA, IM)
       end).
 
-fail(E, {?MODULE, IM}) ->
-    state_t(fun (_) -> monad_fail:fail(E, IM) end).
-
 -spec get(t(M)) -> state_t(S, M, S).
 get({?MODULE, _IM} = ST) ->
     monad_state:default_get(ST).
@@ -174,18 +157,6 @@ put(S, {?MODULE, _IM} = ST) ->
 -spec state(fun((S) -> {A, S}), t(M)) -> state_t(S, M, A).
 state(F, {?MODULE, IM}) ->
     state_t(fun (S) -> monad:return(F(S), IM) end).
-
-ask({?MODULE, IM} = ST) ->
-    lift(monad_reader:ask(IM), ST).
-
-local(F, STA, {?MODULE, IM}) ->
-    map(
-      fun(MA) ->
-              monad_reader:local(F, MA, IM)
-      end, STA).
-
-reader(F, {?MODULE, IM} = ST) ->
-    lift(monad_reader:reader(F, IM), ST).
 
 empty({?MODULE, _IM} = ST) ->
     mzero(ST).

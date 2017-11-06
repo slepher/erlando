@@ -12,7 +12,7 @@
 -export([fail/1]).
 -export([fail/2]).
 
--callback fail(any()) -> monad:monadic(M, _A) when M :: monad:monad().
+-callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
 
 %%%===================================================================
 %%% API

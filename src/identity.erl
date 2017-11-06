@@ -18,6 +18,8 @@
 
 -erlando_type(?MODULE).
 
+-compile({parse_transform, monad_t_transform}).
+
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
@@ -26,11 +28,15 @@
 -export_type([identity/1]).
 
 -export([identity/1]).
--export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, '>>'/2, return/1]).
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
+-export(['>>='/3, '>>'/3, return/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
+
+-transform_behaviour({?MODULE, [], [?MODULE], functor}).
+-transform_behaviour({?MODULE, [], [?MODULE], applicative}).
+-transform_behaviour({?MODULE, [], [?MODULE], monad}).
 
 -type identity(A) :: {?MODULE, A}.
 
@@ -38,43 +44,43 @@ identity(A) ->
     {?MODULE, A}.
 
 -spec fmap(fun((A) -> B), identity(A)) -> identity(B).
-fmap(F, IA) ->
+fmap(F, IA, ?MODULE) ->
     two_tuple:fmap(identity, F, IA).
 
 -spec '<$'(B, identity(_A)) -> identity(B).
-'<$'(B, IA) ->
+'<$'(B, IA, ?MODULE) ->
     functor:'default_<$'(B, IA, ?MODULE).
 
 -spec pure(A) -> identity(A).
-pure(A) -> 
+pure(A, ?MODULE) -> 
     {?MODULE, A}.
 
 -spec '<*>'(identity(fun((A) -> B)), identity(A)) -> identity(B).
-'<*>'(IF, IA) ->
+'<*>'(IF, IA, ?MODULE) ->
     two_tuple:ap(identity, IF, IA).
 
 -spec lift_a2(fun((A, B) -> C), identity(A), identity(B)) -> identity(C).
-lift_a2(F, IA, IB) ->
+lift_a2(F, IA, IB, ?MODULE) ->
     applicative:default_lift_a2(F, IA, IB, ?MODULE).
 
 -spec '*>'(identity(_A), identity(B)) -> identity(B).
-'*>'(IA, IB) ->
+'*>'(IA, IB, ?MODULE) ->
     applicative:'default_*>'(IA, IB, ?MODULE).
 
 -spec '<*'(identity(A), identity(_B)) -> identity(A).
-'<*'(IA, IB) ->
+'<*'(IA, IB, ?MODULE) ->
     applicative:'default_<*'(IA, IB, ?MODULE).
 
 -spec '>>='(identity(A), fun( (A) -> identity(B) )) -> identity(B).
-'>>='(IA, KIB) -> 
+'>>='(IA, KIB, ?MODULE) -> 
     two_tuple:bind(identity, IA, KIB).
 
 -spec '>>'(identity(_A), identity(B)) -> identity(B).
-'>>'(IA, IB) ->
+'>>'(IA, IB, ?MODULE) ->
     monad:'default_>>'(IA, IB, ?MODULE).
 
 -spec return(A) -> identity(A).
-return(A) ->
+return(A, ?MODULE) ->
     monad:default_return(A, ?MODULE).
 
 run_nargs() ->

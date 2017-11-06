@@ -9,11 +9,14 @@
 -module(typeclass).
 
 %% API
--export([is_typeclass/1, module/2]).
+-export([alias/1, is_typeclass/1, module/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+alias(Module) ->
+    Module.
+
 is_typeclass(_A) ->
     false.
 

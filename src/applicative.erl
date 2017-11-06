@@ -16,11 +16,11 @@
 -type f(_A) :: any().
 -type applicative(_F, _A) :: any().
 
--callback pure(A) -> f(A).
--callback '<*>'(applicative(F, fun((A) -> B)), applicative(F, A)) -> applicative(F, B).
--callback lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B)) -> applicative(F, C).
--callback '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
--callback '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
+-callback pure(A, _F) -> f(A).
+-callback '<*>'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
+-callback lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B), F) -> applicative(F, C).
+-callback '*>'(applicative(F, _A), applicative(F, B), F) -> applicative(F, B).
+-callback '<*'(applicative(F, A), applicative(F, _B), F) -> applicative(F, A).
 
 -compile({parse_transform, monad_t_transform}).
 

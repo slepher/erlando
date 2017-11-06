@@ -15,8 +15,8 @@
 -type functor_module() :: module() | {module(), functor_module()}.
 -type functor(_F, _A) :: any().
 
--callback fmap(fun((A) -> B), functor(F, A)) -> functor(F, B).
--callback '<$'(B, functor(F, _A)) -> functor(F, B).
+-callback fmap(fun((A) -> B), functor(F, A), F) -> functor(F, B).
+-callback '<$'(B, functor(F, _A), F) -> functor(F, B).
 
 -compile({parse_transform, monad_t_transform}).
 

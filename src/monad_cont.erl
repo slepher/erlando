@@ -10,7 +10,8 @@
 
 -superclass([monad]).
 
--callback callCC(fun((fun( (A) -> monad:monadic(M, _B) ))-> monad:monadic(M, A))) -> monad:monadic(M, A) when M :: monad:monad().
+-callback callCC(fun((fun( (A) -> monad:monadic(M, _B) )
+                         ) -> monad:monadic(M, A)), M) -> monad:monadic(M, A) when M :: monad:monad().
 
 -compile({parse_transform, monad_t_transform}).
 

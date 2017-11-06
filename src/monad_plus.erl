@@ -14,8 +14,8 @@
 -include("applicative.hrl").
 -include("monad.hrl").
 
--callback mzero() -> monad:monadic(_M, _A).
--callback mplus(monad:monadic(M, A), monad:monadic(M, A)) -> monad:monadic(M, A).
+-callback mzero(M) -> monad:monadic(M, _A).
+-callback mplus(monad:monadic(M, A), monad:monadic(M, A), M) -> monad:monadic(M, A).
 
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).

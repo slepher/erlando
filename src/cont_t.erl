@@ -24,19 +24,11 @@
 -include("op.hrl").
 
 -behaviour(functor).
--behaviour(functor_trans).
 -behaviour(applicative).
--behaviour(applicative_trans).
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_cont).
--behaviour(monad_cont_trans).
 -behaviour(monad_fail).
--behaviour(monad_fail_trans).
--behaviour(monad_reader).
--behaviour(monad_reader_trans).
--behaviour(monad_state).
--behaviour(monad_state_trans).
 -behaviour(monad_runner).
 
 
@@ -48,8 +40,6 @@
 -export([callCC/2]).
 -export([fail/2]).
 -export([shift/2, reset/2]).
--export([ask/1, reader/2, local/3]).
--export([get/1, put/2, state/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/2, eval/2, map/2, with/2]).
 -export([lift_local/5]).
@@ -60,11 +50,8 @@
 -transform({?MODULE, monad, [lift/1]}).
 -transform({?MODULE, monad_cont, [callCC/1]}).
 -transform({?MODULE, monad_fail, [fail/1]}).
--transform({?MODULE, monad_reader, [ask/0, reader/1, local/2]}).
--transform({?MODULE, monad_state, [get/0, put/1, state/1]}).
 -transform({?MODULE, monad, [shift/1, reset/1]}).
 -transform({?MODULE, monad, [eval/1, lift_local/4]}).
-
 
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
@@ -152,24 +139,6 @@ reset(X, {?MODULE, IM}) ->
 -spec shift(fun((fun((A) -> monad:monadic(M, R))) -> cont_t(R, M, R)), t(M)) -> cont_t(R, M, A).
 shift(F, {?MODULE, IM}) ->
     cont_t(fun (CC) -> eval(F(CC), {?MODULE, IM}) end).
-
-ask({?MODULE, IM}) ->
-    lift(monad_reader:ask(IM)).
-
-local(F, X, {?MODULE, IM}) ->
-    lift_local(fun() -> monad_reader:ask(IM) end, monad_reader:local(_, _, IM), F, X, {?MODULE, IM}).
-
-reader(F, {?MODULE, IM}) ->
-    lift(monad_reader:reader(F, IM)).
-
-get({?MODULE, IM}) ->
-    lift(monad_state:get(IM)).
-
-put(S, {?MODULE, IM}) ->
-    lift(monad_state:put(S, IM)).
-
-state(F, {?MODULE, IM}) ->
-    lift(monad_state:state(F, IM)).
 
 -spec run(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
 run(X, CC) ->

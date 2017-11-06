@@ -11,59 +11,71 @@
 -erlando_type(?MODULE).
 
 -compile({parse_transform, cut}).
+-compile({parse_transform, monad_t_transform}).
+
+-define(TYPE, ?MODULE).
 
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 
 %% API
--export([fmap/2, '<$'/2]).
--export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
--export(['>>='/2, '>>'/2, return/1]).
+-export([fmap/3, '<$'/3]).
+-export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
+-export(['>>='/3, '>>'/3, return/2]).
+-export([fail/2]).
 -export([either/2, either/3]).
 -export([swap/0]).
 -export([left/0, left/1, right/0, right/1]).
 
+-transform_behaviour({?MODULE, [], [?TYPE], functor}).
+-transform_behaviour({?MODULE, [], [?TYPE], applicative}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad}).
+-transform_behaviour({?MODULE, [], [?TYPE], monad_fail}).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
-fmap(_, {left, L}) ->
+fmap(_, {left, L}, ?TYPE) ->
     {left, L};
-fmap(F, {right, R}) ->
+fmap(F, {right, R}, ?TYPE) ->
     {right, F(R)}.
 
-'<$'(FB, FA) ->
-    functor:'default_<$'(FB, FA, ?MODULE).
+'<$'(FB, FA, ?TYPE) ->
+    functor:'default_<$'(FB, FA, ?TYPE).
 
-pure(A) ->
+pure(A, ?TYPE) ->
     {right, A}.
 
-'<*>'({left, L}, _) ->
+'<*>'({left, L}, _, ?TYPE) ->
     {left, L};
-'<*>'(_, {left, L}) ->
+'<*>'(_, {left, L}, ?TYPE) ->
     {left, L};
-'<*>'({right, F}, {right, A}) ->
+'<*>'({right, F}, {right, A}, ?TYPE) ->
     {right, F(A)}.
 
-lift_a2(FAB, AA, AB) ->
-    applicative:default_lift_a2(FAB, AA, AB, ?MODULE).
+lift_a2(FAB, AA, AB, ?TYPE) ->
+    applicative:default_lift_a2(FAB, AA, AB, ?TYPE).
 
-'*>'(AA, AB) ->
-    applicative:'default_*>'(AA, AB, ?MODULE).
+'*>'(AA, AB, ?TYPE) ->
+    applicative:'default_*>'(AA, AB, ?TYPE).
 
-'<*'(AA, AB) ->
-    applicative:'default_<*'(AA, AB, ?MODULE).
+'<*'(AA, AB, ?TYPE) ->
+    applicative:'default_<*'(AA, AB, ?TYPE).
 
-'>>='({left, L}, _) ->
+'>>='({left, L}, _, ?TYPE) ->
     {left, L};
-'>>='({right, R}, KAMB) ->
+'>>='({right, R}, KAMB, ?TYPE) ->
     KAMB(R).
 
-'>>'(MA, MB) ->
-    monad:'default_>>'(MA, MB, ?MODULE).
+'>>'(MA, MB, ?TYPE) ->
+    monad:'default_>>'(MA, MB, ?TYPE).
 
-return(A) ->
-    monad:default_return(A, ?MODULE).
+return(A, ?TYPE) ->
+    monad:default_return(A, ?TYPE).
+
+fail(E, ?TYPE) ->
+    {left, E}.
 
 either(FAC, FBC) ->
     either(FAC, FBC, _).

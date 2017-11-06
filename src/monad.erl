@@ -24,9 +24,9 @@
 -type monadic(_M, _A) :: any().
 
 %% Monad primitives
--callback return(A) -> monadic(M, A) when M :: monad(). 
--callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) )) -> monadic(M, B) when M :: monad().
--callback '>>'(monadic(M, _A), monadic(M, B) ) -> monadic(M, B) when M :: monad().
+-callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) ), M) -> monadic(M, B) when M :: monad().
+-callback '>>'(monadic(M, _A), monadic(M, B), M) -> monadic(M, B) when M :: monad().
+-callback return(A, M) -> monadic(M, A) when M :: monad(). 
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).

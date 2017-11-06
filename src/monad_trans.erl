@@ -16,10 +16,6 @@
 
 -type monad_trans(T, M) :: {T, M}.
 
--callback '>>='(monad:monadic(M, A), fun((A) -> monad:monadic(M, B)), M) -> monad:monadic(M, B) when M :: monad:monad().
--callback '>>'(monad:monadic(M, _A), monad:monadic(M, B), M) -> monad:monadic(M, B) when M :: monad:monad().
--callback return(A, M) -> monad:monadic(M, A) when M :: monad:monad(). 
--callback lift(monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 -callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
 
 -export([lift/2]).

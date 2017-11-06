@@ -10,9 +10,9 @@
 
 -superclass([applicative]).
 
--callback empty() -> applicative:applicative(_F, _A).
+-callback empty(F) -> applicative:applicative(F, _A).
 -callback '<|>'(applicative:applicative(F, A), 
-                applicative:applicative(F, A)) -> applicative:applicative(F, A).
+                applicative:applicative(F, A), F) -> applicative:applicative(F, A).
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, monad_t_transform}).
