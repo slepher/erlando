@@ -15,7 +15,7 @@
 %% API
 -export([fail/2]).
 
--transform({?MODULE, [?MODULE], [fail/1]}).
+-transform(#{args => [?MODULE], functions => [fail/1]}).
 
 %%%===================================================================
 %%% API

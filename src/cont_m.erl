@@ -13,17 +13,16 @@
 -compile({parse_transform, monad_t_transform}).
 
 -define(CONT, {cont_t, identity}).
+-define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_cont).
 
--transform({cont_t, [], identity_run, [run/2, eval/1]}).
-
--transform_behaviour({cont_t, [], [?CONT], [functor, applicative, monad, monad_cont]}).
-
--transform_behaviour({cont_t, [?MODULE], [?CONT], [functor, applicative, monad, monad_cont]}).
+-transform(#{remote => cont_t, patterns_group => ?PG, args => [?CONT],
+             behaviours => [functor, applicative, monad, monad_cont]}).
+-transform(#{remote => cont_t, extra_call => {identity, run}, functions => [eval/1, run/2]}).
 
 %%%===================================================================
 %%% API

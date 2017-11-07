@@ -26,8 +26,8 @@
 -export([gets/2, modify/2]).
 -export([default_get/1, default_put/2, default_state/2]).
 
--transform({?MODULE, [?MODULE], [get/0, put/1, state/1]}).
--transform({?MODULE, [?MODULE], [gets/1, modify/1]}).
+-transform(#{args => [?MODULE], functions => [get/0, put/1, state/1]}).
+-transform(#{args => [?MODULE], functions => [gets/1, modify/1]}).
 
 %%%===================================================================
 %%% API

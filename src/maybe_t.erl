@@ -22,6 +22,7 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
+-define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -49,16 +50,10 @@
 % maybe_t functions.
 -export([run/1, map/2]).
 
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_fail,
-                                               alternative, monad_plus]}).
-
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], functor}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], applicative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_fail}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], alternative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_plus}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [applicative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_fail]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [alternative, monad_plus]}).
 
 -spec new(M) -> t(M).
 new(IM) ->

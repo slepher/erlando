@@ -20,7 +20,7 @@
 %% API
 -export([empty/1, '<|>'/3]).
 
--transform({?MODULE, [?MODULE], [empty/0, '<|>'/2]}).
+-transform(#{args => [?MODULE], functions => [empty/0, '<|>'/2]}).
 
 %%%===================================================================
 %%% API

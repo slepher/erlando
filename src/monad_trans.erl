@@ -20,7 +20,7 @@
 
 -export([lift/2]).
 
--transform({?MODULE, [?MODULE], [lift/1]}).
+-transform(#{args => [?MODULE], functions => [lift/1]}).
 
 -spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
 lift(UA, UMonadTrans) ->

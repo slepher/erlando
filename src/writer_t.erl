@@ -10,16 +10,17 @@
 
 -erlando_type(?MODULE).
 
--compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
-
--include("op.hrl").
-
 -export_type([writer_t/3]).
 
 -type writer_t(W, M, A) :: {writer_t, inner_writer_t(W, M, A)}.
 -type inner_writer_t(W, M, A) :: monad:monadic(M, {A, [W]}).
 -type t(M) :: {writer_t, M}.
+
+-compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
+
+-include("op.hrl").
+-define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -47,18 +48,12 @@
 -export([run_nargs/0, run_m/2]).
 -export([exec/2, eval/2, run/1, map/2]).
 
--transform({?MODULE, monad, [exec/1, eval/1]}).
-
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_writer,
-                                               alternative, monad_plus]}).
-
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, applicative}], applicative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_fail}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, alternative}], alternative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad_plus}], monad_plus}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, applicative}], behaviours => [applicative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_writer]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, alternative}], behaviours => [alternative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [monad_plus]}).
+-transform(#{args => [{?MODULE, monad}], functions => [exec/1, eval/1]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

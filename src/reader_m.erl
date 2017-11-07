@@ -13,17 +13,16 @@
 -compile({parse_transform, monad_t_transform}).
 
 -define(READER, {reader_t, identity}).
+-define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_reader).
 
--transform({reader_t, [], identity_run, [run/2]}).
-
--transform_behaviour({reader_t, [], [?READER], [functor, applicative, monad, monad_reader]}).
-
--transform_behaviour({reader_t, [?MODULE], [?READER], [functor, applicative, monad, monad_reader]}).
+-transform(#{remote => reader_t, patterns_group => ?PG, args => [?READER],
+             behaviours => [functor, applicative, monad, monad_reader]}).
+-transform(#{remote => reader_t, extra_call => {identity, run}, functions => [run/2]}).
 
 %%%===================================================================
 %%% API

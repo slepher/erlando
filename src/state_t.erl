@@ -22,8 +22,11 @@
 
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
 -type inner_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
-
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
+-compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
+-compile({no_auto_import, [get/1, put/2]}).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -34,11 +37,8 @@
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
--compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
--compile({no_auto_import, [get/1, put/2]}).
-
 -include("op.hrl").
+-define(PG, [[], [?MODULE]]).
 
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
@@ -58,18 +58,14 @@
 % impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
 %% state related functions
--export([eval/2, exec/2, run/2, map/2, with/2]).
+-export([eval/3, exec/3, run/3, map/3, with/3]).
 
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans,
-                                               monad_state, alternative, monad_plus]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], tfunctions => [eval/3, exec/3, run/3, map/3, with/3]}).
 
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], applicative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_state}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], alternative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_plus}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [applicative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_state]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [alternative, monad_plus]}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(Inner) ->
@@ -179,22 +175,22 @@ mplus(STA, STB, {?MODULE, IM}) ->
       end).
 
 -spec eval(state_t(S, M, A), S) -> monad:monadic(M, A).
-eval(STA, S) ->    
-    fun({A, _}) -> A end /'<$>'/ run(STA, S).
+eval(STA, S, {?MODULE, IM}) ->
+    monad:lift_m(fun({A, _}) -> A end, run(STA, S), IM).
 
 -spec exec(state_t(S, M, _A), S) -> monad:monadic(M, S).
-exec(STA, S) ->
-    fun({_, NS}) -> NS end /'<$>'/ run(STA, S).
+exec(STA, S, {?MODULE, IM}) ->
+    monad:lift_m(fun({_, NS}) -> NS end, run(STA, S), IM).
 
 -spec run(state_t(S, M, A), S) -> monad:monadic(M, {A, S}).
-run(STA, S) -> (run_state_t(STA))(S).
+run(STA, S, {?MODULE, _IM}) -> (run_state_t(STA))(S).
 
 -spec map(fun((monad:monadic(M, {A, S})) -> monad:monadic(N, {B, S})), state_t(S, M, A)) -> state_t(S, N, B).
-map(F, STA) ->
+map(F, STA, {?MODULE, _IM}) ->
     state_t(fun (S) -> F(run(STA, S)) end).
 
 -spec with(fun((S) -> S), state_t(S, M, A)) -> state_t(S, M, A).
-with(F, STA) ->
+with(F, STA, {?MODULE, _IM}) ->
     state_t(fun (S) -> run(STA, F(S)) end).
 
 run_nargs() ->

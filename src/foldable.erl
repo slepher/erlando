@@ -20,7 +20,7 @@
 %% API
 -export([fold_map/3]).
 
--transform({?MODULE, [?MODULE], [fold_map/2]}).
+-transform(#{args => [?MODULE], functions => [fold_map/2]}).
 
 %%%===================================================================
 %%% API

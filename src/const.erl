@@ -21,8 +21,7 @@
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 -export([run_const/1]).
 
--transform_behaviour({?MODULE, [], [?MODULE], functor}).
--transform_behaviour({?MODULE, [], [?MODULE], applicative}).
+-transform(#{args => [?MODULE], behaviours => [functor, applicative]}).
 
 %%%===================================================================
 %%% API

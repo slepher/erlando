@@ -32,9 +32,8 @@
 -export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
 -export([ap/3, '<**>'/3, lift_a3/5]).
 
--transform({?MODULE, [?MODULE], [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
--transform({?MODULE, [?MODULE], [ap/2, '<**>'/2, lift_a3/4]}).
-
+-transform(#{args => [?MODULE], functions => [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
+-transform(#{args => [?MODULE], functions => [ap/2, '<**>'/2, lift_a3/4]}).
 
 %%%===================================================================
 %%% API

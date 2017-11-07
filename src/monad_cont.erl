@@ -24,7 +24,7 @@
 %%%===================================================================
 -export([callCC/2]).
 
--transform({?MODULE, [?MODULE], [callCC/1]}).
+-transform(#{args => [?MODULE], functions => [callCC/1]}).
 
 callCC(F, UMonadCont) ->
     undetermined:new(

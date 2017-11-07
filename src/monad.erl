@@ -41,8 +41,8 @@
 %% utility function join
 -export([as/2, empty/1, run/2, id/1]).
 
--transform({?MODULE, [?MODULE], ['>>='/2, '>>'/2, return/1]}).
--transform({?MODULE, [?MODULE], [bind/2, then/2, join/1, lift_m/2]}).
+-transform(#{args => [?MODULE], functions => ['>>='/2, '>>'/2, return/1]}).
+-transform(#{args => [?MODULE], functions => [bind/2, then/2, join/1, lift_m/2]}).
 
 % depricated functions
 -export([sequence/2, map_m/3]).

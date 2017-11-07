@@ -24,7 +24,7 @@
 -callback sequence(traversable(monad:monadic(M, A)), M) -> monad:monadic(M, traversable(A)).
 
 
--transform({?MODULE, [?MODULE], [traverse/2, sequence_a/1, map_m/2, sequence/1]}).
+-transform(#{args => [?MODULE], functions => [traverse/2, sequence_a/1, map_m/2, sequence/1]}).
 
 %%%===================================================================
 %%% API

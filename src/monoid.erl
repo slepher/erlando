@@ -22,7 +22,7 @@
 %% API
 -export([mempty/1, mappend/3]).
 
--transform({?MODULE, [?MODULE], [mempty/0, mappend/2]}).
+-transform(#{args => [?MODULE], functions => [mempty/0, mappend/2]}).
 %%%===================================================================
 %%% API
 %%%===================================================================

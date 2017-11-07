@@ -10,6 +10,8 @@
 
 -erlando_type(?MODULE).
 
+-export_type([reader_t/3]).
+
 -opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
 -type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
 
@@ -30,9 +32,7 @@
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
--define(READER_T_MONAD, {?MODULE, monad}).
-
--export_type([reader_t/3]).
+-define(PG, [[], [?MODULE]]).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
@@ -55,17 +55,11 @@
 % reader related functions
 -export([run/2, map/2, with/2]).
 
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_reader, 
-                                               alternative, monad_plus]}).
-
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, functor}], functor}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, applicative}], applicative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_reader}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, alternative}], alternative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad_plus}], monad_plus}).
-
+-transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, applicative}], behaviours => [applicative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_reader]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, alternative}], behaviours => [alternative]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [monad_plus]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->

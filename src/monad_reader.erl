@@ -25,8 +25,8 @@
 -export([default_ask/1, default_reader/2]).
 -export([asks/2]).
 
--transform({?MODULE, [?MODULE], [ask/0, local/2, reader/1]}).
--transform({?MODULE, [?MODULE], [asks/1]}).
+-transform(#{args => [?MODULE], functions => [ask/0, local/2, reader/1]}).
+-transform(#{args => [?MODULE], functions => [asks/1]}).
 
 %%%===================================================================
 %%% API

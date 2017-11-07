@@ -26,8 +26,8 @@
 -export([writer/2, tell/2, listen/2, pass/2]).
 -export([listens/3, censor/3]).
 
--transform({?MODULE, [monad_writer], [writer/1, tell/1, listen/1, pass/1]}).
--transform({?MODULE, [monad_writer], [listens/2, censor/2]}).
+-transform(#{args => [?MODULE], functions => [writer/1, tell/1, listen/1, pass/1]}).
+-transform(#{args => [?MODULE], functions => [listens/2, censor/2]}).
 
 %%%===================================================================
 %%% API

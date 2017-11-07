@@ -43,8 +43,8 @@
 %% impl of monad runner.
 -export([run_nargs/0, run_m/2]).
 
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_fail]}).
--transform_behaviour({?MODULE, [], [?MODULE], [alternative, monad_plus]}).
+-transform(#{args => [?MODULE], behaviours => [functor, applicative, monad, monad_fail]}).
+-transform(#{args => [?MODULE], behaviours => [alternative, monad_plus]}).
 
 -spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
 fmap(F, {just, X}, ?MODULE) ->

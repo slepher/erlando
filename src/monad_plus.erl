@@ -24,8 +24,8 @@
 -export([mzero/1, mplus/3]).
 -export([guard/2, msum/2, mfilter/3]).
 
--transform({?MODULE, [?MODULE], [mzero/0, mplus/2]}).
--transform({?MODULE, [?MODULE], [guard/1, msum/1, mfilter/2]}).
+-transform(#{args => [?MODULE], functions => [mzero/0, mplus/2]}).
+-transform(#{args => [?MODULE], functions => [guard/1, msum/1, mfilter/2]}).
 
 mzero(UMonadPlus) ->
     undetermined:new(

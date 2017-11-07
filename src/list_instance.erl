@@ -46,14 +46,14 @@
 -export([run_nargs/0, run_m/2]).
 -export([fold_map/3]).
 -export([traverse/3, sequence_a/2, map_m/3, sequence/2]).
-
 -export([empty/1, '<|>'/3]).
 -export([mzero/1, mplus/3]).
 -export([mempty/1, mappend/3]).
 
--transform_behaviour({?MODULE, [], [?TYPE], [functor, applicative, monad, monad_fail]}).
--transform_behaviour({?MODULE, [], [?TYPE], [foldable, traversable]}).
--transform_behaviour({?MODULE, [], [?TYPE], [alternative, monad_plus, monoid]}).
+-transform(#{args => [?TYPE], behaviours => [functor, applicative, monad, monad_fail]}).
+-transform(#{args => [?TYPE], behaviours => [foldable, traversable]}).
+-transform(#{args => [?TYPE], behaviours => [alternative, monad_plus, monoid]}).
+
 
 fmap(F, Xs, ?TYPE) ->
     [F(X) || X <- Xs].

@@ -31,6 +31,7 @@
 -behaviour(monad_fail).
 -behaviour(monad_runner).
 
+-define(PG, [[], [?MODULE]]).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/3, '<$'/3]).
@@ -44,18 +45,9 @@
 -export([run/2, eval/2, map/2, with/2]).
 -export([lift_local/5]).
 
-
-
--transform({?MODULE, monad, [shift/1, reset/1]}).
--transform({?MODULE, monad, [eval/1, lift_local/4]}).
-
--transform_behaviour({?MODULE, [], [?MODULE], [functor, applicative, monad, monad_trans, monad_cont]}).
-
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], functor}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], applicative}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, any}], monad}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_trans}).
--transform_behaviour({?MODULE, [?MODULE], [{?MODULE, monad}], monad_cont}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, any}], behaviours => [functor, applicative, monad]}).
+-transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad_trans, monad_cont]}).
+-transform(#{args => [{?MODULE, monad}], functions => [shift/1, reset/1, eval/1, lift_local/4]}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(IM) ->

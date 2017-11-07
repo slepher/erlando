@@ -27,8 +27,8 @@
 -export(['<$>'/3]).
 -export(['default_<$'/3]).
 
--transform({?MODULE, [functor], [fmap/2, '<$'/2]}).
--transform({?MODULE, [functor], ['<$>'/2]}).
+-transform(#{args => [?MODULE], functions => [fmap/2, '<$'/2]}).
+-transform(#{args => [?MODULE], functions => ['<$>'/2]}).
 
 %%%===================================================================
 %%% API

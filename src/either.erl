@@ -28,7 +28,7 @@
 -export([swap/0]).
 -export([left/0, left/1, right/0, right/1]).
 
--transform_behaviour({?MODULE, [], [?TYPE], [functor, applicative, monad, monad_fail]}).
+-transform(#{args => [?TYPE], behaviours => [functor, applicative, monad, monad_fail]}).
 
 %%%===================================================================
 %%% API

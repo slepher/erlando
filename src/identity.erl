@@ -34,9 +34,7 @@
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--transform_behaviour({?MODULE, [], [?MODULE], functor}).
--transform_behaviour({?MODULE, [], [?MODULE], applicative}).
--transform_behaviour({?MODULE, [], [?MODULE], monad}).
+-transform(#{args => [?MODULE], behaviours => [functor, applicative, monad]}).
 
 -type identity(A) :: {?MODULE, A}.
 
