@@ -31,7 +31,6 @@
 -behaviour(monad_runner).
 
 -include("op.hrl").
--define(PG, [[], [?MODULE]]).
 
 -export([new/1, error_t/1, run_error_t/1]).
 % impl of functor.
@@ -48,12 +47,15 @@
 -export([mzero/1, mplus/3]).
 % impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
--export([run/1, map/2, with/2]).
+-export([map/3, with/3]).
+-export([run/2]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [applicative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_fail]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [alternative, monad_plus]}).
+-transform(#{inner_type => functior,   behaviours => [functor]}).
+-transform(#{inner_type => monad,      behaviours => [applicative]}).
+-transform(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
+-transform(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
+-transform(#{args => monad,            functions => [map/2, with/2]}).
+-transform(#{args => monad,            functions => [run/1]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -159,16 +161,16 @@ run_m(EM, []) ->
     run(EM).
 
 -spec run(error_t(E, M, A)) -> monad:monadic(M, error_m:error_m(E, A)).
-run(EM) -> 
+run(EM, {?MODULE, _IM}) -> 
     run_error_t(EM).
 
 -spec map(fun((monad:monadic(M, error_m:error_m(EA, A))) -> monad:monadic(N, error_m:error_m(EB, B))),
                 error_t(EA, M, A)) -> error_t(EB, N, B).
-map(F, X) ->
+map(F, X, {?MODULE, _IM}) ->
     error_t(F(run_error_t(X))).
 
 -spec with(fun((EA) -> EB), error_t(EA, M, A)) -> error_t(EB, M, A).
-with(F, X) ->
+with(F, X, {?MODULE, _IM}) ->
     map(
       fun(MA) ->
               fun({error, R}) -> {error, F(R)}; (Val) -> Val end /'<$>'/ MA

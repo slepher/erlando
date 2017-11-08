@@ -31,8 +31,6 @@
 -behaviour(monad_fail).
 -behaviour(monad_runner).
 
--define(PG, [[], [?MODULE]]).
-
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
@@ -40,14 +38,18 @@
 -export([lift/2]).
 -export([callCC/2]).
 -export([fail/2]).
--export([shift/2, reset/2]).
 -export([run_nargs/0, run_m/2]).
--export([run/2, eval/2, map/2, with/2]).
+-export([reset/2, shift/2]).
+-export([map/3, with/3]).
+-export([run/3, eval/2]).
 -export([lift_local/5]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, any}], behaviours => [functor, applicative, monad]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad_trans, monad_cont]}).
--transform(#{args => [{?MODULE, monad}], functions => [shift/1, reset/1, eval/1, lift_local/4]}).
+-transform(#{inner_type => any,   behaviours => [functor, applicative, monad]}).
+-transform(#{inner_type => monad, behaviours => [monad_trans, monad_cont]}).
+-transform(#{args => monad,       functions => [shift/1, reset/1]}).
+-transform(#{args => monad,       functions => [map/2, with/2]}).
+-transform(#{args => monad,       functions => [run/2, eval/1]}).
+-transform(#{args => monad,       functions => [lift_local/4]}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(IM) ->
@@ -135,22 +137,24 @@ reset(X, {?MODULE, IM}) ->
 shift(F, {?MODULE, IM}) ->
     cont_t(fun (CC) -> eval(F(CC), {?MODULE, IM}) end).
 
+-spec map(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
+map(F, X, {?MODULE, _IM}) ->
+    cont_t(fun(CC) -> F(run(X, CC)) end).
+
+-spec with(fun((fun((B) -> monad:monadic(M, R))) -> fun((A) -> monad:monadic(M, R))), 
+                cont_t(R, M, A)) -> cont_t(R, M, B).
+with(F, X, {?MODULE, _IM}) ->
+    cont_t(fun (CC) -> run(X, F(CC)) end).
+
 -spec run(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
-run(X, CC) ->
+run(X, CC, {?MODULE, _IM}) ->
     (run_cont_t(X))(CC).
 
 -spec eval(cont_t(R, M, R), t(M)) -> monad:monadic(M, R).
 eval(X, {?MODULE, IM}) ->
     run(X, fun (A) -> monad:return(A, IM) end).
 
--spec map(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
-map(F, X) ->
-    cont_t(fun(CC) -> F(run(X, CC)) end).
 
--spec with(fun((fun((B) -> monad:monadic(M, R))) -> fun((A) -> monad:monadic(M, R))), 
-                cont_t(R, M, A)) -> cont_t(R, M, B).
-with(F, X) ->
-    cont_t(fun (CC) -> run(X, F(CC)) end).
 
 run_nargs() ->
     1.

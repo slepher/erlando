@@ -38,7 +38,6 @@
 -behaviour(monad_runner).
 
 -include("op.hrl").
--define(PG, [[], [?MODULE]]).
 
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
@@ -58,14 +57,15 @@
 % impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
 %% state related functions
--export([eval/3, exec/3, run/3, map/3, with/3]).
+-export([map/3, with/3]).
+-export([eval/3, exec/3, run/3]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], tfunctions => [eval/3, exec/3, run/3, map/3, with/3]}).
-
--transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [applicative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_state]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [alternative, monad_plus]}).
+-transform(#{inner_type => functor,    behaviours => [functor]}).
+-transform(#{inner_type => monad,      behaviours => [applicative]}).
+-transform(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_state]}).
+-transform(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
+-transform(#{args => monad,            functions => [map/2, with/2]}).
+-transform(#{args => monad,            functions => [eval/2, exec/2, run/2]}).
 
 -spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
 new(Inner) ->

@@ -22,7 +22,6 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
--define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -48,12 +47,15 @@
 % impl of monad_runner.
 -export([run_nargs/0, run_m/2]).
 % maybe_t functions.
--export([run/1, map/2]).
+-export([map/3]).
+-export([run/2]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [applicative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_fail]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [alternative, monad_plus]}).
+-transform(#{inner_type => functior,   behaviours => [functor]}).
+-transform(#{inner_type => monad,      behaviours => [applicative]}).
+-transform(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
+-transform(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
+-transform(#{args => monad,            functions => [map/2]}).
+-transform(#{args => monad,            functions => [run/1]}).
 
 -spec new(M) -> t(M).
 new(IM) ->
@@ -167,9 +169,9 @@ run_m(MTA, []) ->
     run(MTA).
 
 -spec run(maybe_t(M, A)) -> inner_t(M, A).
-run(X) ->
+run(X, {?MODULE, _IM}) ->
     run_maybe_t(X).
 
 -spec map(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A)) -> maybe_t(N, B).
-map(F, X) ->
+map(F, X, {?MODULE, _IM}) ->
     maybe_t(F(run_maybe_t(X))).

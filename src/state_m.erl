@@ -14,16 +14,16 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -define(STATE, {state_t, identity}).
--define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_state).
 
--transform(#{remote => state_t, patterns_group => ?PG, args => [?STATE],
+-transform(#{remote => state_t, inner_type => identity,
              behaviours => [functor, applicative, monad, monad_state]}).
--transform(#{remote => state_t, extra_call => {identity, run}, functions => [eval/2, exec/2, run/2]}).
+-transform(#{remote => state_t, args => identity, extra_call => {identity, run}, 
+             functions => [eval/2, exec/2, run/2]}).
 
 %%%===================================================================
 %%% API

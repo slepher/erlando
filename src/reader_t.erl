@@ -32,8 +32,6 @@
 -behaviour(monad_plus).
 -behaviour(monad_runner).
 
--define(PG, [[], [?MODULE]]).
-
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
 -export([fmap/3, '<$'/3]).
@@ -53,13 +51,16 @@
 -export([mzero/1, mplus/3]).
 -export([run_nargs/0, run_m/2]).
 % reader related functions
--export([run/2, map/2, with/2]).
+-export([map/3, with/3]).
+-export([run/3]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, applicative}], behaviours => [applicative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_reader]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, alternative}], behaviours => [alternative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [monad_plus]}).
+-transform(#{inner_type => functor,     behaviours => [functor]}).
+-transform(#{inner_type => applicative, behaviours => [applicative]}).
+-transform(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_reader]}).
+-transform(#{inner_type => alternative, behaviours => [alternative]}).
+-transform(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
+-transform(#{args => monad,             functions => [map/2, with/2]}).
+-transform(#{args => monad,             functions => [run/2]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -176,13 +177,13 @@ run_m(MR, [R]) ->
     run(MR, R).
 
 -spec run(reader_t(R, M, A), R) -> monad:monadic(M, A).
-run(MR, R) ->
+run(MR, R, {?MODULE, _IM}) ->
     (run_reader_t(MR))(R).
 
 -spec map(fun((monad:monadic(M, R)) -> monad:monadic(N, R)), reader_t(R, M, A)) -> reader_t(R, N, A).
-map(F, MR) ->
+map(F, MR, {?MODULE, _IM}) ->
     reader_t(fun(R) -> F(run(MR, R)) end).
     
 -spec with(fun((NR) -> R), reader_t(NR, M, A)) -> reader_t(R, M, A).
-with(F, MR) ->
+with(F, MR, {?MODULE, _IM}) ->
     reader_t(fun(R) -> run(MR, F(R)) end).

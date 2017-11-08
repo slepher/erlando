@@ -64,17 +64,24 @@ generate_forms(Module, Line, Opts) ->
     ExtraCall = maps:get(extra_call, Opts, undefined),
     Functions = maps:get(functions, Opts, []),
     TFunctions = maps:get(tfunctions, Opts, []),
-    NExtraArgs = update_args(Remote, ExtraArgs),
+    {PatternsGroup, NExtraArgs} = 
+        case maps:find(inner_type, Opts) of
+            {ok, InnerType} ->
+                {[[], [Module]], InnerType};
+            error ->
+                {ExtraPatternsGroup, ExtraArgs}
+        end,
+    NNExtraArgs = update_args(Remote, NExtraArgs),
     SFunctions =
         lists:foldl(
           fun(Patterns, Acc) ->
                   NFunctions = 
                       lists:map(
                         fun({FName, Arity}) ->
-                                {FName, Arity + length(NExtraArgs) - length(Patterns)}
+                                {FName, Arity + length(NNExtraArgs) - length(Patterns)}
                         end, Functions),
                   NFunctions ++ Acc
-          end, [], ExtraPatternsGroup),
+          end, [], PatternsGroup),
     AFunctions = 
         lists:foldl(
           fun(Behaviour, Acc) ->
@@ -86,15 +93,16 @@ generate_forms(Module, Line, Opts) ->
               Forms = 
                   lists:map(
                     fun({FName, Arity}) ->
-                            gen_function(Remote, FName, Arity, Line, Pattrens, NExtraArgs, ExtraCall)
+                            gen_function(Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall)
                     end, AFunctions),
               Forms ++ Acc
-      end, [], ExtraPatternsGroup).
+      end, [], PatternsGroup).
 
-update_args(Remote, Arg) when is_atom(Arg) ->
-    [{Remote, Arg}];
-update_args(_Remote, Args) ->
-    Args.
+update_args(_Remote, Args) when is_list(Args) ->
+    Args;
+update_args(Remote, Arg) ->
+    [{Remote, Arg}].
+
 
 gen_function(Module, FName, Arity, Line, ExtraPatterns, ExtraArgs, ExtraCall) ->
     NArity = Arity - length(ExtraArgs), 

@@ -20,7 +20,6 @@
 -compile({parse_transform, monad_t_transform}).
 
 -include("op.hrl").
--define(PG, [[], [?MODULE]]).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -46,14 +45,16 @@
 % impl of monad_plus
 -export([mzero/1, mplus/3]).
 -export([run_nargs/0, run_m/2]).
--export([exec/2, eval/2, run/1, map/2]).
+-export([map/3]).
+-export([exec/2, eval/2, run/2]).
 
--transform(#{patterns_group => ?PG, args => [{?MODULE, functor}], behaviours => [functor]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, applicative}], behaviours => [applicative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad}], behaviours => [monad, monad_trans, monad_writer]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, alternative}], behaviours => [alternative]}).
--transform(#{patterns_group => ?PG, args => [{?MODULE, monad_plus}], behaviours => [monad_plus]}).
--transform(#{args => [{?MODULE, monad}], functions => [exec/1, eval/1]}).
+-transform(#{inner_type => functor,     behaviours => [functor]}).
+-transform(#{inner_type => applicative, behaviours => [applicative]}).
+-transform(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_writer]}).
+-transform(#{inner_type => alternative, behaviours => [alternative]}).
+-transform(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
+-transform(#{args => monad,             functions => [map/2]}).
+-transform(#{args => monad,             functions => [exec/1, eval/1, run/1]}).
 
 -spec new(M) -> t(M) when M :: monad:monad().
 new(M) ->
@@ -175,10 +176,6 @@ exec(WTA, {?MODULE, IM}) ->
            return(Ws)
        ]).
 
--spec map(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
-                   writer_t(WA, M, A)) -> writer_t(WB, N, B).
-map(F, X) ->
-    writer_t(F(run_writer_t(X))).
 
 -spec eval(writer_t(_W, M, A)) -> monad:monadic(M, A).
 eval(WTA, {?MODULE, IM}) ->
@@ -187,5 +184,10 @@ eval(WTA, {?MODULE, IM}) ->
            return(A)
        ]).
 
-run(WTA) ->
+run(WTA, {?MODULE, _IM}) ->
     run_writer_t(WTA).
+
+-spec map(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
+                   writer_t(WA, M, A)) -> writer_t(WB, N, B).
+map(F, X, {?MODULE, _IM}) ->
+    writer_t(F(run_writer_t(X))).
