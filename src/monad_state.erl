@@ -10,9 +10,9 @@
 
 -superclass([monad]).
 
--callback get(M) -> monad:monadic(M, _S)  when M :: monad:monad().
--callback put(_S, M)  -> monad:monadic(M, ok)  when M :: monad:monad().
--callback state(fun((S) -> {A, S}), M) -> monad:monadic(M, A)  when M :: monad:monad().
+-callback get(M) -> monad:m(M, _S) when M :: monad:class().
+-callback put(_S, M)  -> monad:m(M, ok) when M :: monad:class().
+-callback state(fun((S) -> {A, S}), M) -> monad:m(M, A) when M :: monad:class().
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
@@ -32,18 +32,21 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec get(M) -> monad:m(M, _S) when M :: monad:class().
 get(UMonadState) ->
     undetermined:new(
       fun(MonadState) -> 
               typeclass_trans:apply(get, [], MonadState, ?MODULE)
       end, UMonadState).
 
+-spec put(_S, M)  -> monad:m(M, ok)  when M :: monad:class().
 put(S, UMonadState) ->
     undetermined:new(
       fun(MonadState) -> 
               typeclass_trans:apply(put, [S], MonadState, ?MODULE)
       end, UMonadState).
 
+-spec state(fun((S) -> {A, S}), M) -> monad:m(M, A) when M :: monad:class().
 state(F, UMonadState) ->
     undetermined:new(
       fun(MonadState) ->
@@ -64,9 +67,11 @@ default_state(F, MonadState) ->
            return(A)
        ]).
 
+-spec gets(fun((_S) -> T), M) -> monad:m(M, T) when M :: monad:class().
 gets(F, MonadState) ->
     functor:fmap(F, get(MonadState), MonadState).
 
+-spec modify(fun((_S) -> _T), M) -> monad:m(M, _A) when M :: monad:class().
 modify(F, MonadState) ->
     state(fun(S) -> {ok, F(S)} end, MonadState).
 %%%===================================================================

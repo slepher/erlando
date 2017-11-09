@@ -16,13 +16,13 @@
 
 -type monad_trans(T, M) :: {T, M}.
 
--callback lift(monad:monadic(M, A), M) -> monad:monadic(monad_trans(T, M), A) when T :: module(), M :: monad:monad().
+-callback lift(monad:m(M, A), M) -> monad:m(monad_trans(T, M), A) when T :: module(), M :: monad:class().
 
 -export([lift/2]).
 
 -transform(#{args => [?MODULE], functions => [lift/1]}).
 
--spec lift(monad_trans(T, M), monad:monadic(M, A)) -> monad:monadic(monad_trans(T, M), A) when M :: monad:monad(), T :: module().
+-spec lift(monad:m(M, A), monad_trans(T, M)) -> monad:m(monad_trans(T, M), A) when M :: monad:class(), T :: module().
 lift(UA, UMonadTrans) ->
     undetermined:new(
       fun(MonadTrans) when is_atom(MonadTrans) ->

@@ -13,7 +13,7 @@
 -export_type([reader_t/3]).
 
 -opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
--type inner_reader_t(R, M, A) :: fun( (R) -> monad:monadic(M, A)).
+-type inner_reader_t(R, M, A) :: fun( (R) -> monad:m(M, A)).
 
 -type t(M) :: {reader_t, M}.
 
@@ -62,7 +62,7 @@
 -transform(#{args => monad,             functions => [map/2, with/2]}).
 -transform(#{args => monad,             functions => [run/2]}).
 
--spec new(M) -> t(M) when M :: monad:monad().
+-spec new(M) -> t(M) when M :: monad:class().
 new(M) ->
     {?MODULE, M}.
 
@@ -127,7 +127,7 @@ pure(A, {?MODULE, IM}) ->
 return(A, {?MODULE, IM}) ->
     reader_t(fun (_) -> monad:return(A, IM) end).
 
--spec lift(monad:monadic(M, A)) -> reader_t(_R, M, A).
+-spec lift(monad:m(M, A)) -> reader_t(_R, M, A).
 lift(X, {?MODULE, _IM}) ->
     reader_t(fun(_) -> X end).
 
@@ -176,11 +176,11 @@ run_nargs() ->
 run_m(MR, [R]) ->
     run(MR, R).
 
--spec run(reader_t(R, M, A), R) -> monad:monadic(M, A).
+-spec run(reader_t(R, M, A), R) -> monad:m(M, A).
 run(MR, R, {?MODULE, _IM}) ->
     (run_reader_t(MR))(R).
 
--spec map(fun((monad:monadic(M, R)) -> monad:monadic(N, R)), reader_t(R, M, A)) -> reader_t(R, N, A).
+-spec map(fun((monad:m(M, R)) -> monad:m(N, R)), reader_t(R, M, A)) -> reader_t(R, N, A).
 map(F, MR, {?MODULE, _IM}) ->
     reader_t(fun(R) -> F(run(MR, R)) end).
     

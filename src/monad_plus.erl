@@ -14,8 +14,8 @@
 -include("applicative.hrl").
 -include("monad.hrl").
 
--callback mzero(M) -> monad:monadic(M, _A).
--callback mplus(monad:monadic(M, A), monad:monadic(M, A), M) -> monad:monadic(M, A).
+-callback mzero(M) -> monad:m(M, _A) when M :: monad:class().
+-callback mplus(monad:m(M, A), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
@@ -27,12 +27,14 @@
 -transform(#{args => [?MODULE], functions => [mzero/0, mplus/2]}).
 -transform(#{args => [?MODULE], functions => [guard/1, msum/1, mfilter/2]}).
 
+-spec mzero(M) -> monad:m(M, _A) when M :: monad:class().
 mzero(UMonadPlus) ->
     undetermined:new(
       fun(MonadPlus) ->
               typeclass_trans:apply(mzero, [], MonadPlus, ?MODULE)
       end, UMonadPlus).
 
+-spec mplus(monad:m(M, A), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 mplus(UA, UB, UMonadPlus) ->
     undetermined:map_pair(
       fun(MonadPlus, MA, MB) ->
@@ -40,14 +42,14 @@ mplus(UA, UB, UMonadPlus) ->
       end, UA, UB, UMonadPlus).
 
 %% Utility functions
--spec guard(boolean(), M) -> monad:monadic(M, _A).
+-spec guard(boolean(), M) -> monad:m(M, _A) when M :: monad:class().
 guard(true, MonadPlus)  -> monad:return(ok, MonadPlus);
 guard(false, MonadPlus) -> mzero(MonadPlus).
 
--spec msum([monad:monadic(M, A)], M) -> monad:monadic(M, A).
+-spec msum([monad:m(M, A)], M) -> monad:m(M, A) when M :: monad:class().
 msum(List, MonadPlus) ->
     lists:foldr(mplus(_, _, MonadPlus), mzero(MonadPlus), List).
 
--spec mfilter(fun( (A) -> boolean() ), monad:monadic(M, A), M) -> monad:monadic(M, A).
+-spec mfilter(fun( (A) -> boolean() ), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 mfilter(Pred, X, MonadPlus) ->
     do([MonadPlus || A <- X, guard(Pred(A), MonadPlus)]).

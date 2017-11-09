@@ -10,7 +10,11 @@
 
 -superclass([monad]).
 
--callback fail(any(), M) -> monad:monadic(M, _A) when M :: monad:monad().
+-include("functor.hrl").
+-include("applicative.hrl").
+-include("monad.hrl").
+
+-callback fail(any(), M) -> monad:m(M, _A) when M :: monad:class().
 
 %% API
 -export([fail/2]).
@@ -20,12 +24,12 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec fail(any(), M) -> monad:m(M, _A) when M :: monad:class().
 fail(E, UMonadFail) ->
     undetermined:new(
       fun(MonadFail) ->
               typeclass_trans:apply(fail, [E], MonadFail, ?MODULE)
       end, UMonadFail).
-
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

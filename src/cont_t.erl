@@ -13,7 +13,7 @@
 -export_type([cont_t/3]).
 
 -opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
--type inner_t(R, M, A) :: fun((fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R)).
+-type inner_t(R, M, A) :: fun((fun((A) -> monad:m(M, R))) -> monad:m(M, R)).
 -type t(M) :: {cont_t, M}.
 
 -compile({parse_transform, cut}).
@@ -51,7 +51,7 @@
 -transform(#{args => monad,       functions => [run/2, eval/1]}).
 -transform(#{args => monad,       functions => [lift_local/4]}).
 
--spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
+-spec new(M) -> TM when TM :: monad:class(), M :: monad:class().
 new(IM) ->
     {?MODULE, IM}.
 
@@ -133,24 +133,24 @@ callCC(F, {?MODULE, _IM}) ->
 reset(X, {?MODULE, IM}) ->
     lift(eval(X, {?MODULE, IM})).
 
--spec shift(fun((fun((A) -> monad:monadic(M, R))) -> cont_t(R, M, R)), t(M)) -> cont_t(R, M, A).
+-spec shift(fun((fun((A) -> monad:m(M, R))) -> cont_t(R, M, R)), t(M)) -> cont_t(R, M, A).
 shift(F, {?MODULE, IM}) ->
     cont_t(fun (CC) -> eval(F(CC), {?MODULE, IM}) end).
 
--spec map(fun((monad:monadic(M, R)) -> monad:monadic(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
+-spec map(fun((monad:m(M, R)) -> monad:m(M, R)), cont_t(R, M, A)) -> cont_t(R, M, A).
 map(F, X, {?MODULE, _IM}) ->
     cont_t(fun(CC) -> F(run(X, CC)) end).
 
--spec with(fun((fun((B) -> monad:monadic(M, R))) -> fun((A) -> monad:monadic(M, R))), 
+-spec with(fun((fun((B) -> monad:m(M, R))) -> fun((A) -> monad:m(M, R))), 
                 cont_t(R, M, A)) -> cont_t(R, M, B).
 with(F, X, {?MODULE, _IM}) ->
     cont_t(fun (CC) -> run(X, F(CC)) end).
 
--spec run(cont_t(R, M, A), fun((A) -> monad:monadic(M, R))) -> monad:monadic(M, R).
+-spec run(cont_t(R, M, A), fun((A) -> monad:m(M, R))) -> monad:m(M, R).
 run(X, CC, {?MODULE, _IM}) ->
     (run_cont_t(X))(CC).
 
--spec eval(cont_t(R, M, R), t(M)) -> monad:monadic(M, R).
+-spec eval(cont_t(R, M, R), t(M)) -> monad:m(M, R).
 eval(X, {?MODULE, IM}) ->
     run(X, fun (A) -> monad:return(A, IM) end).
 

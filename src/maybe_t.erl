@@ -13,7 +13,7 @@
 -export_type([maybe_t/2]).
 
 -opaque maybe_t(M, A) :: {maybe_t, inner_t(M, A)}.
--type inner_t(M, A) :: monad:monadic(M, maybe:maybe(A)).
+-type inner_t(M, A) :: monad:m(M, maybe:maybe(A)).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -compile({parse_transform, cut}).
@@ -126,7 +126,7 @@ pure(A, {?MODULE, _IM} = MT) ->
 return(A, {?MODULE, IM}) ->
     maybe_t(monad:return(maybe:pure(A), IM)).
 
--spec lift(monad:monadic(M, A)) -> maybe_t(M, A).
+-spec lift(monad:m(M, A)) -> maybe_t(M, A).
 lift(MA, {?MODULE, IM}) ->
     maybe_t(monad:lift_m(maybe:return(_), MA, IM)).
 
@@ -172,6 +172,6 @@ run_m(MTA, []) ->
 run(X, {?MODULE, _IM}) ->
     run_maybe_t(X).
 
--spec map(fun((monad:monadic(M, A)) -> monad:monadic(N, B)), maybe_t(M, A)) -> maybe_t(N, B).
+-spec map(fun((monad:m(M, A)) -> monad:m(N, B)), maybe_t(M, A)) -> maybe_t(N, B).
 map(F, X, {?MODULE, _IM}) ->
     maybe_t(F(run_maybe_t(X))).

@@ -13,7 +13,7 @@
 -export_type([writer_t/3]).
 
 -type writer_t(W, M, A) :: {writer_t, inner_writer_t(W, M, A)}.
--type inner_writer_t(W, M, A) :: monad:monadic(M, {A, [W]}).
+-type inner_writer_t(W, M, A) :: monad:m(M, {A, [W]}).
 -type t(M) :: {writer_t, M}.
 
 -compile({parse_transform, do}).
@@ -56,7 +56,7 @@
 -transform(#{args => monad,             functions => [map/2]}).
 -transform(#{args => monad,             functions => [exec/1, eval/1, run/1]}).
 
--spec new(M) -> t(M) when M :: monad:monad().
+-spec new(M) -> t(M) when M :: monad:class().
 new(M) ->
     {?MODULE, M}.
 
@@ -122,7 +122,7 @@ pure(A, {?MODULE, IM}) ->
 return(A, {?MODULE, IM}) ->
     writer_t(monad:return({A, []}, IM)).
 
--spec lift(monad:monadic(M, A)) -> writer_t(_W, M, A).
+-spec lift(monad:m(M, A)) -> writer_t(_W, M, A).
 lift(MA, {?MODULE, IM}) ->
     writer_t(monad:lift_m(fun(A) -> {A, []} end, MA, IM)).
 
@@ -169,7 +169,7 @@ run_nargs() ->
 run_m(WTA, []) ->
     run_writer_t(WTA).
 
--spec exec(writer_t(W, M, _A)) -> monad:monadic(M, [W]).
+-spec exec(writer_t(W, M, _A)) -> monad:m(M, [W]).
 exec(WTA, {?MODULE, IM}) ->
     do([IM || 
            {_A, Ws} <- run_writer_t(WTA),
@@ -177,7 +177,7 @@ exec(WTA, {?MODULE, IM}) ->
        ]).
 
 
--spec eval(writer_t(_W, M, A)) -> monad:monadic(M, A).
+-spec eval(writer_t(_W, M, A)) -> monad:m(M, A).
 eval(WTA, {?MODULE, IM}) ->
     do([IM || 
            {A, _Ws} <- run_writer_t(WTA),
@@ -187,7 +187,7 @@ eval(WTA, {?MODULE, IM}) ->
 run(WTA, {?MODULE, _IM}) ->
     run_writer_t(WTA).
 
--spec map(fun((monad:monadic(M, {A, [WA]})) -> monad:monadic(N, {B, [WB]})),
+-spec map(fun((monad:m(M, {A, [WA]})) -> monad:m(N, {B, [WB]})),
                    writer_t(WA, M, A)) -> writer_t(WB, N, B).
 map(F, X, {?MODULE, _IM}) ->
     writer_t(F(run_writer_t(X))).

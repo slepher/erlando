@@ -18,15 +18,19 @@
 
 -superclass([applicative]).
 
+-export_type([class/0, m/2]).
 -export_type([monad/0, monadic/2]).
 
--type monad()         :: module() | {module(), monad()}.
--type monadic(_M, _A) :: any().
+-type monad()         :: class().
+-type monadic(M, A) :: m(M, A).
+
+-type class() :: {module(), class()} | module().
+-type m(_M, _A) :: any(). 
 
 %% Monad primitives
--callback '>>='(monadic(M, A), fun( (A) -> monadic(M, B) ), M) -> monadic(M, B) when M :: monad().
--callback '>>'(monadic(M, _A), monadic(M, B), M) -> monadic(M, B) when M :: monad().
--callback return(A, M) -> monadic(M, A) when M :: monad(). 
+-callback '>>='(monad:m(M, A), fun( (A) -> monad:m(M, B) ), M) -> monad:m(M, B) when M :: monad:class().
+-callback '>>'(monad:m(M, _A), monad:m(M, B), M) -> monad:m(M, B) when M :: monad:class().
+-callback return(A, M) -> monad:m(M, A) when M :: monad:class(). 
 
 -compile({parse_transform, do}).
 -compile({parse_transform, monad_t_transform}).
@@ -47,6 +51,7 @@
 % depricated functions
 -export([sequence/2, map_m/3]).
 
+-spec '>>='(monad:m(M, A), fun((A) -> monad:m(M, B)), M) -> monad:m(M, B) when M :: monad:class().
 '>>='(UA, KUB, UMonad) ->
     undetermined:map(
       fun(Monad, MA) ->
@@ -54,39 +59,41 @@
               'do_>>='(MA, KMB, Monad)
       end, UA, UMonad).
 
+-spec '>>'(monad:m(M, _A), monad:m(M, B), M) -> monad:m(M, B).
 '>>'(UA, UB, UMonad) ->
     undetermined:map_pair(
       fun(Monad, MA, MB) ->
               typeclass_trans:apply('>>', [MA, MB], Monad, ?MODULE)
       end, UA, UB, UMonad).
 
--spec return(M, A) -> monad:monadic(M, A) when M :: monad().
+-spec return(A, M) -> monad:m(M, A) when M :: monad:class().
 return(A, UMonad) ->
     undetermined:new(
       fun(Monad) ->
               typeclass_trans:apply(return, [A], Monad, ?MODULE)
       end, UMonad).
 
--spec 'default_>>'(monadic(M, _A), monadic(M, B), module()) -> monadic(M, B).
+-spec 'default_>>'(m(M, _A), m(M, B), M) -> m(M, B).
 'default_>>'(MA, MB, Monad) ->
     'do_>>='(MA, fun(_) -> MB end, Monad).
 
+-spec default_return(A, M) -> monad:m(M, A) when M :: monad:class().
 default_return(A, Monad) ->
     applicative:pure(A, Monad).
 
--spec bind(monad:monadic(M, A), fun((A) -> monad:monadic(M, B)), M) -> monad:monadic(M, B) when M :: monad:monad().
+-spec bind(monad:m(M, A), fun((A) -> monad:m(M, B)), M) -> monad:m(M, B) when M :: monad:class().
 bind(X, F, Monad) ->
     '>>='(X, F, Monad).
 
--spec then(monad:monadic(M, _A), monad:monadic(M, B), M) -> monad:monadic(M, B).
+-spec then(monad:m(M, _A), monad:m(M, B), M) -> monad:m(M, B).
 then(X, F, Monad) ->
     '>>'(X, F, Monad).
 
--spec join(monadic(M, monadic(M, A))) -> monadic(M, A).
+-spec join(m(M, m(M, A)), M) -> m(M, A).
 join(MMA, Monad) ->
     bind(MMA, fun(MA) -> MA end, Monad).
 
--spec lift_m(M, fun((A) -> B), monad:monadic(M, A)) -> monad:monadic(M, B) when M :: monad().
+-spec lift_m(fun((A) -> B), monad:m(M, A), M) -> monad:m(M, B) when M :: monad:class().
 lift_m(F, MA, Monad) ->
     do([Monad || 
            A <- MA,
@@ -115,11 +122,11 @@ run(M, Monad) ->
 
 
 %% traversable functions
--spec sequence(M, [monadic(M, A)]) -> monadic(M, [A]).
+-spec sequence(M, [m(M, A)]) -> m(M, [A]).
 sequence(Monad, Xs) ->
     map_m(Monad, fun(X) -> X end, Xs).
 
--spec map_m(M, fun((A) -> monad:monadic(M, B)), [A]) -> monad:monadic(M, [B]).
+-spec map_m(M, fun((A) -> monad:m(M, B)), [A]) -> monad:m(M, [B]).
 map_m(Monad, F, [X|Xs]) ->
     do([Monad ||
            A <- F(X),

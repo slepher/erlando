@@ -21,7 +21,7 @@
 -export_type([state_t/3]).
 
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
--type inner_t(S, M, A) :: fun((S) -> monad:monadic(M, {A, S})).
+-type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -compile({parse_transform, do}).
@@ -67,7 +67,7 @@
 -transform(#{args => monad,            functions => [map/2, with/2]}).
 -transform(#{args => monad,            functions => [eval/2, exec/2, run/2]}).
 
--spec new(M) -> TM when TM :: monad:monad(), M :: monad:monad().
+-spec new(M) -> TM when TM :: monad:class(), M :: monad:class().
 new(Inner) ->
     {?MODULE, Inner}.
 
@@ -138,7 +138,7 @@ lift_a2(F, STA, STB, {?MODULE, _IM} = ST) ->
 return(A, {?MODULE, _IM} = ST) ->
     state(fun (S) -> {A, S} end, ST).
 
--spec lift(monad:monadic(M, A)) -> state_t(_S, M, A).
+-spec lift(monad:m(M, A)) -> state_t(_S, M, A).
 lift(MA, {?MODULE, IM}) ->
     state_t(
       fun(S) ->
@@ -174,18 +174,18 @@ mplus(STA, STB, {?MODULE, IM}) ->
               monad_plus:mplus(run(STA, S), run(STB, S), IM)
       end).
 
--spec eval(state_t(S, M, A), S) -> monad:monadic(M, A).
+-spec eval(state_t(S, M, A), S) -> monad:m(M, A).
 eval(STA, S, {?MODULE, IM}) ->
     monad:lift_m(fun({A, _}) -> A end, run(STA, S), IM).
 
--spec exec(state_t(S, M, _A), S) -> monad:monadic(M, S).
+-spec exec(state_t(S, M, _A), S) -> monad:m(M, S).
 exec(STA, S, {?MODULE, IM}) ->
     monad:lift_m(fun({_, NS}) -> NS end, run(STA, S), IM).
 
--spec run(state_t(S, M, A), S) -> monad:monadic(M, {A, S}).
+-spec run(state_t(S, M, A), S) -> monad:m(M, {A, S}).
 run(STA, S, {?MODULE, _IM}) -> (run_state_t(STA))(S).
 
--spec map(fun((monad:monadic(M, {A, S})) -> monad:monadic(N, {B, S})), state_t(S, M, A)) -> state_t(S, N, B).
+-spec map(fun((monad:m(M, {A, S})) -> monad:m(N, {B, S})), state_t(S, M, A)) -> state_t(S, N, B).
 map(F, STA, {?MODULE, _IM}) ->
     state_t(fun (S) -> F(run(STA, S)) end).
 

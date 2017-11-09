@@ -11,7 +11,7 @@
 -superclass([]).
 
 -callback run_nargs() -> integer().
--callback run_m(monad:monadic(_M, A), [any()]) -> monad:monadic(_N, A) | A.
+-callback run_m(monad:m(_M, A), [any()]) -> monad:m(_N, A) | A.
 
 %% API
 -export([run_m/2]).

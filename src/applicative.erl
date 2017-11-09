@@ -10,17 +10,20 @@
 
 -superclass([functor]).
 
--export_type([applicative_module/0, f/1, applicative/2]).
+-export_type([class/0, f/2]).
+-export_type([applicative_module/0, applicative/2]).
 
--type applicative_module() :: {module(), applicative_module()} | module().
--type f(_A) :: any().
--type applicative(_F, _A) :: any().
+-type applicative_module() :: class().
+-type applicative(F, A) :: f(F, A).
 
--callback pure(A, _F) -> f(A).
--callback '<*>'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
--callback lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B), F) -> applicative(F, C).
--callback '*>'(applicative(F, _A), applicative(F, B), F) -> applicative(F, B).
--callback '<*'(applicative(F, A), applicative(F, _B), F) -> applicative(F, A).
+-type class() :: {module(), class()} | module().
+-type f(_F, _A) :: any().
+
+-callback pure(A, F) -> applicative:f(F, A) when F :: applicative:class(). 
+-callback '<*>'(applicative:f(F, fun((A) -> B)), applicative:f(F, A), F) -> applicative:f(F, B) when F :: applicative:class(). 
+-callback lift_a2(fun((A, B) -> C), applicative:f(F, A), applicative:f(F, B), F) -> applicative:f(F, C) when F :: applicative:class(). 
+-callback '*>'(applicative:f(F, _A), applicative:f(F, B), F) -> applicative:f(F, B) when F :: applicative:class(). 
+-callback '<*'(applicative:f(F, A), applicative:f(F, _B), F) -> applicative:f(F, A) when F :: applicative:class(). 
 
 -compile({parse_transform, monad_t_transform}).
 
@@ -38,37 +41,40 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec pure(A, F) -> applicative:f(F, A) when F :: applicative:class(). 
 pure(A, UApplicative) ->
     undetermined:new(
       fun(Applicative) ->
               typeclass_trans:apply(pure, [A], Applicative, ?MODULE)
       end, UApplicative).
 
--spec '<*>'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
+-spec '<*>'(applicative:f(F, fun((A) -> B)), applicative:f(F, A), F) -> applicative:f(F, B) when F :: applicative:class(). 
 '<*>'(UF, UA, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AF, AA) ->
               'do_<*>'(AF, AA, Applicative)
       end, UF, UA, UApplicative).
 
+-spec lift_a2(fun((A, B) -> C), applicative:f(F, A), applicative:f(F, B), F) -> 
+                     applicative:f(F, C) when F :: applicative:class(). 
 lift_a2(F, UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
               do_lift_a2(F, AA, AB, Applicative)
       end, UA, UB, UApplicative).
 
--spec '*>'(applicative(F, _A), applicative(F, B)) -> applicative(F, B).
+-spec '*>'(applicative:f(F, _A), applicative:f(F, B), F) -> applicative:f(F, B) when F :: applicative:class(). 
 '*>'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
               typeclass_trans:apply('*>', [AA, AB], Applicative, ?MODULE)
       end, UA, UB, UApplicative).
 
--spec '<*'(applicative(F, A), applicative(F, _B)) -> applicative(F, A).
+-spec '<*'(applicative:f(F, A), applicative:f(F, _B), F) -> applicative:f(F, A) when F :: applicative:class(). 
 '<*'(UA, UB, UApplicative) ->
     undetermined:map_pair(
       fun(Applicative, AA, AB) ->
-              typeclass_trans:apply('<*', [AB, AA], Applicative, ?MODULE)
+              typeclass_trans:apply('<*', [AA, AB], Applicative, ?MODULE)
       end, UA, UB, UApplicative).
 
 'default_<*>'(AF, AA, Applicative) ->
@@ -78,7 +84,8 @@ lift_a2(F, UA, UB, UApplicative) ->
         end,
     lift_a2(FA, AF, AA, Applicative).
 
--spec default_lift_a2(fun((A, B) -> C), applicative(F, A), applicative(F, B), module()) -> applicative(F, C).
+-spec default_lift_a2(fun((A, B) -> C), applicative:f(F, A), applicative:f(F, B), F) -> 
+                             applicative:f(F, C) when F :: applicative:class(). 
 default_lift_a2(F, AA, AB, Applicative) ->
     NF = 
         fun(A) ->
@@ -89,7 +96,7 @@ default_lift_a2(F, AA, AB, Applicative) ->
     AF = applicative:pure(NF, Applicative),
     'do_<*>'('do_<*>'(AF, AA, Applicative), AB, Applicative).
 
--spec 'default_*>'(applicative(F, _A), applicative(F, B), module()) -> applicative(F, B).
+-spec 'default_*>'(applicative:f(F, _A), applicative:f(F, B), F) -> applicative:f(F, B) when F :: applicative:class(). 
 'default_*>'(AA, AB, Applicative) ->
     ConstId = 
         fun(_A) ->
@@ -97,7 +104,7 @@ default_lift_a2(F, AA, AB, Applicative) ->
         end,
     do_lift_a2(ConstId, AA, AB, Applicative).
 
--spec 'default_<*'(applicative(F, A), applicative(F, _B), module()) -> applicative(F, A).
+-spec 'default_<*'(applicative:f(F, A), applicative:f(F, _B), F) -> applicative:f(F, A) when F :: applicative:class(). 
 'default_<*'(AA, AB, Applicative) ->
     Const = 
         fun(A) -> 
@@ -105,15 +112,16 @@ default_lift_a2(F, AA, AB, Applicative) ->
         end,
     do_lift_a2(Const, AA, AB, Applicative).
 
--spec 'ap'(applicative(F, fun((A) -> B)), applicative(F, A), F) -> applicative(F, B).
+-spec 'ap'(applicative:f(F, fun((A) -> B)), applicative:f(F, A), F) -> applicative:f(F, B) when F :: applicative:class(). 
 ap(AF, A, Applicative) ->
     '<*>'(AF, A, Applicative).
 
--spec '<**>'(applicative(F, A), applicative(F, fun((A) -> B)), F) -> applicative(F, B).
+-spec '<**>'(applicative:f(F, A), applicative:f(F, fun((A) -> B)), F) -> applicative:f(F, B) when F :: applicative:class(). 
 '<**>'(AA, AF, Applicative) ->
     '<*>'(AF, AA, Applicative).
 
--spec lift_a3(fun((A, B, C) -> D), applicative(F, A), applicative(F, B), applicative(F, C), F) -> applicative(F, D).
+-spec lift_a3(fun((A, B, C) -> D), applicative:f(F, A), applicative:f(F, B), applicative:f(F, C), F) -> 
+                     applicative:f(F, D) when F :: applicative:class(). 
 lift_a3(F, AA, AB, AC, Applicative) ->
     NF = 
         fun(A) ->
