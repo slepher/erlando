@@ -12,11 +12,11 @@
 
 -compile({parse_transform, monad_t_transform}).
 
--export_type([foldable/2]).
+-export_type([t/2]).
 
--type foldable(_F, _A) :: any().
+-type t(_F, _A) :: any().
 
--callback fold_map(fun((A) -> monoid:monoid(M)), foldable(F, A), F) -> monoid:monoid(M).
+-callback fold_map(fun((A) -> monoid:monoid(M)), foldable:t(T, A), T) -> monoid:monoid(M).
 %% API
 -export([fold_map/3]).
 
@@ -25,6 +25,7 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec fold_map(fun((A) -> monoid:monoid(M)), foldable:t(T, A), T) -> monoid:monoid(M).
 fold_map(F, UA, UFoldable) ->
     undetermined:map(
       fun(Foldable, TA) -> 
