@@ -32,40 +32,40 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec writer({A, [_W]}, M) -> monad:m(M, A) when M :: monad:class().
-writer({A, Ws}, UMonadWriter) ->
+-spec writer({A, monoid:m(_W)}, M) -> monad:m(M, A) when M :: monad:class().
+writer({A, W}, UMonadWriter) ->
     undetermined:new(
       fun(MonadWriter) ->
-              typeclass_trans:apply(writer, [{A, Ws}], MonadWriter, ?MODULE)
+              typeclass_trans:apply(writer, [{A, W}], MonadWriter, ?MODULE)
       end, UMonadWriter).
 
--spec tell([_W], M) -> monad:m(M, _A) when M :: monad:class().
-tell(Ws, UMonadWriter) ->
+-spec tell(monoid:m(_W), M) -> monad:m(M, _A) when M :: monad:class().
+tell(W, UMonadWriter) ->
     undetermined:new(
       fun(MonadWriter) ->
-              typeclass_trans:apply(writer, [Ws], MonadWriter, ?MODULE)
+              typeclass_trans:apply(writer, [W], MonadWriter, ?MODULE)
       end, UMonadWriter).
 
--spec listen(monad:m(M, A), M) -> monad:m(M, {A, [_W]}) when M :: monad:class().
+-spec listen(monad:m(M, A), M) -> monad:m(M, {A, monoid:m(_W)}) when M :: monad:class().
 listen(UA, UMonadWriter) ->
     undetermined:map(
       fun(MonadWriter, MWA) ->
               typeclass_trans:apply(listen, [MWA], MonadWriter, ?MODULE)
       end, UA, UMonadWriter).
 
--spec pass(monad:m(M, {A, fun(([W]) -> [W])}), M) -> monad:m(M, A) when M :: monad:class().
+-spec pass(monad:m(M, {A, fun((monoid:m(W)) -> monoid:m(W))}), M) -> monad:m(M, A) when M :: monad:class().
 pass(UA, UMonadWriter) ->
     undetermined:map(
       fun(MonadWriter, MWA) ->
               typeclass_trans:apply(pass, [MWA], MonadWriter, ?MODULE)
       end, UA, UMonadWriter).
 
--spec listens(fun(([_W]) -> B), monad:m(M, A), M) -> monad:m(M, {A, B}) when M :: monad:class().
+-spec listens(fun((monoid:m(_W)) -> B), monad:m(M, A), M) -> monad:m(M, {A, B}) when M :: monad:class().
 listens(F, MWA, MonadWriter) ->
-    NF = fun({A, Ws}) -> {A, F(Ws)} end,
+    NF = fun({A, W}) -> {A, F(W)} end,
     monad:lift_m(NF,listen(MWA), MonadWriter).
 
--spec censor(fun(([W]) -> [W]), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
+-spec censor(fun((monoid:m(W)) -> monoid:m(W)), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 censor(F, MWA, MonadWriter) ->
     pass(monad:lift_m(fun(A) -> {A, F} end, MWA, MonadWriter), MonadWriter).
 %%%===================================================================

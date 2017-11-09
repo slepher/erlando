@@ -13,7 +13,7 @@
 -export_type([writer_t/3]).
 
 -type writer_t(W, M, A) :: {writer_t, inner_writer_t(W, M, A)}.
--type inner_writer_t(W, M, A) :: monad:m(M, {A, [W]}).
+-type inner_writer_t(W, M, A) :: monad:m(M, {A, monoid:m(W)}).
 -type t(M) :: {writer_t, M}.
 
 -compile({parse_transform, do}).
@@ -87,7 +87,7 @@ fmap(F, WTA, {?MODULE, IM}) ->
     AF = 
         fun({F, W1}) ->
                 fun({A, W2}) ->
-                        {F(A), W1 ++ W2}
+                        {F(A), monoid:mappend(W1, W2)}
                 end
         end,
     writer_t(applicative:lift_a2(AF, run_writer_t(WTF), run_writer_t(WTA), IM)).
@@ -105,14 +105,14 @@ lift_a2(F, WTA, WTB, {?MODULE, _IM} = WT) ->
     applicative:'default_<*'(WTA, WTB, WT).
 
 pure(A, {?MODULE, IM}) ->
-    writer_t(applicative:pure({A, []}, IM)).
+    writer_t(applicative:pure({A, monoid:mempty()}, IM)).
 
 -spec '>>='(writer_t(W, M, A), fun((A) -> writer_t(W, M, B) )) -> writer_t(W, M, B).
 '>>='(WTA, KWTB, {?MODULE, IM}) ->
     writer_t(
       do([IM || {A, LogsA} <- run_writer_t(WTA),
                 {B, LogsB} <- run_writer_t(KWTB(A)),
-                return({B, LogsA ++ LogsB})
+                return({B, monoid:mappend(LogsA, LogsB)})
        ])).
 
 -spec '>>'(writer_t(W, M, _A), writer_t(W, M, B)) -> writer_t(W, M, B).
@@ -120,11 +120,11 @@ pure(A, {?MODULE, IM}) ->
     monad:'default_>>'(WTA, WTB, WT).
 
 return(A, {?MODULE, IM}) ->
-    writer_t(monad:return({A, []}, IM)).
+    writer_t(monad:return({A, monoid:mempty()}, IM)).
 
 -spec lift(monad:m(M, A)) -> writer_t(_W, M, A).
 lift(MA, {?MODULE, IM}) ->
-    writer_t(monad:lift_m(fun(A) -> {A, []} end, MA, IM)).
+    writer_t(monad:lift_m(fun(A) -> {A, monoid:mempty()} end, MA, IM)).
 
 writer({A, Ws}, {?MODULE, IM}) ->
     writer_t(monad:return({A, Ws}, IM)).
@@ -132,14 +132,14 @@ writer({A, Ws}, {?MODULE, IM}) ->
 tell(Ws, {?MODULE, IM}) ->
     writer_t(monad:return({ok, Ws}, IM)).
 
--spec listen(writer_t(W, M, A)) -> writer_t(W, M, {A, [W]}).
+-spec listen(writer_t(W, M, A)) -> writer_t(W, M, {A, monoid:m(W)}).
 listen(WTA, {?MODULE, IM}) ->
     map(
       fun(MA) ->
               monad:lift_m(fun({A, Ws}) -> {{A, Ws}, Ws} end, MA, IM)
       end, WTA).
 
--spec pass(writer_t(W, M, {A, fun(([W]) -> [W])})) -> writer_t(W, M, A).
+-spec pass(writer_t(W, M, {A, fun((monoid:m(W)) -> monoid:m(W))})) -> writer_t(W, M, A).
 pass(WTAK, {?MODULE, IM}) ->
     map(
       fun(MAK) ->
@@ -169,13 +169,12 @@ run_nargs() ->
 run_m(WTA, []) ->
     run_writer_t(WTA).
 
--spec exec(writer_t(W, M, _A)) -> monad:m(M, [W]).
+-spec exec(writer_t(W, M, _A)) -> monad:m(M, monoid:m(W)).
 exec(WTA, {?MODULE, IM}) ->
     do([IM || 
            {_A, Ws} <- run_writer_t(WTA),
            return(Ws)
        ]).
-
 
 -spec eval(writer_t(_W, M, A)) -> monad:m(M, A).
 eval(WTA, {?MODULE, IM}) ->
@@ -187,7 +186,7 @@ eval(WTA, {?MODULE, IM}) ->
 run(WTA, {?MODULE, _IM}) ->
     run_writer_t(WTA).
 
--spec map(fun((monad:m(M, {A, [WA]})) -> monad:m(N, {B, [WB]})),
+-spec map(fun((monad:m(M, {A, monoid:m(WA)})) -> monad:m(N, {B, monoid:m(WB)})),
                    writer_t(WA, M, A)) -> writer_t(WB, N, B).
 map(F, X, {?MODULE, _IM}) ->
     writer_t(F(run_writer_t(X))).

@@ -12,12 +12,12 @@
 
 -compile({parse_transform, monad_t_transform}).
 
--export_type([monoid/1]).
+-export_type([m/1]).
 
--type monoid(_M) :: any().
+-type m(_M) :: any().
 
--callback mempty(M) -> monoid(M).
--callback mappend(monoid(M), monoid(M), M) -> monoid(M).
+-callback mempty(M) -> monoid:m(M).
+-callback mappend(monoid:m(M), monoid:m(M), M) -> monoid:m(M).
 
 %% API
 -export([mempty/1, mappend/3]).
