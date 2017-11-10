@@ -11,7 +11,7 @@
 -include("erlando.hrl").
 
 %% API
--export([new/2, type/2, run/2, map0/3, map/3, map_pair/3, map_pair/4]).
+-export([new/2, type/2, run/2, map0/3, map/3, map_pair/4]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -63,9 +63,6 @@ map(F, M, Typeclass) ->
         false ->
             F(Typeclass, M)
     end.
-
-map_pair(F, UA, UB) ->
-    map_pair(F, UA, UB, undefined).
 
 map_pair(F, #undetermined{} = UA, UB, Typeclass) ->
     undetermined:map(
