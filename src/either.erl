@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(either).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [{left, '_'}, {right, '_'}]}).
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, monad_t_transform}).

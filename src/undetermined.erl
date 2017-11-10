@@ -58,8 +58,12 @@ map(F, #undetermined{inner_function = UF}, Typeclass) ->
 map(F, M, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
-            Type = type:type(M),
-            F(Type, M);
+            case typeclass:type(M) of
+                undefined ->
+                    new(fun(Type) -> F(Type, M) end, Typeclass);
+                Type ->
+                    F(Type, M)
+            end;
         false ->
             F(Typeclass, M)
     end.

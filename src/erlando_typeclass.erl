@@ -21,7 +21,8 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {behaviour_modules = maps:new(), typeclasses = [], type_aliases = []}).
+-record(state, {behaviour_modules = maps:new(), typeclasses = [],
+                type_aliases = [], types = maps:new()}).
 
 %%%===================================================================
 %%% API
@@ -84,17 +85,8 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({register_modules, Modules}, _From, 
-            #state{behaviour_modules = BehaviourModules, typeclasses = Typeclasses} = State) ->
-    TypeAlias = 
-        lists:foldl(
-          fun(Module, Acc) ->
-                  case aliases(Module) of
-                      [] ->
-                          Acc;
-                      [Alias|_T] ->
-                          maps:put(Module, Alias, Acc)
-                  end
-          end, maps:new(), Modules),
+            #state{behaviour_modules = BehaviourModules,
+                   typeclasses = Typeclasses, types = Types} = State) ->
     NTypeclasses = 
         lists:foldl(
           fun(Module, Acc) ->
@@ -106,28 +98,20 @@ handle_call({register_modules, Modules}, _From,
                           ordsets:add_element(Module, Acc)
                   end
           end, Typeclasses, Modules),
-    NBehaviourModules = 
+    {NTypes, NBehaviourModules} = 
         lists:foldl(
-          fun(Module, Acc0) ->
-                  Behaviours = behaviours(Module),
-                  Types = types(Module),
-                  lists:foldl(
-                    fun(Type, Acc1) ->
-                            lists:foldl(
-                              fun(Behaviour, Acc2) ->
-                                      case ordsets:is_element(Behaviour, NTypeclasses) of
-                                          true ->
-                                              maps:put({Type, Behaviour}, Module, Acc2);
-                                          false ->
-                                              Acc2
-                                      end
-                              end, Acc1, Behaviours)
-                    end, Acc0, Types)
-          end, BehaviourModules, Modules),
-    do_load_module(TypeAlias, NTypeclasses, NBehaviourModules),
-    {reply, ok, State#state{behaviour_modules = NBehaviourModules, typeclasses = NTypeclasses}};
+          fun(Module, {TIAcc, TBMAcc}) ->
+                  {TypeInstanceMap, TypeBehaviourModuleMap} = 
+                      module_type_info(Module, NTypeclasses),
+                  {maps:merge(TypeInstanceMap, TIAcc),
+                   maps:merge(TypeBehaviourModuleMap, TBMAcc)}
+          end, {Types, BehaviourModules}, Modules),
+    do_load_module(NTypes, NTypeclasses, NBehaviourModules),
+    {reply, ok, State#state{behaviour_modules = NBehaviourModules,
+                            typeclasses = NTypeclasses, types = NTypes}};
 
-handle_call({module, Type, Behaviour}, _From, #state{behaviour_modules = BehaviourModules} = State) ->
+handle_call({module, Type, Behaviour}, _From,
+            #state{behaviour_modules = BehaviourModules} = State) ->
     Reply = 
         case maps:find({Type, Behaviour}, BehaviourModules) of
             {ok, Module} ->
@@ -195,8 +179,43 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-aliases(Module) ->
-    lists:flatten(attributes(erlando_type_alias, Module)).
+module_type_info(Module, Typeclasses) ->
+    TypeAttrs = types(Module),
+    Behaviours = behaviours(Module),
+    TypeInstanceMap = 
+        lists:foldl(
+          fun({Type, Patterns}, Acc1) ->
+                  maps:put(Type, Patterns, Acc1);
+             (Type, Acc1) when is_atom(Type) ->
+                  case maps:find(Type, Acc1) of
+                      {ok, _Patterns} ->
+                          Acc1;
+                      error ->
+                          maps:put(Type, undefined, Acc1)
+                  end
+          end, maps:new(), TypeAttrs),
+    NTypeInstanceMap = 
+        maps:map(
+          fun(Type, undefined) ->
+                  [{Type, '_'}];
+             (_Type, Patterns) ->
+                  Patterns
+          end, TypeInstanceMap),
+    Types = maps:keys(TypeInstanceMap),
+    TypeBehaviourMap = 
+        lists:foldl(
+          fun(Type, Acc1) ->
+                  lists:foldl(
+                    fun(Behaviour, Acc2) ->
+                            case ordsets:is_element(Behaviour, Typeclasses) of
+                                true ->
+                                    maps:put({Type, Behaviour}, Module, Acc2);
+                                false ->
+                                    Acc2
+                            end
+                    end, Acc1, Behaviours)
+          end, maps:new(), Types),
+    {NTypeInstanceMap, TypeBehaviourMap}.
 
 superclasses(Module) ->
     attributes(superclass, Module).
@@ -216,23 +235,36 @@ attributes(Attribute, Module) ->
               Acc
       end, [], Attributes).
 
-do_load_module(Aliases, Typeclasses, BehaviourModules) ->
+do_load_module(Types, Typeclasses, BehaviourModules) ->
     TypeclassModule = {attribute,0,module,typeclass},
-    Export = {attribute,0,export,[{module,2}, {is_typeclass, 1}, {alias, 1}]},
-    AliasesFun = generate_alias(Aliases),
+    Export = {attribute,0,export,[{module,2}, {is_typeclass, 1}, {type, 1}]},
+    TypesFun = generate_type(Types),
     IsTypeClass = generate_is_typeclass(Typeclasses),
     Module = generate_module(BehaviourModules),
-    {ok, Mod, Bin} = compile:forms([TypeclassModule, Export, AliasesFun, IsTypeClass, Module]),
+    {ok, Mod, Bin} = compile:forms([TypeclassModule, Export, TypesFun, IsTypeClass, Module]),
     code:load_binary(Mod, [], Bin).
 
-generate_alias(Aliases) ->
+generate_type(Types) ->
     Clauses = 
         maps:fold(
-          fun(Module, Alias, Acc) ->
-                  [alias_clause(0, Module, Alias)|Acc]
-          end, [], Aliases),
-    LastClause = {clause, 0, [{var, 0, 'Type'}], [], [{var, 0, 'Type'}]},
-    {function, 0, alias, 1, lists:reverse([LastClause|Clauses])}.
+          fun(Type, Patterns, Acc) ->
+                  NPatterns = 
+                      case Patterns of
+                          undefined ->
+                              [{Type, '_'}];
+                          _ ->
+                              Patterns
+                      end,
+                  lists:map(
+                    fun(Pattern) ->
+                            type_clause(0, Pattern, Type)
+                    end, NPatterns) ++ Acc
+          end, [], Types),
+    FunClause = {clause, 0, [{var, 0, 'Fun'}], 
+                 [[{call, 0, {atom, 0, is_function}, [{var, 0, 'Fun'}]}]],
+                 [{atom, 0, function}]},
+    LastClause = {clause, 0, [{var, 0, '_'}], [], [{atom, 0, undefined}]},
+    {function, 0, type, 1, [FunClause|Clauses] ++ [LastClause]}.
 
 generate_is_typeclass(Typeclasses) ->
    Clauses = 
@@ -254,8 +286,8 @@ generate_module(BehaviourModules) ->
                     [{tuple, 0, [{atom, 0, unregisted_module}, {tuple, 0, [{var, 0, 'A'}, {var, 0, 'B'}]}]}]}]},
     {function, 0, module, 2, lists:reverse([LastClause|Clauses])}.
 
-alias_clause(Line, Module, Alias) ->
-    {clause, Line, [{atom, Line, Module}], [], [ast_traverse:from_value(Line, Alias)]}.
+type_clause(Line, Pattern, Type) ->
+    {clause, Line, [ast_traverse:from_value(Line, Pattern)], [], [{atom, Line, Type}]}.
    
 is_typeclass_clause(Line, Typeclass) ->
     {clause, Line, [{atom, Line, Typeclass}], [], [{atom, Line, true}]}.

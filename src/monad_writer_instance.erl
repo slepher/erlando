@@ -81,7 +81,7 @@ lift_listen(Listen, WMA, MonadTrans) when is_atom(MonadTrans) ->
     lift_listen(Listen, WMA, {MonadTrans, monad_writer}).
 
 lift_pass(Pass, MTWMAF, {maybe_t, MonadWriter}) ->
-    state_t:map(
+    maybe_t:map(
       fun(WMAF) ->
               Pass(
                 do([MonadWriter ||
