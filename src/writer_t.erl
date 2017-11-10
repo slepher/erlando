@@ -20,6 +20,7 @@
 -compile({parse_transform, monad_t_transform}).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -67,7 +68,7 @@ writer_t(Inner) ->
 -spec run_writer_t(writer_t(W, M, A)) -> inner_writer_t(W, M, A).
 run_writer_t({?MODULE, Inner}) ->
     Inner;
-run_writer_t({undetermined, _} = U) ->
+run_writer_t(#undetermined{} = U) ->
     run_writer_t(undetermined:run(U, ?MODULE));
 run_writer_t(Other) ->
     exit({invalid_t, Other}).

@@ -22,6 +22,7 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -68,7 +69,7 @@ maybe_t(Inner) ->
 -spec run_maybe_t(maybe_t(M, A)) -> inner_t(M, A).
 run_maybe_t({?MODULE, Inner}) ->
     Inner;
-run_maybe_t({undetermined, _} = U) ->
+run_maybe_t(#undetermined{} = U) ->
     run_maybe_t(undetermined:run(U, maybe_t));
 run_maybe_t(Other) ->
     exit({invalid_t, Other}).

@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(two_tuple).
 
+-include("erlando.hrl").
+
 %% API
 -export([fmap/3]).
 -export([fmap_trans/3]).
@@ -48,7 +50,7 @@ bind_trans(T, {T, MA}, K) ->
 return(T, A) ->
     {T, A}.
 
-run(T, {undetermined, _} = A) ->
+run(T, #undetermined{} = A) ->
     run(T, undetermined:run(A, T));
 run(T, {T, A}) ->
     A.

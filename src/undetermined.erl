@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(undetermined).
 
+-include("erlando.hrl").
+
 %% API
 -export([new/2, type/2, run/2, map0/3, map/3, map_pair/3, map_pair/4]).
 %%%===================================================================
@@ -16,7 +18,7 @@
 new(F, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
-            {?MODULE, F};
+            #undetermined{typeclass = Typeclass, inner_function = F};
         false ->
             F(Typeclass)
     end.
@@ -33,7 +35,7 @@ run(UA, Typeclass) ->
               MA
       end, UA, Typeclass).
 
-map0(F, {?MODULE, UF} = UA, Typeclass) ->
+map0(F, #undetermined{inner_function = UF} = UA, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
             F(Typeclass, UA);
@@ -43,7 +45,7 @@ map0(F, {?MODULE, UF} = UA, Typeclass) ->
 map0(F, A, Typeclass) ->
     map(F, A, Typeclass).
 
-map(F, {?MODULE, UF}, Typeclass) ->
+map(F, #undetermined{inner_function = UF}, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
             new(
@@ -65,7 +67,7 @@ map(F, M, Typeclass) ->
 map_pair(F, UA, UB) ->
     map_pair(F, UA, UB, undefined).
 
-map_pair(F, {undetermined, _} = UA, UB, Typeclass) ->
+map_pair(F, #undetermined{} = UA, UB, Typeclass) ->
     undetermined:map(
       fun(Module, B) ->
               A = run(UA, Module),

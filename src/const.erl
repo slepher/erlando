@@ -15,6 +15,8 @@
 -behaviour(functor).
 -behaviour(applicative).
 
+-include("erlando.hrl").
+
 %% API
 -export([const/1]).
 -export([fmap/3, '<$'/3]).
@@ -50,7 +52,7 @@ lift_a2(F, CA, CB, ?MODULE) ->
 '<*'(CA, CB, ?MODULE) ->
     applicative:'default_<*'(CA, CB, ?MODULE).
 
-run_const({undetermined, _} = UA) ->
+run_const(#undetermined{} = UA) ->
     run_const(undetermined:run(UA, ?MODULE));
 run_const({?MODULE, CA}) ->
     CA.

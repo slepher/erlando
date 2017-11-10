@@ -22,6 +22,7 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -73,8 +74,8 @@ reader_t(Inner) ->
 -spec run_reader_t(reader_t(R, M, A)) -> inner_reader_t(R, M, A).
 run_reader_t({?MODULE, Inner}) ->
     Inner;
-run_reader_t({undetermined, _} = U) ->
-    run_reader_t(undetermined:run(U, ?MODULE));
+run_reader_t(#undetermined{} = UA) ->
+    run_reader_t(undetermined:run(UA, ?MODULE));
 run_reader_t(Other) ->
     exit({invalid_reader_t, Other}).
 

@@ -31,6 +31,7 @@
 -behaviour(monad_runner).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -export([new/1, error_t/1, run_error_t/1]).
 % impl of functor.
@@ -68,7 +69,7 @@ error_t(Inner) ->
 -spec run_error_t(error_t(E, M, A)) -> inner_t(E, M, A).
 run_error_t({?MODULE, Inner}) ->
     Inner;
-run_error_t({undetermined, _} = UT) ->
+run_error_t(#undetermined{} = UT) ->
     run_error_t(undetermined:run(UT, ?MODULE));
 run_error_t(Other) ->
     exit({invalid_t, Other}).

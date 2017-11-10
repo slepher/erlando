@@ -38,6 +38,7 @@
 -behaviour(monad_runner).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -export([new/1, state_t/1, run_state_t/1]).
 % impl of functor.
@@ -78,7 +79,7 @@ state_t(Inner) ->
 -spec run_state_t(state_t(S, M, A)) -> inner_t(S, M, A).
 run_state_t({?MODULE, Inner}) ->
     Inner;
-run_state_t({undetermined, _} = U) ->
+run_state_t(#undetermined{} = U) ->
     run_state_t(undetermined:run(U, ?MODULE));
 run_state_t(Other) ->
     exit({invalid_t, Other}).

@@ -36,6 +36,7 @@
 -behaviour(monad_runner).
 
 -define(TYPE, error).
+-include("erlando.hrl").
 
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
@@ -110,7 +111,7 @@ run_nargs() ->
 run_m(EA, []) ->
     EA.
 
-run({undetermined, _} = U) ->
+run(#undetermined{} = U) ->
     run(undetermined:run(U, ?TYPE));
 run(EM) ->
     EM.

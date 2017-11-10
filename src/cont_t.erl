@@ -22,6 +22,7 @@
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
+-include("erlando.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -60,7 +61,7 @@ cont_t(Inner) ->
 -spec run_cont_t(cont_t(R, M, A)) -> inner_t(R, M, A).
 run_cont_t({?MODULE, Inner}) ->
     Inner;
-run_cont_t({undetermined, _} = U) ->
+run_cont_t(#undetermined{} = U) ->
     run_cont_t(undetermined:run(U, cont_t));
 run_cont_t(Other) ->
     exit({invalid_monad, Other}).
