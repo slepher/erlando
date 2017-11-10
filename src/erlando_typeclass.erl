@@ -263,8 +263,11 @@ generate_type(Types) ->
     FunClause = {clause, 0, [{var, 0, 'Fun'}], 
                  [[{call, 0, {atom, 0, is_function}, [{var, 0, 'Fun'}]}]],
                  [{atom, 0, function}]},
+    ListClause = {clause, 0, [{var, 0, 'List'}], 
+                 [[{call, 0, {atom, 0, is_list}, [{var, 0, 'List'}]}]],
+                 [{atom, 0, list}]},
     LastClause = {clause, 0, [{var, 0, '_'}], [], [{atom, 0, undefined}]},
-    {function, 0, type, 1, [FunClause|Clauses] ++ [LastClause]}.
+    {function, 0, type, 1, [FunClause, ListClause|Clauses] ++ [LastClause]}.
 
 generate_is_typeclass(Typeclasses) ->
    Clauses = 

@@ -18,7 +18,7 @@
 
 -module(list_instance).
 
--erlando_type(list).
+-erlando_type({list, []}).
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).

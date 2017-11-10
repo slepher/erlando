@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(state_m).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, []}).
 
 -compile({parse_transform, monad_t_transform}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).

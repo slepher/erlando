@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(function_instance).
 
--erlando_type(function).
+-erlando_type({function, []}).
 
 -compile({parse_transform, monad_t_transform}).
 

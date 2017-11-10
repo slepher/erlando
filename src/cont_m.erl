@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(cont_m).
 
--erlando_type_alias({cont_t, identity}).
+-erlando_type({?MODULE, []}).
 
 -compile({parse_transform, monad_t_transform}).
 
