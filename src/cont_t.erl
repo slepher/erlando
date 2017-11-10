@@ -42,14 +42,12 @@
 -export([reset/2, shift/2]).
 -export([map/3, with/3]).
 -export([run/3, eval/2]).
--export([lift_local/5]).
 
 -transform(#{inner_type => any,   behaviours => [functor, applicative, monad]}).
 -transform(#{inner_type => monad, behaviours => [monad_trans, monad_cont]}).
 -transform(#{args => monad,       functions => [shift/1, reset/1]}).
 -transform(#{args => monad,       functions => [map/2, with/2]}).
 -transform(#{args => monad,       functions => [run/2, eval/1]}).
--transform(#{args => monad,       functions => [lift_local/4]}).
 
 -spec new(M) -> TM when TM :: monad:class(), M :: monad:class().
 new(IM) ->
@@ -154,18 +152,8 @@ run(X, CC, {?MODULE, _IM}) ->
 eval(X, {?MODULE, IM}) ->
     run(X, fun (A) -> monad:return(A, IM) end).
 
-
-
 run_nargs() ->
     1.
 
 run_m(CTA, [CC]) ->
     run(CTA, CC).
-
-lift_local(Ask, Local, F, X, {?MODULE, IM}) ->
-    cont_t(fun (CC) ->
-                   do([IM || 
-                          R <- Ask(),
-                          Local(F, run(X, fun(A) -> Local(fun(_) -> R end, CC(A)) end))
-                      ])
-           end).

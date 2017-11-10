@@ -246,10 +246,10 @@ test_cont_t_local(_Config) ->
     ?assertEqual(RefY, R1).
 
 test_cont_t_lifted_local(F, C) ->
-    cont_t:lift_local(
+    monad_reader_instance:lift_local(
       fun() -> reader_t:ask() end,
       fun(IF, X) -> reader_t:local(IF, X) end,
-      F, C).
+      F, C, cont_t).
 
 test_cont_t_monad_runner(_Config) ->          
     MC = cont_t:new(reader_t:new(state_t:new(identity))),

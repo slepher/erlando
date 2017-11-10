@@ -11,38 +11,49 @@
 -erlando_type([state_t, cont_t, maybe_t, error_t]).
 
 -compile({parse_transform, cut}).
+-compile({parse_transform, do}).
 
 -behaviour(monad_reader).
 
 %% API
 -export([ask/1, local/3, reader/2]).
+-export([lift_local/5]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-ask(MonadTrans) when is_atom(MonadTrans) ->
-    ask({MonadTrans, monad_reader});
 ask({MonadTrans, MonadReader}) ->
-    monad_trans:lift(monad_reader:ask(MonadReader), {MonadTrans, MonadReader}).
+    monad_trans:lift(monad_reader:ask(MonadReader), {MonadTrans, MonadReader});
+ask(MonadTrans) ->
+    ask({MonadTrans, monad_reader}).
 
-local(F, MRA, cont_t) ->
-    local(F, MRA, {cont, monad_reader});
-local(F, MRA, {cont_t, MonadReader}) ->
+local(F, MRA, {MonadTrans, MonadReader}) ->
     Ask = fun() -> monad_reader:ask(MonadReader) end,
     Local = monad_reader:local(_, _, MonadReader),
-    cont_t:lift_local(Ask, Local, F, MRA, {cont_t, MonadReader});
-local(F, MRA, MonadTrans) when is_atom(MonadTrans)->
-    local(F, MRA, {MonadTrans, monad_reader});
-local(F, MRA, {MonadTrans, MonadReader}) ->
-    MonadTrans:map(
-      fun(MA) ->
-              monad_reader:local(F, MA, MonadReader)
-      end, MRA).
+    lift_local(Ask, Local, F, MRA, {MonadTrans, MonadReader});
+local(F, MRA, MonadTrans) when is_atom(MonadTrans) ->
+    local(F, MRA, {MonadTrans, monad_reader}).
 
-reader(F, MonadTrans) when is_atom(MonadTrans) ->
-    reader(F, {MonadTrans, monad_reader});
 reader(F, {MonadTrans, MonadReader}) ->
-    monad_trans:lift(monad_reader:reader(F, MonadReader), {MonadTrans, MonadReader}).
+    monad_trans:lift(monad_reader:reader(F, MonadReader), {MonadTrans, MonadReader});
+reader(F, MonadTrans) ->
+    reader(F, {MonadTrans, monad_reader}).
+
+lift_local(Ask, Local, F, CTMRA, {cont_t, MonadReader}) ->
+    cont_t:cont_t(
+      fun (CC) ->
+              do([MonadReader || 
+                     R <- Ask(),
+                     Local(F, cont_t:run(CTMRA, fun(A) -> Local(fun(_) -> R end, CC(A)) end))
+                 ])
+      end);
+lift_local(_Ask, Local, F, MTMRA, {MonadTrans, MonadReader}) ->
+    MonadTrans:map(
+      fun(MRA) ->
+              Local(F, MRA)
+      end, MTMRA, {MonadTrans, MonadReader});
+lift_local(Ask, Local, F, MRA, MonadTrans) when is_atom(MonadTrans) ->
+    lift_local(Ask, Local, F, MRA, {MonadTrans, monad_reader}).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -52,3 +63,4 @@ reader(F, {MonadTrans, MonadReader}) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
