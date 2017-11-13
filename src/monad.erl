@@ -135,4 +135,3 @@ map_m(Monad, F, [X|Xs]) ->
        ]);
 map_m(Monad, _F, []) ->
     return(Monad, []).
-
