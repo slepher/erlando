@@ -103,12 +103,19 @@ handle_call({register_modules, Modules}, _From,
           fun(Module, {TIAcc, TBMAcc}) ->
                   {TypeInstanceMap, TypeBehaviourModuleMap} = 
                       module_type_info(Module, NTypeclasses),
-                  {maps:merge(TypeInstanceMap, TIAcc),
-                   maps:merge(TypeBehaviourModuleMap, TBMAcc)}
+                  {merge_type_instance(TIAcc, TypeInstanceMap),
+                   maps:merge(TBMAcc, TypeBehaviourModuleMap)}
           end, {Types, BehaviourModules}, Modules),
-    do_load_module(NTypes, NTypeclasses, NBehaviourModules),
+    NNTypes = 
+        maps:map(
+          fun(Type, undefined) ->
+                  [{Type, '_'}];
+             (_Type, Patterns) ->
+                  Patterns
+          end, NTypes),
+    do_load_module(NNTypes, NTypeclasses, NBehaviourModules),
     {reply, ok, State#state{behaviour_modules = NBehaviourModules,
-                            typeclasses = NTypeclasses, types = NTypes}};
+                            typeclasses = NTypeclasses, types = NNTypes}};
 
 handle_call({module, Type, Behaviour}, _From,
             #state{behaviour_modules = BehaviourModules} = State) ->
@@ -194,13 +201,6 @@ module_type_info(Module, Typeclasses) ->
                           maps:put(Type, undefined, Acc1)
                   end
           end, maps:new(), TypeAttrs),
-    NTypeInstanceMap = 
-        maps:map(
-          fun(Type, undefined) ->
-                  [{Type, '_'}];
-             (_Type, Patterns) ->
-                  Patterns
-          end, TypeInstanceMap),
     Types = maps:keys(TypeInstanceMap),
     TypeBehaviourMap = 
         lists:foldl(
@@ -215,7 +215,20 @@ module_type_info(Module, Typeclasses) ->
                             end
                     end, Acc1, Behaviours)
           end, maps:new(), Types),
-    {NTypeInstanceMap, TypeBehaviourMap}.
+    {TypeInstanceMap, TypeBehaviourMap}.
+
+merge_type_instance(TypeInstanceMap, NTypeInstanceMap) ->
+    maps:fold(
+      fun(Type, Pattern, Acc) ->
+              case maps:find(Type, Acc) of
+                  {ok, undefined} ->
+                      maps:put(Type, Pattern, Acc);
+                  {ok, _} ->
+                      Acc;
+                  error ->
+                      maps:put(Type, Pattern, Acc)
+              end
+      end, TypeInstanceMap, NTypeInstanceMap).
 
 superclasses(Module) ->
     attributes(superclass, Module).
