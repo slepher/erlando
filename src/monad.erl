@@ -48,9 +48,6 @@
 -transform(#{args => [?MODULE], functions => ['>>='/2, '>>'/2, return/1]}).
 -transform(#{args => [?MODULE], functions => [bind/2, then/2, join/1, lift_m/2]}).
 
-% depricated functions
--export([sequence/2, map_m/3]).
-
 -spec '>>='(monad:m(M, A), fun((A) -> monad:m(M, B)), M) -> monad:m(M, B) when M :: monad:class().
 '>>='(UA, KUB, UMonad) ->
     undetermined:map(
@@ -119,19 +116,3 @@ run(M, Monad) ->
 %%%===================================================================
 'do_>>='(MA, KMB, Monad) ->
     typeclass_trans:apply('>>=', [MA, KMB], Monad, ?MODULE).
-
-
-%% traversable functions
--spec sequence(M, [m(M, A)]) -> m(M, [A]).
-sequence(Monad, Xs) ->
-    map_m(Monad, fun(X) -> X end, Xs).
-
--spec map_m(M, fun((A) -> monad:m(M, B)), [A]) -> monad:m(M, [B]).
-map_m(Monad, F, [X|Xs]) ->
-    do([Monad ||
-           A <- F(X),
-           As <- map_m(Monad, F, Xs),
-           return([A|As])
-       ]);
-map_m(Monad, _F, []) ->
-    return(Monad, []).
