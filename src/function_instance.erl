@@ -23,11 +23,11 @@
 -behaviour(monad_runner).
 
 %% API
--export([fmap/3, '<$'/3]).
--export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
--export(['>>='/3, '>>'/3, return/2]).
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
 % monad reader instance.
--export([ask/1, local/3, reader/2]).
+-export([ask/0, local/2, reader/1]).
 % monad runner instance.
 -export([run_nargs/0, run_m/2]).
 
@@ -35,58 +35,58 @@
 -export([const/1]).
 -export([id/0, id/1]).
 
--transform(#{args => [?TYPE], behaviours => [functor, applicative, monad, monad_reader]}).
+-transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 -spec fmap(fun((A) -> B), fun((R) -> A)) -> fun((R) -> B).
-fmap(F, FA, ?TYPE) ->
+fmap(F, FA) ->
     '.'(F, FA).
 
 -spec '<$'(B, fun((R) -> _A)) -> fun((R) -> B).
-'<$'(B, FA, ?TYPE) ->
+'<$'(B, FA) ->
     functor:'default_<$'(B, FA, ?TYPE).
 
 -spec '<*>'(fun((R) -> fun((A) -> B)), fun((R) -> A)) -> fun((R) -> B).
-'<*>'(FF, FA, ?TYPE) ->
+'<*>'(FF, FA) ->
     fun(R) -> (FF(R))(FA(R)) end.
 
 -spec pure(A) -> fun((_R) -> A).
-pure(A, ?TYPE) ->
+pure(A) ->
     const(A).
 
 -spec lift_a2(fun((A, B) -> C), fun((R) -> A), fun((R) -> B)) -> fun((R) -> C).
-lift_a2(F, RTA, RTB, ?TYPE) ->
+lift_a2(F, RTA, RTB) ->
     applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
 
 -spec '*>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
-'*>'(RTA, RTB, ?TYPE) ->
+'*>'(RTA, RTB) ->
     applicative:'default_*>'(RTA, RTB, ?TYPE).
 
 -spec '<*'(fun((R) -> A), fun((R) -> _B)) -> fun((R) -> A).
-'<*'(RTA, RTB, ?TYPE) ->
+'<*'(RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?TYPE).
            
 -spec '>>='(fun((R) -> A), fun((A) -> fun((R) -> B))) -> fun((R) -> B).  
-'>>='(FA, KFB, ?TYPE) ->
+'>>='(FA, KFB) ->
     fun(X) -> (KFB(FA(X)))(X) end.
 
 -spec '>>'(fun((R) -> _A), fun((R) -> B)) -> fun((R) -> B).
-'>>'(FA, FB, ?TYPE) ->
+'>>'(FA, FB) ->
     monad:'default_>>'(FA, FB, ?TYPE).
 
 -spec return(A) -> fun((_R) -> A).
-return(A, ?TYPE) ->
+return(A) ->
     monad:default_return(A, ?TYPE).
 
-ask(?TYPE) ->
+ask() ->
     id().
 
-local(F, FI, ?TYPE) ->
+local(F, FI) ->
     '.'(FI, F).
 
-reader(F, ?TYPE) ->
+reader(F) ->
     id(F).
 
 run_nargs() ->

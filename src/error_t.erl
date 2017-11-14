@@ -153,7 +153,7 @@ mplus(ETA, ETB, {?MODULE, IM}) ->
          ])).
 
 mzero({?MODULE, IM}) ->
-    error_t(monad:return({error, error}, IM)).
+    error_t(monad:return({error, mzero}, IM)).
 
 run_nargs() ->
     0.

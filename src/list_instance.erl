@@ -39,64 +39,65 @@
 -behaviour(monad_plus).
 -behaviour(monoid).
 
--export([fmap/3, '<$'/3]).
--export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
--export(['>>='/3, '>>'/3, return/2]).
--export([fail/2]).
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
+-export([fail/1]).
+
 -export([run_nargs/0, run_m/2]).
--export([fold_map/3]).
--export([traverse/3, sequence_a/2, map_m/3, sequence/2]).
--export([empty/1, '<|>'/3]).
--export([mzero/1, mplus/3]).
--export([mempty/1, mappend/3]).
+-export([fold_map/2]).
+-export([traverse/2, sequence_a/1, map_m/2, sequence/1]).
+-export([empty/0, '<|>'/2]).
+-export([mzero/0, mplus/2]).
+-export([mempty/0, mappend/2]).
 
--transform(#{args => [?TYPE], behaviours => [functor, applicative, monad, monad_fail]}).
--transform(#{args => [?TYPE], behaviours => [foldable, traversable]}).
--transform(#{args => [?TYPE], behaviours => [alternative, monad_plus, monoid]}).
+-transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_fail]}).
+-transform(#{patterns => [?TYPE], gbehaviours => [foldable, traversable]}).
+-transform(#{patterns => [?TYPE], gbehaviours => [alternative, monad_plus, monoid]}).
 
 
-fmap(F, Xs, ?TYPE) ->
+fmap(F, Xs) ->
     [F(X) || X <- Xs].
 
-'<$'(B, As, ?TYPE) ->
+'<$'(B, As) ->
     functor:'default_<$'(B, As, ?TYPE).
 
-pure(A, ?TYPE) -> [A].
+pure(A) -> [A].
 
 -spec '<*>'([fun((A) -> B)], [A]) -> [B].
-'<*>'(LF, LA, ?TYPE) ->
+'<*>'(LF, LA) ->
     [F(A) || F <- LF, A <- LA].
 
 -spec lift_a2(fun((A, B) -> C), [A], [B]) -> [C].
-lift_a2(F, As, Bs, ?TYPE) ->
-    applicative:default_lift_a2(F, As, Bs, ?MODULE).
+lift_a2(F, As, Bs) ->
+    applicative:default_lift_a2(F, As, Bs, ?TYPE).
 
 -spec '<*'([_A], [B]) -> [B].
-'*>'(As, Bs, ?TYPE) ->
-    applicative:'default_*>'(As, Bs, ?MODULE).
+'*>'(As, Bs) ->
+    applicative:'default_*>'(As, Bs, ?TYPE).
 
 -spec '*>'([A], [_B]) -> [A].
-'<*'(As, Bs, ?TYPE) ->
-    applicative:'default_<*'(As, Bs, ?MODULE).
+'<*'(As, Bs) ->
+    applicative:'default_<*'(As, Bs, ?TYPE).
 
 %% Note that using a list comprehension is (obviously) cheating, but
 %% it's easier to read. The "real" implementation is also included for
 %% completeness.
 
 -spec '>>='([A], fun( (A) -> [B] )) -> [B].
-'>>='(X, Fun, ?TYPE) -> lists:append([Fun(E) || E <- X]).
+'>>='(X, Fun) -> lists:append([Fun(E) || E <- X]).
 %%               lists:foldr(fun (E, Acc) -> Fun(E) ++ Acc end, [], X).
 
 -spec '>>'([_A], [B]) -> [B].
-'>>'(As, Bs, ?TYPE) ->
-    monad:'default_>>'(As, Bs, ?MODULE).
+'>>'(As, Bs) ->
+    monad:'default_>>'(As, Bs, ?TYPE).
 
 -spec return(A) -> [A].
-return(A, ?TYPE) -> 
-    monad:default_return(A, ?MODULE).
+return(A) -> 
+    monad:default_return(A, ?TYPE).
 
 -spec fail(any()) -> [_A].
-fail(_E, ?TYPE) -> [].
+fail(_E) -> [].
 
 run_nargs() ->
     0.
@@ -104,45 +105,45 @@ run_nargs() ->
 run_m(As, []) ->
     As.
 
-fold_map(F, As, ?TYPE) ->
+fold_map(F, As) ->
     lists:foldr(
       fun(A, Acc) ->
               monoid:mappend(Acc, F(A))
       end, monoid:mempty(), As).
 
-traverse(A_FB, [H|T], ?TYPE) ->
-    applicative:lift_a2([_|_], A_FB(H), traverse(A_FB, T, ?TYPE));
-traverse(_A_FB, [], ?TYPE) ->
+traverse(A_FB, [H|T]) ->
+    applicative:lift_a2([_|_], A_FB(H), traverse(A_FB, T));
+traverse(_A_FB, []) ->
     applicative:pure([]).
 
-sequence_a(TFA, ?TYPE) ->
+sequence_a(TFA) ->
     traversable:default_sequence_a(TFA, ?TYPE).
 
-map_m(A_MB, [MH|TM], ?TYPE) ->
+map_m(A_MB, [MH|TM]) ->
     do([monad ||
            H <- MH,
-           T <- map_m(A_MB, TM, ?TYPE),
+           T <- map_m(A_MB, TM),
            return([H|T])
        ]);
-map_m(_A_MB, [], ?TYPE) ->
+map_m(_A_MB, []) ->
     monad:return([]).
 
-sequence(TMA, ?TYPE) ->
-    map_m(function_instance:id(), TMA, ?TYPE).
+sequence(TMA) ->
+    map_m(function_instance:id(), TMA).
            
-empty(?TYPE) ->
+empty() ->
     mzero(?TYPE).
 
-'<|>'(LA, LB, ?TYPE) ->
-    mplus(LA, LB, ?TYPE).
+'<|>'(LA, LB) ->
+    mplus(LA, LB).
 
 -spec mzero() -> [_A].
-mzero(?TYPE) -> [].
+mzero() -> [].
 
 -spec mplus([A], [A]) -> [A].
-mplus(X, Y, ?TYPE) ->
+mplus(X, Y) ->
     lists:append(X, Y).
 
-mempty(?TYPE) -> [].
+mempty() -> [].
 
-mappend(X, Y, ?TYPE) -> mplus(X, Y).
+mappend(X, Y) -> mplus(X, Y).

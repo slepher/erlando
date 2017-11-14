@@ -62,6 +62,7 @@ generate_forms(Module, Type, Line, Opts) ->
     ExtraPatternsGroup = maps:get(patterns_group, Opts, [ExtraPatterns]),
     ExtraArgs = maps:get(args, Opts, []),
     Behaviours = maps:get(behaviours, Opts, []),
+    GBehaviours = maps:get(gbehaviours, Opts, []),
     ExtraCall = maps:get(extra_call, Opts, undefined),
     Functions = maps:get(functions, Opts, []),
     TFunctions = maps:get(tfunctions, Opts, []),
@@ -81,11 +82,17 @@ generate_forms(Module, Type, Line, Opts) ->
     SFunctions =
         lists:foldl(
           fun(Patterns, Acc) ->
+                  Callbacks = 
+                      lists:foldl(
+                        fun(Behaviour, Acc0) ->
+                                Callbacks = Behaviour:behaviour_info(callbacks),
+                                Callbacks ++ Acc0
+                        end, [], GBehaviours),
                   NFunctions = 
                       lists:map(
                         fun({FName, Arity}) ->
                                 {FName, Arity + length(NNExtraArgs) - length(Patterns)}
-                        end, Functions),
+                        end, Functions ++ Callbacks),
                   NFunctions ++ Acc
           end, [], PatternsGroup),
     AFunctions = 
@@ -93,7 +100,7 @@ generate_forms(Module, Type, Line, Opts) ->
           fun(Behaviour, Acc) ->
                   Callbacks = Behaviour:behaviour_info(callbacks),
                   Callbacks ++ Acc
-          end, SFunctions ++ TFunctions, Behaviours),
+          end,  SFunctions ++ TFunctions, Behaviours),
     lists:foldl(
       fun(Pattrens, Acc) ->
               Forms = 

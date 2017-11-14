@@ -32,85 +32,85 @@
 -behaviour(monad_runner).
 
 %% impl of functor.
--export([fmap/3, '<$'/3]).
--export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
--export(['>>='/3, '>>'/3, return/2]).
--export([fail/2]).
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
+-export([fail/1]).
 %% impl of alternative.
--export([empty/1, '<|>'/3]).
+-export([empty/0, '<|>'/2]).
 %% impl of monad plus.
--export([mzero/1, mplus/3]).
+-export([mzero/0, mplus/2]).
 %% impl of monad runner.
 -export([run_nargs/0, run_m/2]).
 
--transform(#{args => [?MODULE], behaviours => [functor, applicative, monad, monad_fail]}).
--transform(#{args => [?MODULE], behaviours => [alternative, monad_plus]}).
+-transform(#{patterns => [?MODULE], gbehaviours => [functor, applicative, monad, monad_fail]}).
+-transform(#{patterns => [?MODULE], gbehaviours => [alternative, monad_plus]}).
 
 -spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
-fmap(F, {just, X}, ?MODULE) ->
+fmap(F, {just, X}) ->
     {just, F(X)};
-fmap(_F, nothing, ?MODULE) ->
+fmap(_F, nothing) ->
     nothing.
 
 -spec '<$'(B, maybe(_A)) -> maybe(B).
-'<$'(B, MA, ?MODULE) ->
+'<$'(B, MA) ->
     functor:'default_<$'(B, MA, ?MODULE).
 
 -spec pure(A) -> maybe(A).
-pure(A, ?MODULE) ->
+pure(A) ->
     {just, A}.
 
 -spec '<*>'(maybe(fun((A) -> B)), A) -> maybe(B).
-'<*>'(nothing, _, ?MODULE) ->
+'<*>'(nothing, _) ->
     nothing;
-'<*>'(_, nothing, ?MODULE) ->
+'<*>'(_, nothing) ->
     nothing;
-'<*>'({just, F}, {just, A}, ?MODULE) ->
+'<*>'({just, F}, {just, A}) ->
     {just, F(A)}.
 
 -spec lift_a2(fun((A, B) -> C), maybe(A), maybe(B)) -> maybe(C).
-lift_a2(F, RTA, RTB, ?MODULE) ->
+lift_a2(F, RTA, RTB) ->
     applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
 
 -spec '*>'(maybe(_A), maybe(B)) -> maybe(B).
-'*>'(RTA, RTB, ?MODULE) ->
+'*>'(RTA, RTB) ->
     applicative:'default_*>'(RTA, RTB, ?MODULE).
 
 -spec '<*'(maybe(A), maybe(_B)) -> maybe(A).
-'<*'(RTA, RTB, ?MODULE) ->
+'<*'(RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?MODULE).
 
 -spec '>>='(maybe(A), fun( (A) -> maybe(B) )) -> maybe(B).
-'>>='({just, X}, Fun, ?MODULE) -> Fun(X);
-'>>='(nothing,  _Fun, ?MODULE) -> nothing.
+'>>='({just, X}, Fun) -> Fun(X);
+'>>='(nothing,  _Fun) -> nothing.
 
 -spec '>>'(maybe(_A), maybe(B)) -> maybe(B).
-'>>'(MA, MB, ?MODULE) ->
+'>>'(MA, MB) ->
     monad:'default_>>'(MA, MB, ?MODULE).
 
 -spec return(A) -> maybe(A).
-return(A, ?MODULE) -> 
+return(A) -> 
     monad:default_return(A, ?MODULE).
 
 -spec fail(any()) -> maybe(_A).
-fail(_E, ?MODULE) -> nothing.
+fail(_E) -> nothing.
 
-empty(?MODULE) ->
+empty() ->
     nothing.
 
 -spec '<|>'(maybe(A), maybe(A)) -> maybe(A).
-'<|>'(nothing, MB, ?MODULE) -> 
+'<|>'(nothing, MB) -> 
     MB;
-'<|>'(MA,     _MB, ?MODULE) -> 
+'<|>'(MA,     _MB) -> 
     MA.
 
 -spec mzero() -> maybe(_A).
-mzero(?MODULE) -> 
-    empty(?MODULE).
+mzero() -> 
+    empty().
 
 -spec mplus(maybe(A), maybe(A)) -> maybe(A).
-mplus(MA, MB, ?MODULE) ->
-    '<|>'(MA, MB, ?MODULE).
+mplus(MA, MB) ->
+    '<|>'(MA, MB).
 
 -spec run_nargs() -> integer().
 run_nargs() ->
