@@ -231,22 +231,13 @@ merge_type_instance(TypeInstanceMap, NTypeInstanceMap) ->
       end, TypeInstanceMap, NTypeInstanceMap).
 
 superclasses(Module) ->
-    attributes(superclass, Module).
+    ast_traverse:module_attributes(superclass, Module).
 
 types(Module) ->
-    lists:flatten(attributes(erlando_type, Module)).
+    lists:flatten(ast_traverse:module_attributes(erlando_type, Module)).
 
 behaviours(Module) ->
-    lists:flatten(attributes(behaviour, Module)).
-
-attributes(Attribute, Module) ->
-    Attributes = Module:module_info(attributes),
-    lists:foldl(
-      fun({Attr, Value}, Acc) when Attr == Attribute ->
-              [Value|Acc];
-         (_Other, Acc) ->
-              Acc
-      end, [], Attributes).
+    lists:flatten(ast_traverse:module_attributes(behaviour, Module)).
 
 do_load_module(Types, Typeclasses, BehaviourModules) ->
     TypeclassModule = {attribute,0,module,typeclass},

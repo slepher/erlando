@@ -16,9 +16,10 @@
 parse_transform(Forms, _Opts) ->
     [Module] = ast_traverse:attributes(module, Forms),
     MFs = ast_traverse:attributes_with_line(transform, Forms),
+    Type = type(Forms),
     lists:foldl(
       fun({Line, Transform}, FormsAcc) ->
-              GForms = generate_forms(Module, Line, Transform),
+              GForms = generate_forms(Module, Type, Line, Transform),
               insert_gforms(GForms, FormsAcc)
           end, Forms, MFs).
 %%--------------------------------------------------------------------
@@ -55,7 +56,7 @@ insert_exports(Exports, [{attribute,_Line,module,_Mod} = Module|T], Acc) ->
 insert_exports(Exports, [Form|Forms], Acc) ->
     insert_exports(Exports, Forms, [Form|Acc]).
 
-generate_forms(Module, Line, Opts) ->
+generate_forms(Module, Type, Line, Opts) ->
     Remote = maps:get(remote, Opts, Module),
     ExtraPatterns = maps:get(patterns, Opts, []),
     ExtraPatternsGroup = maps:get(patterns_group, Opts, [ExtraPatterns]),
@@ -67,7 +68,12 @@ generate_forms(Module, Line, Opts) ->
     {PatternsGroup, NExtraArgs} = 
         case maps:find(inner_type, Opts) of
             {ok, InnerType} ->
-                {[[], [Module]], InnerType};
+                case Type of
+                    undefined ->
+                        exit(undefined_type);
+                    Type ->
+                        {[[], [Type]], InnerType}
+                end;
             error ->
                 {ExtraPatternsGroup, ExtraArgs}
         end,
@@ -97,6 +103,16 @@ generate_forms(Module, Line, Opts) ->
                     end, AFunctions),
               Forms ++ Acc
       end, [], PatternsGroup).
+
+type(Forms) ->
+    case lists:flatten(ast_traverse:attributes(erlando_type, Forms)) of
+        [{Type, _Patterns}] ->
+            Type;
+        [Type] ->
+            Type;
+        _ ->
+            undefined
+    end.
 
 update_args(_Remote, Args) when is_list(Args) ->
     Args;
