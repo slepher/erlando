@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2017, Chen Slepher
-%%% @doc
+%%% @Doc
 %%%
 %%% @end
 %%% Created : 11 Aug 2017 by Chen Slepher <slepheric@gmail.com>
@@ -13,7 +13,7 @@
 -export_type([error_t/3]).
 
 -opaque error_t(E, M, A) :: {error_t, inner_t(E, M, A)}.
--type inner_t(E, M, A) :: monad:m(M, error_m:error_m(E, A)).
+-type inner_t(E, M, A) :: monad:m(M, either:either(E, A)).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -compile({parse_transform, do}).
@@ -78,7 +78,7 @@ run_error_t(Other) ->
 fmap(F, ETA, {?MODULE, IM}) ->
     map(
       fun(FA) ->
-              functor:fmap(error_m:fmap(F, _), FA, IM)
+              functor:fmap(either:fmap(F, _), FA, IM)
       end, ETA).
 
 -spec '<$'(B, error_t(E, M, _A)) -> error_t(E, M, B).
@@ -90,8 +90,8 @@ fmap(F, ETA, {?MODULE, IM}) ->
     error_t(
       do([IM || 
              EF <- run_error_t(ETF),
-             error_m:'>>='(
-               EF, fun(F) -> error_m:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
+             either:'>>='(
+               EF, fun(F) -> either:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
          ])).
 
 -spec lift_a2(fun((A, B) -> C), error_t(E, M, A), error_t(E, M, B)) -> error_t(E, M, C).
@@ -114,9 +114,8 @@ pure(A, {?MODULE, _IM} = ET) ->
     error_t(
       do([IM || EA <- run_error_t(ETA),
               case EA of
-                  {error, _Err}    -> return(EA);
-                  {ok,  A}         -> run_error_t(KETB(A));
-                  ok               -> run_error_t(KETB(ok))
+                  {left, _Err}    -> return(EA);
+                  {right,  A}         -> run_error_t(KETB(A))
               end
        ])).
 
@@ -125,14 +124,14 @@ pure(A, {?MODULE, _IM} = ET) ->
     monad:'default_>>'(ETA, ETB, ET).
 
 return(A, {?MODULE, IM}) ->
-    error_t(monad:return(error_m:pure(A), IM)).
+    error_t(monad:return(either:pure(A), IM)).
 
 -spec lift(monad:m(M, A)) -> error_t(_E, M, A).
 lift(MA, {?MODULE, IM}) ->
-    error_t(functor:fmap(error_m:return(_), MA, IM)).
+    error_t(functor:fmap(either:return(_), MA, IM)).
 
 fail(E, {?MODULE, IM}) ->
-    error_t(monad:return(error_m:fail(E), IM)).
+    error_t(monad:return(either:fail(E), IM)).
 
 empty({?MODULE, _IM} = ET) ->
     mzero(ET).
@@ -145,7 +144,7 @@ mplus(ETA, ETB, {?MODULE, IM}) ->
       do([IM ||
              EA <- run_error_t(ETA),
              case EA of
-                 {error, _} ->
+                 {left, _} ->
                      run_error_t(ETB);
                  _ ->
                      return(EA)
@@ -153,7 +152,7 @@ mplus(ETA, ETB, {?MODULE, IM}) ->
          ])).
 
 mzero({?MODULE, IM}) ->
-    error_t(monad:return({error, mzero}, IM)).
+    error_t(monad:return({left, mzero}, IM)).
 
 run_nargs() ->
     0.
@@ -161,11 +160,11 @@ run_nargs() ->
 run_m(EM, []) ->
     run(EM).
 
--spec run(error_t(E, M, A)) -> monad:m(M, error_m:error_m(E, A)).
+-spec run(error_t(E, M, A)) -> monad:m(M, either:either(E, A)).
 run(EM, {?MODULE, _IM}) -> 
     run_error_t(EM).
 
--spec map(fun((monad:m(M, error_m:error_m(EA, A))) -> monad:m(N, error_m:error_m(EB, B))),
+-spec map(fun((monad:m(M, either:either(EA, A))) -> monad:m(N, either:either(EB, B))),
                 error_t(EA, M, A)) -> error_t(EB, N, B).
 map(F, X, {?MODULE, _IM}) ->
     error_t(F(run_error_t(X))).
@@ -174,5 +173,5 @@ map(F, X, {?MODULE, _IM}) ->
 with(F, X, {?MODULE, _IM}) ->
     map(
       fun(MA) ->
-              fun({error, R}) -> {error, F(R)}; (Val) -> Val end /'<$>'/ MA
+              fun({left, R}) -> {left, F(R)}; (Val) -> Val end /'<$>'/ MA
       end, X).

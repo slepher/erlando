@@ -165,7 +165,7 @@ test_reader_t_ask(_Config) ->
 
 
 test_monad_laws(_Config) ->
-    Monad = reader_t:new(error),
+    Monad = reader_t:new(either),
 
     F = fun(A) -> do([Monad || 
                          Value <- reader_t:ask(),
@@ -185,8 +185,8 @@ test_monad_laws(_Config) ->
 
     M2 = F(2),
     
-    ?assertEqual({ok, 9}, error_instance:run(reader_t:run(M1, 4))),
-    ?assertEqual({ok, 9}, error_instance:run(reader_t:run(M2, 4))),
+    ?assertEqual({right, 9}, either:run(reader_t:run(M1, 4))),
+    ?assertEqual({right, 9}, either:run(reader_t:run(M2, 4))),
     
     M3 = do([Monad ||
                Value <- reader_t:ask(),
@@ -195,8 +195,8 @@ test_monad_laws(_Config) ->
     M4 = do([Monad ||
                 Value <- M3,
                 return(Value)]),
-    ?assertEqual({ok, 7}, error_instance:run(reader_t:run(M3, 3))),
-    ?assertEqual({ok, 7}, error_instance:run(reader_t:run(M4, 3))),
+    ?assertEqual({right, 7}, either:run(reader_t:run(M3, 3))),
+    ?assertEqual({right, 7}, either:run(reader_t:run(M4, 3))),
     
     M5 = do([Monad || 
                 Y <- do([Monad || X <- M3, F(X) ]),
@@ -214,39 +214,39 @@ test_monad_laws(_Config) ->
                 G(Y)
             ]),
     
-    ?assertEqual({ok, 97}, error_instance:run(reader_t:run(M5, 10))),
-    ?assertEqual({ok, 97}, error_instance:run(reader_t:run(M6, 10))),
-    ?assertEqual({ok, 97}, error_instance:run(reader_t:run(M7, 10))).
+    ?assertEqual({right, 97}, either:run(reader_t:run(M5, 10))),
+    ?assertEqual({right, 97}, either:run(reader_t:run(M6, 10))),
+    ?assertEqual({right, 97}, either:run(reader_t:run(M7, 10))).
 
 test_monad_fail(_Config) ->
-    Monad = reader_t:new(error),
+    Monad = reader_t:new(either),
     M0 = do([Monad ||
                 Value <- reader_t:ask(),
                 fail(Value + 3)
             ]),
     
-    ?assertEqual({error, 13}, error_instance:run(reader_t:run(M0, 10))).
+    ?assertEqual({left, 13}, either:run(reader_t:run(M0, 10))).
 
 test_monad_lift(_Config) ->
-    Monad = reader_t:new(error),
+    Monad = reader_t:new(either),
     M0 = do([Monad ||
                 X <- reader_t:ask(),
-                Y <- reader_t:lift(error_instance:return(10)),
+                Y <- reader_t:lift(either:return(10)),
                 return(X * Y)
             ]),
     
-    ?assertEqual({ok, 60}, error_instance:run(reader_t:run(M0, 6))).
+    ?assertEqual({right, 60}, either:run(reader_t:run(M0, 6))).
 
 test_local(_Config) ->
-    Monad = reader_t:new(error),
+    Monad = reader_t:new(either),
     M0 = do([Monad ||
                 X <- reader_t:ask(),
-                Y <- reader_t:lift(error_instance:return(10)),
+                Y <- reader_t:lift(either:return(10)),
                 return(X * Y)
             ]),
     
     M1 = reader_t:local(fun(X) -> X * 2 end, M0),
-    ?assertEqual({ok, 120}, error_instance:run(reader_t:run(M1, 6))).
+    ?assertEqual({right, 120}, either:run(reader_t:run(M1, 6))).
 
 test_reader(_Config) ->
     Monad0 = reader_t:new(identity),
@@ -256,7 +256,7 @@ test_reader(_Config) ->
             ]),
     M1 = reader_t:reader(fun(R) -> identity:run(reader_t:run(M0, R)) end),
 
-    ?assertEqual({ok, 3}, error_instance:run(reader_t:run(M1, [1,2,3]))).
+    ?assertEqual({right, 3}, either:run(reader_t:run(M1, [1,2,3]))).
 
 test_monad_state0(_Config) ->
     M0 = do([monad ||

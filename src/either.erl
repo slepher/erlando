@@ -18,61 +18,78 @@
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
+-behaviour(monad_fail).
+-behaviour(monad_runner).
+
+-include("erlando.hrl").
 
 %% API
--export([fmap/3, '<$'/3]).
--export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
--export(['>>='/3, '>>'/3, return/2]).
--export([fail/2]).
+-export([fmap/2, '<$'/2]).
+-export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
+-export(['>>='/2, '>>'/2, return/1]).
+-export([fail/1]).
+-export([run_nargs/0, run_m/2]).
+-export([run/1]).
 -export([either/2, either/3]).
 -export([swap/0]).
 -export([left/0, left/1, right/0, right/1]).
 
--transform(#{args => [?TYPE], behaviours => [functor, applicative, monad, monad_fail]}).
+-transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_fail]}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-fmap(_, {left, L}, ?TYPE) ->
+fmap(_, {left, L}) ->
     {left, L};
-fmap(F, {right, R}, ?TYPE) ->
+fmap(F, {right, R}) ->
     {right, F(R)}.
 
-'<$'(FB, FA, ?TYPE) ->
+'<$'(FB, FA) ->
     functor:'default_<$'(FB, FA, ?TYPE).
 
-pure(A, ?TYPE) ->
+pure(A) ->
     {right, A}.
 
-'<*>'({left, L}, _, ?TYPE) ->
+'<*>'({left, L}, _) ->
     {left, L};
-'<*>'(_, {left, L}, ?TYPE) ->
+'<*>'(_, {left, L}) ->
     {left, L};
-'<*>'({right, F}, {right, A}, ?TYPE) ->
+'<*>'({right, F}, {right, A}) ->
     {right, F(A)}.
 
-lift_a2(FAB, AA, AB, ?TYPE) ->
+lift_a2(FAB, AA, AB) ->
     applicative:default_lift_a2(FAB, AA, AB, ?TYPE).
 
-'*>'(AA, AB, ?TYPE) ->
+'*>'(AA, AB) ->
     applicative:'default_*>'(AA, AB, ?TYPE).
 
-'<*'(AA, AB, ?TYPE) ->
+'<*'(AA, AB) ->
     applicative:'default_<*'(AA, AB, ?TYPE).
 
-'>>='({left, L}, _, ?TYPE) ->
+'>>='({left, L}, _) ->
     {left, L};
-'>>='({right, R}, KAMB, ?TYPE) ->
+'>>='({right, R}, KAMB) ->
     KAMB(R).
 
-'>>'(MA, MB, ?TYPE) ->
+'>>'(MA, MB) ->
     monad:'default_>>'(MA, MB, ?TYPE).
 
-return(A, ?TYPE) ->
+return(A) ->
     monad:default_return(A, ?TYPE).
 
-fail(E, ?TYPE) ->
+fail(E) ->
     {left, E}.
+
+run_nargs() ->
+    0.
+
+run_m(EA, []) ->
+    run(EA).
+
+run(#undetermined{} = UEA) ->
+    undetermined:run(UEA, either);
+run(Either) ->
+    Either.
 
 either(FAC, FBC) ->
     either(FAC, FBC, _).
