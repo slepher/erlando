@@ -92,7 +92,14 @@ pattern_syntax(Line, Pattern, Exprs, Monad) ->
       [monad_call_expr(Line, Line, {atom, Line, monad_fail}, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
 
 monad_call_expr(Line, Line1, Monad, Function, Args) ->
-    {call, Line, {remote, Line1, {atom, Line1, do_runtime}, {atom, Line1, Function}}, Args ++ [Monad]}.
+    MonadModule =
+        case Function of
+            fail ->
+                monad_fail;
+            _ ->
+                monad
+        end,
+    {call, Line, {remote, Line1, {atom, Line1, MonadModule}, {atom, Line1, Function}}, Args ++ [Monad]}.
 
 %% Use this function to report any parse_transform error. The
 %% resulting error message will be displayed as an ordinary

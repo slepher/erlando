@@ -78,7 +78,7 @@ run_error_t(Other) ->
 fmap(F, ETA, {?MODULE, IM}) ->
     map(
       fun(FA) ->
-              functor:fmap(error_instance:fmap(F, _), FA, IM)
+              functor:fmap(error_m:fmap(F, _), FA, IM)
       end, ETA).
 
 -spec '<$'(B, error_t(E, M, _A)) -> error_t(E, M, B).
@@ -90,8 +90,8 @@ fmap(F, ETA, {?MODULE, IM}) ->
     error_t(
       do([IM || 
              EF <- run_error_t(ETF),
-             error_instance:'>>='(
-               EF, fun(F) -> error_instance:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
+             error_m:'>>='(
+               EF, fun(F) -> error_m:fmap(F, _) /'<$>'/ run_error_t(ETA) end)
          ])).
 
 -spec lift_a2(fun((A, B) -> C), error_t(E, M, A), error_t(E, M, B)) -> error_t(E, M, C).
@@ -125,14 +125,14 @@ pure(A, {?MODULE, _IM} = ET) ->
     monad:'default_>>'(ETA, ETB, ET).
 
 return(A, {?MODULE, IM}) ->
-    error_t(monad:return(error_instance:pure(A), IM)).
+    error_t(monad:return(error_m:pure(A), IM)).
 
 -spec lift(monad:m(M, A)) -> error_t(_E, M, A).
 lift(MA, {?MODULE, IM}) ->
-    error_t(functor:fmap(error_instance:return(_), MA, IM)).
+    error_t(functor:fmap(error_m:return(_), MA, IM)).
 
 fail(E, {?MODULE, IM}) ->
-    error_t(monad:return(error_instance:fail(E), IM)).
+    error_t(monad:return(error_m:fail(E), IM)).
 
 empty({?MODULE, _IM} = ET) ->
     mzero(ET).
