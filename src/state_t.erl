@@ -16,7 +16,7 @@
 
 -module(state_t).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [state_t/3]}).
 
 -export_type([state_t/3]).
 

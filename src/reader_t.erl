@@ -8,11 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(reader_t).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [reader_t/3]}).
 
 -export_type([reader_t/3]).
 
--opaque reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
+-type reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
 -type inner_reader_t(R, M, A) :: fun( (R) -> monad:m(M, A)).
 
 -type t(M) :: {reader_t, M}.

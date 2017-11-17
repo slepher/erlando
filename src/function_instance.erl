@@ -8,7 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(function_instance).
 
--erlando_type({function, []}).
+-erlando_type({function, [function_instance/0]}).
+
+-export_type([function_instance/0]).
+
+-type function_instance() :: fun((_A) -> _B).
 
 -compile({parse_transform, monad_t_transform}).
 

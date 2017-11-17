@@ -10,6 +10,10 @@
 
 -erlando_type({?MODULE, []}).
 
+-export_type([state_m/2]).
+
+-type state_m(S, A) :: {state_t, fun((S) -> {identity, {S, A}})}.
+
 -compile({parse_transform, monad_t_transform}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 

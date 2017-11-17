@@ -15,7 +15,7 @@
 %%
 -module(maybe).
 
--erlando_type({?MODULE, [{just, '_'}, nothing]}).
+-erlando_type({?MODULE, [maybe/1]}).
 
 -export_type([maybe/1]).
 

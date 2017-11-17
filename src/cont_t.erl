@@ -8,11 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(cont_t).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [cont_t/3]}).
 
 -export_type([cont_t/3]).
 
--opaque cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
+-type cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
 -type inner_t(R, M, A) :: fun((fun((A) -> monad:m(M, R))) -> monad:m(M, R)).
 -type t(M) :: {cont_t, M}.
 

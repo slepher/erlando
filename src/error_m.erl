@@ -16,7 +16,7 @@
 
 -module(error_m).
 
--erlando_type({error_m, [{ok, '_'}, {error, '_'}, ok]}).
+-erlando_type({error_m, [error_m/2]}).
 
 -export_type([error_m/2, ok/1, error/1]).
 

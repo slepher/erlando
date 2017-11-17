@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(writer_t).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [writer_t/3]}).
 
 -export_type([writer_t/3]).
 

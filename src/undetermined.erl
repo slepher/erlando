@@ -10,6 +10,10 @@
 
 -include("erlando.hrl").
 
+-export_type([undetermined/0]).
+
+-type undetermined() :: #undetermined{}.
+
 %% API
 -export([new/2, type/2, run/2, map0/3, map/3, map_pair/4]).
 %%%===================================================================

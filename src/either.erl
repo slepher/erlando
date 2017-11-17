@@ -8,7 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(either).
 
--erlando_type({?MODULE, [{left, '_'}, {right, '_'}]}).
+-erlando_type({?MODULE, [either/2]}).
+
+-export_type([either/2]).
+
+-type either(L, R) :: {left, L} | {right, R}.
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, monad_t_transform}).

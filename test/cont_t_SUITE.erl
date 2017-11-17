@@ -171,6 +171,9 @@ test_t() ->
     [{doc, "Test cont_t"}].
 
 test_t(_Config) ->
+    io:format("~p~n", [erlando_typeclass:types()]),
+    io:format("~p~n", [sys:get_status(erlando_typeclass)]),
+
     R = do([monad || 
                R1 <- monad:return(2),
                R2 <- monad:return(3),

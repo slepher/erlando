@@ -18,7 +18,11 @@
 
 -module(list_instance).
 
--erlando_type({list, []}).
+-erlando_type({list, [list_instance/0]}).
+
+-export_type([list_instance/0]).
+
+-type list_instance() :: [any()].
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
@@ -27,6 +31,7 @@
 -include("op.hrl").
 
 -define(TYPE, list).
+
 
 -behaviour(functor).
 -behaviour(applicative).
