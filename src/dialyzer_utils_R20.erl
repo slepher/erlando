@@ -268,7 +268,7 @@ get_record_and_type_info([], _Module, RecDict, _File) ->
 add_new_type(TypeOrOpaque, Name, TypeForm, ArgForms, Module, FN,
              RecDict) ->
   Arity = length(ArgForms),
-  case erl_types:type_is_defined(TypeOrOpaque, Name, Arity, RecDict) of
+  case type_is_defined(TypeOrOpaque, Name, Arity, RecDict) of
     true ->
       Msg = flat_format("Type ~ts/~w already defined\n", [Name, Arity]),
       throw({error, Msg});
@@ -1029,3 +1029,6 @@ parallelism() ->
 
 family(L) ->
     sofs:to_external(sofs:rel2fam(sofs:relation(L))).
+
+type_is_defined(TypeOrOpaque, Name, Arity, Table) ->
+  maps:is_key({TypeOrOpaque, Name, Arity}, Table).
