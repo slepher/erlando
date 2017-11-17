@@ -421,7 +421,7 @@ type_patterns(Module, Types, ETypes, ModRecs) ->
 core(Module) ->
     case code:get_object_code(Module) of
         {Module, _, Beam} ->
-            dialyzer_utils:get_core_from_beam(Beam);
+            dialyzer_utils_R20:get_core_from_beam(Beam);
         error ->
             {error, {not_loaded, Module}}
     end.
@@ -459,4 +459,4 @@ exported_types(Core) ->
     sets:from_list([{M, F, A} || {F, A} <- ExpTypes2]).
 
 rec_map(Core) ->
-    dialyzer_utils:get_record_and_type_info(Core).
+    dialyzer_utils_R20:get_record_and_type_info(Core).
