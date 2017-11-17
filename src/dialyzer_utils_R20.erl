@@ -212,7 +212,7 @@ keep_compile_option(_) -> true.
 %%
 %% ============================================================================
 
--type type_table() :: erl_types:type_table().
+-type type_table() :: erl_types_R20:type_table().
 
 -spec get_record_and_type_info(cerl:c_module()) ->
         {'ok', type_table()} | {'error', string()}.
@@ -268,16 +268,16 @@ get_record_and_type_info([], _Module, RecDict, _File) ->
 add_new_type(TypeOrOpaque, Name, TypeForm, ArgForms, Module, FN,
              RecDict) ->
   Arity = length(ArgForms),
-  case type_is_defined(TypeOrOpaque, Name, Arity, RecDict) of
+  case erl_types_R20:type_is_defined(TypeOrOpaque, Name, Arity, RecDict) of
     true ->
       Msg = flat_format("Type ~ts/~w already defined\n", [Name, Arity]),
       throw({error, Msg});
     false ->
-      try erl_types:t_var_names(ArgForms) of
+      try erl_types_R20:t_var_names(ArgForms) of
         ArgNames ->
 	  maps:put({TypeOrOpaque, Name, Arity},
                    {{Module, FN, TypeForm, ArgNames},
-                    erl_types:t_any()}, RecDict)
+                    erl_types_R20:t_any()}, RecDict)
       catch
         _:_ ->
 	  throw({error, flat_format("Type declaration for ~tw does not "
@@ -287,7 +287,7 @@ add_new_type(TypeOrOpaque, Name, TypeForm, ArgForms, Module, FN,
 
 get_record_fields(Fields, RecDict) ->
   Fs = get_record_fields(Fields, RecDict, []),
-  {ok, [{Name, Form, erl_types:t_any()} || {Name, Form} <- Fs]}.
+  {ok, [{Name, Form, erl_types_R20:t_any()} || {Name, Form} <- Fs]}.
 
 get_record_fields([{typed_record_field, OrdRecField, TypeForm}|Left],
 		  RecDict, Acc) ->
@@ -315,7 +315,7 @@ process_record_remote_types(CServer) ->
   ExpTypes = dialyzer_codeserver:get_exported_types(CServer),
   Mods = dialyzer_codeserver:all_temp_modules(CServer),
   process_opaque_types0(Mods, CServer, ExpTypes),
-  VarTable = erl_types:var_table__new(),
+  VarTable = erl_types_R20:var_table__new(),
   RecordTable = dialyzer_codeserver:get_temp_records_table(CServer),
   ModuleFun =
     fun(Module) ->
@@ -333,7 +333,7 @@ process_record_remote_types(CServer) ->
                                              check_remote(Field, ExpTypes,
                                                           MRA, RecordTable),
                                              {FieldT, C6} =
-                                               erl_types:t_from_form
+                                               erl_types_R20:t_from_form
                                                  (Field, ExpTypes, Site,
                                                   RecordTable, VarTable,
                                                   C5),
@@ -354,7 +354,7 @@ process_record_remote_types(CServer) ->
                   {{Key, Value}, C2}
               end
           end,
-        Cache = erl_types:cache__new(),
+        Cache = erl_types_R20:cache__new(),
         {RecordList, _NewCache} =
           lists:mapfoldl(RecordFun, Cache, maps:to_list(RecordMap)),
         dialyzer_codeserver:store_temp_records(Module,
@@ -365,7 +365,7 @@ process_record_remote_types(CServer) ->
   check_record_fields(Mods, CServer, ExpTypes),
   dialyzer_codeserver:finalize_records(CServer).
 
-%% erl_types:t_from_form() substitutes the declaration of opaque types
+%% erl_types_R20:t_from_form() substitutes the declaration of opaque types
 %% for the expanded type in some cases. To make sure the initial type,
 %% any(), is not used, the expansion is done twice.
 %% XXX: Recursive opaque types are not handled well.
@@ -374,7 +374,7 @@ process_opaque_types0(AllModules, CServer, TempExpTypes) ->
   process_opaque_types(AllModules, CServer, TempExpTypes).
 
 process_opaque_types(AllModules, CServer, TempExpTypes) ->
-  VarTable = erl_types:var_table__new(),
+  VarTable = erl_types_R20:var_table__new(),
   RecordTable = dialyzer_codeserver:get_temp_records_table(CServer),
   ModuleFun =
     fun(Module) ->
@@ -386,7 +386,7 @@ process_opaque_types(AllModules, CServer, TempExpTypes) ->
                   {{_Module, _FileLine, Form, _ArgNames}=F, _Type} = Value,
                   Site = {type, {Module, Name, NArgs}},
                   {Type, C3} =
-                    erl_types:t_from_form(Form, TempExpTypes, Site,
+                    erl_types_R20:t_from_form(Form, TempExpTypes, Site,
                                           RecordTable, VarTable, C2),
                   {{Key, {F, Type}}, C3};
                 {type, _Name, _NArgs} ->
@@ -395,7 +395,7 @@ process_opaque_types(AllModules, CServer, TempExpTypes) ->
                   {{Key, Value}, C2}
               end
           end,
-        C0 = erl_types:cache__new(),
+        C0 = erl_types_R20:cache__new(),
         {RecordList, _NewCache} =
           lists:mapfoldl(RecordFun, C0, maps:to_list(RecordMap)),
         dialyzer_codeserver:store_temp_records(Module,
@@ -405,12 +405,12 @@ process_opaque_types(AllModules, CServer, TempExpTypes) ->
   lists:foreach(ModuleFun, AllModules).
 
 check_record_fields(AllModules, CServer, TempExpTypes) ->
-  VarTable = erl_types:var_table__new(),
+  VarTable = erl_types_R20:var_table__new(),
   RecordTable = dialyzer_codeserver:get_temp_records_table(CServer),
   CheckFun =
     fun(Module) ->
         CheckForm = fun(Form, Site, C1) ->
-                        erl_types:t_check_record_fields(Form, TempExpTypes,
+                        erl_types_R20:t_check_record_fields(Form, TempExpTypes,
                                                         Site, RecordTable,
                                                         VarTable, C1)
                   end,
@@ -436,7 +436,7 @@ check_record_fields(AllModules, CServer, TempExpTypes) ->
                   msg_with_position(Fun, FileLine)
               end
           end,
-        C0 = erl_types:cache__new(),
+        C0 = erl_types_R20:cache__new(),
         _ = lists:foldl(RecordFun, C0, maps:to_list(RecordMap))
     end,
   lists:foreach(CheckFun, AllModules).
@@ -452,7 +452,7 @@ msg_with_position(Fun, FileLine) ->
   end.
 
 check_remote(Form, ExpTypes, What, RecordTable) ->
-  erl_types:t_from_form_check_remote(Form, ExpTypes, What, RecordTable).
+  erl_types_R20:t_from_form_check_remote(Form, ExpTypes, What, RecordTable).
 
 -spec merge_types(codeserver(), dialyzer_plt:plt()) -> codeserver().
 
@@ -510,9 +510,9 @@ get_optional_callbacks(Tuples, ModName) ->
 
 %% TypeSpec is a list of conditional contracts for a function.
 %% Each contract is of the form {[Argument], Range, [Constraint]} where
-%%  - Argument and Range are in erl_types:erl_type() format and
+%%  - Argument and Range are in erl_types_R20:erl_type() format and
 %%  - Constraint is of the form {subtype, T1, T2} where T1 and T2
-%%    are erl_types:erl_type()
+%%    are erl_types_R20:erl_type()
 
 get_spec_info([{Contract, Ln, [{Id, TypeSpec}]}|Left],
 	      SpecMap, CallbackMap, RecordsMap, ModName, OptCb, File)
@@ -737,15 +737,15 @@ format_errors([{Mod, Errors}|Left]) ->
 format_errors([]) ->
   [].
 
--spec format_sig(erl_types:erl_type()) -> string().
+-spec format_sig(erl_types_R20:erl_type()) -> string().
 
 format_sig(Type) ->
   format_sig(Type, maps:new()).
 
--spec format_sig(erl_types:erl_type(), type_table()) -> string().
+-spec format_sig(erl_types_R20:erl_type(), type_table()) -> string().
 
 format_sig(Type, RecDict) ->
-  "fun(" ++ Sig = lists:flatten(erl_types:t_to_string(Type, RecDict)),
+  "fun(" ++ Sig = lists:flatten(erl_types_R20:t_to_string(Type, RecDict)),
   ")" ++ RevSig = lists:reverse(Sig),
   lists:reverse(RevSig).
 
@@ -1029,6 +1029,3 @@ parallelism() ->
 
 family(L) ->
     sofs:to_external(sofs:rel2fam(sofs:relation(L))).
-
-type_is_defined(TypeOrOpaque, Name, Arity, Table) ->
-  maps:is_key({TypeOrOpaque, Name, Arity}, Table).
