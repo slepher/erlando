@@ -219,7 +219,7 @@ type_with_remote(Module, Type, Args, ExportedTypes, TRecMap) ->
     Type0 = {type, Type, Args},
     Type1 = {type, {Module, Type, Args}},
     case maps:find(Type0, RecMap) of
-        {ok, {{Module, _, TypeForm, _}, _}} ->
+        {ok, {{Module, _FileLine, TypeForm, _ArgNames}, _}} ->
             Cache = #cache{mod_recs = {mrecs, TRecMap}},
             {CType, _NCache} = erl_types_R20:t_from_form(TypeForm, ExportedTypes, Type1, undefined, #{}, Cache),
             {ok, CType};

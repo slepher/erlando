@@ -30,7 +30,6 @@ fmap_trans(T, F, {T, FA}) ->
 ap(T, {T, F}, {T, A}) ->
     {T, F(A)}.
 
-
 ap_trans(T, {T, AF}, {T, AA}) ->
     {T, applicative:ap(AF, AA)}.
 

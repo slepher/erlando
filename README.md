@@ -311,10 +311,10 @@ with the *do* parse-transformer, you can write in Erlang:
 
 which is readable and straightforward, and this is transformed into:
 
-    Monad:'>>='(foo(),
-                fun (A) -> Monad:'>>='(bar(A, dog),
-                                       fun (B) -> ok end)
-                end).
+    monad:'>>='(foo(),
+                fun (A) -> monad:'>>='(bar(A, dog),
+                                       fun (B) -> ok end, Monad)
+                end, Monad).
 
 There is no intention that this latter form is any more readable than
 the `comma/2` form - it is not. However, it should be clear that the
@@ -374,13 +374,12 @@ rather than `'>>'(A, B)`. There is no `'>>'/2` operator in our Erlang monads.
 
 The simplest monad possible is the Identity-monad:
 
-    -module(identity_m).
+    -module(identity).
     -behaviour(monad).
-    -export(['>>='/2, return/1, fail/1]).
+    -export(['>>='/2, return/1]).
 
-    '>>='(X, Fun) -> Fun(X).
-    return(X)     -> X.
-    fail(X)       -> throw({error, X}).
+    '>>='({identity, X}, Fun) -> Fun(X).
+    return(X)     -> {identity, X}.
 
 This makes our programmatic comma behave just like Erlang's comma
 normally does. The **bind** operator (that's the Haskell term for the
@@ -390,7 +389,7 @@ values passed to it, and always invokes the subsequent expression function.
 What could we do if we did inspect the values passed to the sequencing
 combinators? One possibility results in the Maybe-monad:
 
-    -module(maybe_m).
+    -module(maybe).
     -behaviour(monad).
     -export(['>>='/2, return/1, fail/1]).
     
@@ -529,10 +528,6 @@ line is added or removed. Wouldn't it be nice if we could abstract out the
 `State`? We could then have a monad encapsulate the state and provide
 it to (and collect it from) the functions we wish to run.
 
-> Our implementation of monad-transformers (like State) uses a "hidden feature"
-of the Erlang distribution called *parameterized modules*. These are
-described in [Parameterized Modules in Erlang](http://ftp.sunet.se/pub/lang/erlang/workshop/2003/paper/p29-carlsson.pdf).
-
 The State-transform can be applied to any monad. If we apply it to the
 Identity-monad then we get what we're looking for. The key extra
 functionality that the State transformer provides us with is the
@@ -540,36 +535,32 @@ ability to `get` and `set` (or just plain `modify`) state from within
 the inner monad. If we use both the *do* and *cut* parse-transformers, we
 can write:
 
-    StateT = state_t:new(identity_m),
-    SM = StateT:modify(_),
-    SMR = StateT:modify_and_return(_),
-    StateT:exec(
+    StateT = state_t:new(identity),
+    identity:run(state_t:exec(
       do([StateT ||
-
-          StateT:put(init(Dimensions)),
-          SM(plant_seeds(SeedCount, _)),
-          DidFlood <- SMR(pour_on_water(WaterVolume, _)),
-          SM(apply_sunlight(Time, _)),
-          DidFlood2 <- SMR(pour_on_water(WaterVolume, _)),
-          Crop <- SMR(harvest(_)),
+          monad_state:put(init(Dimensions)),
+          monad_state:modify(plant_seeds(SeedCount, _)),
+          DidFlood <- monad_state:state(pour_on_water(WaterVolume, _)),
+          monad_state:modify(apply_sunlight(Time, _)),
+          DidFlood2 <- monad_state:state(pour_on_water(WaterVolume, _)),
+          Crop <- monad_state:state(harvest(_)),
           ...
 
-          ]), undefined).
+          ]), undefined, StateT)).
 
 We began by creating a State-transform over the Identity-monad:
 
-    StateT = state_t:new(identity_m),
+    StateT = state_t:new(identity),
     ...
 
 > This is the syntax for *instantiating* parameterized modules. `StateT` is a
 variable referencing a module instance which, in this case, is a monad.
 
-and we define two shorthands for running functions that either just
+and we use two monad_state function for running functions that either just
 modify the state, or modify the state *and* return a result:
 
-    SM = StateT:modify(_),
-    SMR = StateT:modify_and_return(_),
-    ...
+    monad_state:modify/1,
+    monad_state:state/1
 
 There's a bit of bookkeeping required but we achieve our goal: there are no
 state variables now to renumber whenever we make a change. We used *cut*s
@@ -586,6 +577,8 @@ There are some standard monad functions such as `join/2` and
 *zero*  and *plus* (currently Maybe-monad, List-monad, and Omega-monad).
 The associated functions `guard`, `msum` and `mfilter` are available
 in the `monad_plus` module.
+
+> sequence/1 has been moved to traversable module
 
 In many cases, a fairly mechanical translation from Haskell to Erlang
 is possible, so converting other monads or combinators should mostly
