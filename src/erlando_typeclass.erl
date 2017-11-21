@@ -259,6 +259,10 @@ type_to_patterns({c, union, Unions, _}) ->
     lists:foldl(fun(Item, Acc) -> type_to_patterns(Item) ++ Acc end, [],Unions);
 type_to_patterns({c, list, _, _}) ->
     [{guard, is_list}];
+type_to_patterns({c, map, _, _}) ->
+    [{guard, is_map}];
+type_to_patterns({c, binary, _, _}) ->
+    [{guard, is_binary}];
 type_to_patterns(any) ->
     [any];
 type_to_patterns(none) ->
