@@ -43,7 +43,7 @@ writer({A, W}, UMonadWriter) ->
 tell(W, UMonadWriter) ->
     undetermined:new(
       fun(MonadWriter) ->
-              typeclass_trans:apply(writer, [W], MonadWriter, ?MODULE)
+              typeclass_trans:apply(tell, [W], MonadWriter, ?MODULE)
       end, UMonadWriter).
 
 -spec listen(monad:m(M, A), M) -> monad:m(M, {A, monoid:m(_W)}) when M :: monad:class().

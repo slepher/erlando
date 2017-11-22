@@ -13,6 +13,8 @@
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
 
+-behaviour(monad_writer).
+
 %% API
 -export([writer/2, tell/2, listen/2, pass/2]).
 -export([lift_listen/3, lift_pass/3]).
@@ -64,7 +66,7 @@ lift_listen(Listen, ETWMA, {error_t, MonadWriter}) ->
       fun(WMA) ->
               do([MonadWriter || 
                      {EA, W} <- Listen(WMA),
-                     return(functor:fmap(fun(A) -> {A, W} end, EA, error))
+                     return(functor:fmap(fun(A) -> {A, W} end, EA, either))
                  ])
       end, ETWMA);
 lift_listen(Listen, RTWMA, {reader_t, _MonadWriter}) ->
@@ -104,10 +106,10 @@ lift_pass(Pass, ETWMAF, {error_t, MonadWriter}) ->
                        EAF <- WMAF,
                        return(
                          case EAF of
-                             {ok, {A, F}} ->
-                                 {{ok, A}, F};
-                             {error, Reason} ->
-                                 {{error, Reason}, function_instance:id()}
+                             {right, {A, F}} ->
+                                 {{right, A}, F};
+                             {left, Reason} ->
+                                 {{left, Reason}, function_instance:id()}
                          end)
                    ])
                )
