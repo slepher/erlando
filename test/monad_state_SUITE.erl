@@ -122,7 +122,7 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_get, test_put, test_state, test_modify, test_gets].
+    [test_get, test_put, test_state].
 
 
 %%--------------------------------------------------------------------
@@ -154,7 +154,6 @@ test_get(_Config) ->
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
     M3 = writer_t:eval(M),
-    ?assertEqual({ok, 5}, error_m:run(reader_t:run(state_t:eval(M, 5), 5))),
     ?assertEqual({ok, 5}, error_m:run(reader_t:run(state_t:eval(M1, 5), 5))),
     ?assertEqual({ok, 5}, error_m:run(reader_t:run(state_t:eval(M2, 5), 5))),
     ?assertEqual({ok, 5}, error_m:run(reader_t:run(state_t:eval(M3, 5), 5))).
@@ -164,7 +163,6 @@ test_put(_Config) ->
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
     M3 = writer_t:eval(M),
-    ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M, 5), 5))),
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M1, 5), 5))),
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M2, 5), 5))),
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M3, 5), 5))).
@@ -174,15 +172,6 @@ test_state(_Config) ->
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
     M3 = writer_t:eval(M),
-    ?assertEqual({6, 5}, identity:run(state_t:run(M, 5))),
     ?assertEqual({6, 5}, identity:run(state_t:run(M1, 5))),
     ?assertEqual({6, 5}, identity:run(state_t:run(M2, 5))),
     ?assertEqual({6, 5}, identity:run(state_t:run(M3, 5))).
-    
-test_modify(_Config) ->
-    M = monad_state:modify(fun(S) -> S + 1 end),
-    ?assertEqual({ok, 6}, identity:run(state_t:run(M, 5))).
-
-test_gets(_Config) ->
-    M = monad_state:gets(fun(A) -> 2 * A end),
-    ?assertEqual({10, 5}, identity:run(state_t:run(M, 5))).
