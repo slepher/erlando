@@ -10,6 +10,8 @@
 
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
+-compile({parse_transform, cut}).
+-compile({parse_transform, do}).
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("common_test/include/ct.hrl").
@@ -122,7 +124,8 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_fail, test_lifted_fail].
+    [test_error_m_fail, test_maybe_fail, test_either_fail, test_error_t_fail,
+     test_maybe_t_fail, test_reader_t_fail, test_writer_t_fail, test_state_t_fail, test_cont_t_fail].
 
 
 %%--------------------------------------------------------------------
@@ -149,27 +152,43 @@ all() ->
 %% @spec TestCase(Arg) -> Descr | Spec | ok | exit() | {skip,Reason}
 %% @end
 %%--------------------------------------------------------------------
-test_fail(_Config) -> 
-    M = monad_fail:fail(error),
-    M1 = error_t:run(M),
-    M2 = maybe_t:run(M),
-    M3 = either:run(M),
-    M4 = error_m:run(M),
-    M5 = maybe:run(M),
-    ?assertEqual({left, error}, identity:run(M1)),
-    ?assertEqual(nothing, identity:run(M2)),
-    ?assertEqual({left, error}, M3),
-    ?assertEqual({error, error}, M4),
-    ?assertEqual(nothing, M5).
+test_error_m_fail(_Config) ->
+    F = fun(M) -> {error, E} = error_m:run(M), E end,
+    fail(F).
 
+test_maybe_fail(_Config) ->
+    F = fun(M) -> nothing = maybe:run(M), error end,
+    fail(F).
 
-test_lifted_fail(_Config) ->
+test_either_fail(_Config) ->
+    F = fun(M) -> {left, E} = either:run(M), E end,
+    fail(F).
+
+test_error_t_fail(_Config) ->
+    F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
+    fail(F).
+
+test_maybe_t_fail(_Config) ->
+    F = fun(E) -> nothing = identity:run(maybe_t:run(E)), error end,
+    fail(F).
+
+test_reader_t_fail(_Config) ->
+    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    fail(F).
+
+test_writer_t_fail(_Config) ->
+    F = fun(E) -> {left, L} = either:run(writer_t:eval(E)), L end,
+    fail(F).
+
+test_state_t_fail(_Config) ->
+    F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
+    fail(F).
+
+test_cont_t_fail(_Config) ->
+    F = fun(E) -> {left, L} = either:run(cont_t:eval(E)), L end,
+    fail(F).
+
+fail(F) ->
     M = monad_fail:fail(error),
-    M1 = state_t:exec(M, undefined),
-    M2 = reader_t:run(M, undefined),
-    M3 = cont_t:eval(M),
-    M4 = writer_t:eval(M),
-    ?assertEqual({left, error}, either:run(M1)),
-    ?assertEqual({left, error}, either:run(M2)),
-    ?assertEqual({left, error}, either:run(M3)),
-    ?assertEqual({left, error}, either:run(M4)).
+    Result = error,
+    ?assertEqual(Result, F(M)).

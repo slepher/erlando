@@ -156,7 +156,7 @@ test_ask_error_t(_Config) ->
     ask(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
 test_ask_maybe_t(_Config) ->
-    ask(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
+    ask(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
 test_ask_reader_t(_Config) ->
     ask(fun(T) -> T end).

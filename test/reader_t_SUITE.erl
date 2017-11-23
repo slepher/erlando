@@ -124,8 +124,8 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_reader_t_ask, test_monad_laws, test_monad_fail, test_local, test_monad_lift,
-     test_reader, test_monad_state0, test_monad_state1, test_monad_state2].
+    [test_left_identity, test_right_identity, test_associativity,
+     test_monad_fail, test_monad_lift].
 
 
 %%--------------------------------------------------------------------
@@ -152,21 +152,32 @@ all() ->
 %% @spec TestCase(Arg) -> Descr | Spec | ok | exit() | {skip,Reason}
 %% @end
 %%--------------------------------------------------------------------
-test_reader_t_ask() ->
-    [{doc, "Test reader_t"}].
-
-test_reader_t_ask(_Config) ->
-    M0 = 
-        do([reader_m ||
-               Local <- monad_reader:ask({reader_t, identity}),
-               return({Local, world})
-           ]),
-    ?assertEqual({hello, world}, reader_m:run(M0, hello)).
-
-
-test_monad_laws(_Config) ->
+test_left_identity(_Config) ->
     Monad = reader_t:new(either),
 
+    F = fun(A) -> do([Monad || 
+                         Value <- reader_t:ask(),
+                         return(Value + 3 + A)
+                     ])
+        end,
+
+    M1 = F(2), 
+    M2 = ml_test_util:left_identity(2, F),
+    ?assertEqual({right, 9}, either:run(reader_t:run(M1, 4))),
+    ?assertEqual({right, 9}, either:run(reader_t:run(M2, 4))).
+    
+test_right_identity(_Config) ->
+    Monad = reader_t:new(either),
+
+    M1 = reader_t:ask(Monad),
+    M2 = ml_test_util:right_identity(M1),
+    ?assertEqual({right, 3}, either:run(reader_t:run(M1, 3))),
+    ?assertEqual({right, 3}, either:run(reader_t:run(M2, 3))).
+
+test_associativity(_Config) ->
+    Monad = reader_t:new(either),
+
+    M = reader_t:ask(Monad),
     F = fun(A) -> do([Monad || 
                          Value <- reader_t:ask(),
                          return(Value + 3 + A)
@@ -178,45 +189,14 @@ test_monad_laws(_Config) ->
                          return(Value * 7 + A)
                      ])
         end,
-    M1 = do([Monad ||
-                Value <- return(2),
-                F(Value)
-            ]),
-
-    M2 = F(2),
     
-    ?assertEqual({right, 9}, either:run(reader_t:run(M1, 4))),
-    ?assertEqual({right, 9}, either:run(reader_t:run(M2, 4))),
+    M1 = ml_test_util:associativity1(M, F, G),
+    M2 = ml_test_util:associativity2(M, F, G),
+    M3 = ml_test_util:associativity3(M, F, G),
     
-    M3 = do([Monad ||
-               Value <- reader_t:ask(),
-               return(Value + 4)]),
-                  
-    M4 = do([Monad ||
-                Value <- M3,
-                return(Value)]),
-    ?assertEqual({right, 7}, either:run(reader_t:run(M3, 3))),
-    ?assertEqual({right, 7}, either:run(reader_t:run(M4, 3))),
-    
-    M5 = do([Monad || 
-                Y <- do([Monad || X <- M3, F(X) ]),
-                G(Y)
-            ]),
-    M6 = do([Monad ||
-                X <- M3,
-                do([Monad ||
-                       Y <- F(X),
-                       G(Y)])
-            ]),
-    M7 = do([Monad ||
-                X <- M3,
-                Y <- F(X),
-                G(Y)
-            ]),
-    
-    ?assertEqual({right, 97}, either:run(reader_t:run(M5, 10))),
-    ?assertEqual({right, 97}, either:run(reader_t:run(M6, 10))),
-    ?assertEqual({right, 97}, either:run(reader_t:run(M7, 10))).
+    ?assertEqual({right, 93}, either:run(reader_t:run(M1, 10))),
+    ?assertEqual({right, 93}, either:run(reader_t:run(M2, 10))),
+    ?assertEqual({right, 93}, either:run(reader_t:run(M3, 10))).
 
 test_monad_fail(_Config) ->
     Monad = reader_t:new(either),
@@ -236,48 +216,3 @@ test_monad_lift(_Config) ->
             ]),
     
     ?assertEqual({right, 60}, either:run(reader_t:run(M0, 6))).
-
-test_local(_Config) ->
-    Monad = reader_t:new(either),
-    M0 = do([Monad ||
-                X <- reader_t:ask(),
-                Y <- reader_t:lift(either:return(10)),
-                return(X * Y)
-            ]),
-    
-    M1 = reader_t:local(fun(X) -> X * 2 end, M0),
-    ?assertEqual({right, 120}, either:run(reader_t:run(M1, 6))).
-
-test_reader(_Config) ->
-    Monad0 = reader_t:new(identity),
-    M0 = do([Monad0 ||
-                Value <- reader_t:ask(),
-                return(length(Value))
-            ]),
-    M1 = reader_t:reader(fun(R) -> identity:run(reader_t:run(M0, R)) end),
-
-    ?assertEqual({right, 3}, either:run(reader_t:run(M1, [1,2,3]))).
-
-test_monad_state0(_Config) ->
-    M0 = do([monad ||
-                monad_state:get()
-            ]),
-    ?assertEqual(2, state_m:eval(reader_t:run(M0, 3), 2)).
-
-test_monad_state1(_Config) ->
-    Monad = reader_t:new(state_t:new(identity)),
-    M0 = do([Monad ||
-                A <- monad_reader:ask(),
-                S <- monad_state:get(),
-                monad_state:put(S + A)
-            ]),
-
-    ?assertEqual(4, identity:run(state_t:exec(reader_t:run(M0, 3), 1))).
-
-test_monad_state2(_Config) ->
-    M0 = do([monad ||
-                A <- monad_reader:ask(),
-                S <- monad_state:get(),
-                monad_state:put(S + A)
-            ]),
-    ?assertEqual(4, identity:run(state_t:exec(reader_t:run(M0, 3), 1))).
