@@ -160,7 +160,6 @@ test_right_identity(_Config) ->
     MB = ml_test_util:right_identity(MA),
     ?assertEqual({10, 10}, state_m:run(MA, 10)),
     ?assertEqual({10, 10}, state_m:run(MB, 10)).
-    
 
 test_associativity(_Config) ->
     M = state_m:get(),
