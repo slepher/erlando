@@ -256,9 +256,7 @@ test_cont_t_lifted_local(F, C) ->
 
 test_cont_t_monad_runner(_Config) ->          
     MC = cont_t:new(reader_t:new(state_t:new(identity))),
-    M = do([monad ||
-               monad:empty(MC)
-           ]),
+    M = monad:empty(MC),
     Result = monad_runner:run_m(M, [fun(A) -> monad:return(A) end, 10, 0]),
     ?assertEqual({ok, 0}, Result).
 

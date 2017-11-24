@@ -19,7 +19,6 @@
 -erlando_type({?MODULE, [state_t/3]}).
 
 -export_type([state_t/3]).
-
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
 -type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).

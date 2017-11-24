@@ -263,6 +263,8 @@ type_to_patterns({c, map, _, _}) ->
     [{guard, is_map}];
 type_to_patterns({c, binary, _, _}) ->
     [{guard, is_binary}];
+type_to_patterns({c, var, _, _}) ->
+    [any];
 type_to_patterns(any) ->
     [any];
 type_to_patterns(none) ->

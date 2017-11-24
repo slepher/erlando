@@ -16,7 +16,7 @@
 
 -module(identity).
 
--erlando_type(?MODULE).
+-erlando_type({?MODULE, [identity/1]}).
 
 -compile({parse_transform, monad_t_transform}).
 
@@ -26,6 +26,7 @@
 -behaviour(monad_runner).
 
 -export_type([identity/1]).
+-type identity(A) :: {?MODULE, A}.
 
 -export([identity/1]).
 -export([fmap/2, '<$'/2]).
@@ -36,7 +37,6 @@
 
 -transform(#{patterns => [?MODULE], gbehaviours => [functor, applicative, monad]}).
 
--type identity(A) :: {?MODULE, A}.
 
 identity(A) ->
     {?MODULE, A}.

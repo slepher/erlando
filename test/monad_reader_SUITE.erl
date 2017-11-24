@@ -168,7 +168,7 @@ test_ask_cont_t(_Config) ->
     ask(fun(T) -> cont_t:eval(T) end).
 
 test_reader_error_t(_Config) ->
-    reader(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
+    asks(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
 test_reader_maybe_t(_Config) ->
     reader(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
@@ -205,6 +205,12 @@ ask(F) ->
 
 reader(F) ->
     M = monad_reader:reader(fun(A) -> A * 2 end),
+    M1 = F(M),
+    Result = 20,
+    ?assertEqual(Result, reader_m:run(M1, 10)).
+
+asks(F) ->
+    M = monad_reader:asks(fun(A) -> A * 2 end),
     M1 = F(M),
     Result = 20,
     ?assertEqual(Result, reader_m:run(M1, 10)).
