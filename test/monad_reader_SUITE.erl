@@ -10,7 +10,7 @@
 
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
-
+-compile({parse_transform, do}).
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("common_test/include/ct.hrl").
 
@@ -210,8 +210,11 @@ reader(F) ->
     ?assertEqual(Result, reader_m:run(M1, 10)).
 
 local(F) ->
-    M = monad_reader:local(fun(A) -> A * 3 end, monad_reader:ask()),
+    M0 = do([monad || 
+                A <- monad_reader:ask(),
+                return(A + 3)
+            ]),
+    M = monad_reader:local(fun(A) -> A * 3 end, M0),
     M1 = F(M),
-    Result = 30,
+    Result = 33,
     ?assertEqual(Result, reader_m:run(M1, 10)).
-

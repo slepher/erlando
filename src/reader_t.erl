@@ -44,8 +44,6 @@
 -export([lift/2]).
 % impl of monad_reader
 -export([ask/1, reader/2, local/3]).
-% impl of monad_state
--export([get/1, put/2, state/2]).
 % impl of alternative
 -export([empty/1, '<|>'/3]).
 % impl of monad_plus
@@ -142,15 +140,6 @@ ask({?MODULE, IM}) ->
 -spec reader(fun( (R) -> A)) -> reader_t(R, _M, A).
 reader(F, {?MODULE, IM}) ->
     reader_t(fun(R) -> monad:return(F(R), IM) end).
-
-get({?MODULE, IM} = RT) ->
-    lift(monad_state:get(IM), RT).
-
-put(S, {?MODULE, IM} = RT) ->
-    lift(monad_state:put(S, IM), RT).
-
-state(F, {?MODULE, IM} = RT) ->
-    lift(monad_state:state(F, IM), RT).
 
 empty({?MODULE, IM} = RT) ->
     lift(alternative:empty(IM), RT).

@@ -53,7 +53,7 @@ default_ask(MonadReader) ->
     reader(function_instance:id(), MonadReader).
 
 default_reader(F, MonadReader) ->
-    monad:lift_m(F, MonadReader).
+    monad:lift_m(F, ask(MonadReader), MonadReader).
 
 asks(F, MonadReader) ->
     monad:lift_m(F, ask(MonadReader), MonadReader).
