@@ -615,6 +615,340 @@ being the local name by which the function is to be known--the
 safe to use in, for example, `Var = fun dup/2` expressions.
 
 
+## Different from classic erlando
+
+### type changes
+
+old:
+
+```erlang
+state_t:state_t(S, M, A) :: fun((A) -> monad:monadic(M, {A, S})).
+reader_t:reader_t(R, M, A) :: fun((R) -> monad:monadic(A)).
+error_t:error_t(E, M, A) :: monad:monadic(M, error_m(E, A)).
+maybe_m:maybe_m(A) :: {just, A} | nothing.
+error_m:error_m(E, A) :: {ok, A} | ok | {error, E}.
+identity:identity_m(A) :: A.
+list_m:list_m(A) :: [A].
+```
+new:
+
+```erlang
+state_t:state_t(S, M, A) :: {state_t, fun((A) -> monad:m(M, {A, S}))}.
+reader_t:reader_t(R, M, A) :: {reader_t, fun((R) -> monad:m(M, A)})}.
+writer_t:writer_t(W, M, A) :: {writer_t, monad:m(M, {A, monoid:m(W)})}.
+cont_t:cont_t(R, M, A) :: {cont_t, fun((fun((A) -> monad:m(M, R))) -> monad:m(M, R))}.
+error_t:error_t(E, M, A) :: {error_t, monad:m(M, either:either(E, A))}.
+maybe_t:maybe_t(M, A) :: {maybe_t, monad:m(M, maybe:maybe(A))}.
+maybe:maybe(A) :: {just, A} | nothing.
+either:either(E, A) :: {right, A} | {left, E}.
+error_m:error_m(E, A) :: {ok, A} | ok, | {error, E}.
+identity:identity(A) :: {identity, A}.
+list_instance:list_instance(A) :: [A].
+function_instance:function_instance(R, A) :: fun((R) -> A).
+```
+
+## function location changes
+
+* state_t:modify/2 -> monad_state:modify/1
+* state_t:modify_and_return/2 -> monad_state:state/2
+
+## renamed modules
+
+* identity_m -> identity
+* maybe_m -> maybe
+
+## Typeclasses
+
+  functor
+  applicative
+  monad
+  foldable
+  traversable
+  alternative
+  monad_plus
+  monad_reader
+  monad_writer
+  monad_state
+  monad_cont
+  monad_fail
+  monad_trans
+  monoid
+  
+typeclass could be defined by attribute -superclass 
+
+```erlang
+-module(monad).
+-superclass([applicative]).
+```
+  
+it means monad is a typeclass and it's superclass is applicative
+
+```erlang
+-module(functor).
+-superclass([]).
+```
+
+attribute -superclass(Superclasses) defines a typeclass.
+(attribute parameter Superclass now is useless, but will be usable future).
+
+typeclass is also a behaviour in erlang 
+
+```erlang
+-module(monad).
+-superclass([applicative]).
+
+-callback '>>='(monad:m(M, A), fun( (A) -> monad:m(M, B) ), M) -> monad:m(M, B) when M :: monad:class().
+-callback '>>'(monad:m(M, _A), monad:m(M, B), M) -> monad:m(M, B) when M :: monad:class().
+-callback return(A, M) -> monad:m(M, A) when M :: monad:class(). 
+```
+
+## Types
+
+```erlang
+-module(identity).
+-erlando_type([identity, [identity/1]).
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-export_type([identity/1]).
+-type identity(A) :: {?MODULE, A}.
+```
+
+type identity instance of typeclass functor, application and monad.
+
+name of type could be different from module
+
+```erlang
+-module(function_instance).
+-erlando_type({function, [function_instance/0]}).
+-export_type([function_instance/0]).
+-type function_instance() :: fun((_A) -> _B).
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_reader).
+```
+
+function_instance defines type function
+
+as haskell, type could be defined in multi modules
+
+```erlang
+-module(state_t).
+
+-erlando_type({?MODULE, [state_t/3]}).
+
+-export_type([state_t/3]).
+-type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
+-type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
+-type t(M) :: monad_trans:monad_trans(?MODULE, M).
+
+-compile({parse_transform, do}).
+-compile({parse_transform, monad_t_transform}).
+-compile({no_auto_import, [get/1, put/2]}).
+
+-behaviour(functor).
+-behaviour(applicative).
+-behaviour(monad).
+-behaviour(monad_trans).
+-behaviour(monad_state).
+```
+
+state_t is instance of functor, applicative, monad, monad_trans, monad_state in module state_t
+
+```erlang
+-erlando_type([state_t, cont_t, maybe_t, error_t]).
+-behaviour(monad_reader).
+```
+
+state_t is instance of monad_reader in module monad_reader_instance
+
+```erlang
+-erlando_type([state_t, reader_t, maybe_t, error_t]).
+-behaviour(monad_writer).
+```
+
+state_t is instance of monad_writer in module monad_writer_instance
+
+```erlang
+monad:return(A, state_t).
+```
+
+will call
+
+```erlang
+state_t:return(A).
+```
+
+and 
+
+```erlang
+monad_reader:ask(state_t).
+```
+
+will call
+
+```erlang
+monad_reader_instance:ask(state_t).
+```
+
+## runtime typeclass and type check
+
+erlando_typeclass:register_application/1 registers all modules in one application and do such things
+
+* read attribute -superclass and collect typeclasses to a set
+* read attribute -erlando_type, -behaviour and genererate a map :: #{ {typeclass, type} => module}.
+* read attribute -export_type and -type and use erlando_typeclass:type_with_remote/4 generate erlang type forms
+
+```erlang
+state_t:state_t/3 :: 
+{c,tuple,
+       [{c,atom,[state_t],unknown},
+        {c,function,
+           [{c,product,[{c,var,'S',unknown}],unknown},any],
+           unknown}],
+       {2,{c,atom,[state_t],unknown}}}
+```
+
+* convert actual forms of erlang type definition to pattern
+
+```erlang
+[{tuple,[{atom,state_t},{guard,is_function}]}]
+```
+
+* compose pattern and -erlando(type, [ExportedType]) generate a map :: #{ type => patterns}.
+* generate funciton is_typeclass/1 use set of typeclasses
+
+```erlang
+is_typeclass(monad) ->
+    true;
+is_typeclass(functor) ->
+    true;
+is_typeclass(...) ->
+    true;
+is_typeclass(_Rest) ->
+    false.
+```
+
+* generate function module/2 use map of {typeclass, type} to module
+
+```erlang
+module(error_m, monad) ->
+    error_m;
+module(error_m, applicative) ->
+    error_m;
+module(state_t, monad) ->
+    state_t;
+module(state_t, monad_reader) ->
+    monad_reader_instance;
+module(..., ...) ->
+   ...
+module(Type, Typeclass) ->
+   exit({unregisted_module, {Type, Typeclass}}).
+```
+
+* generate function type/1 use map of pattern to type
+
+```erlang
+type({state_t, Inner}) when is_function(Inner) ->
+    state_t;
+type({identity, _}) -> 
+    identity;
+type({ok, _}) ->
+    error_m;
+type({error, _}) ->
+    errror_m;
+type(_Rest) ->
+    undefined.
+```
+
+* put function is_typeclass/1, module/2, type/1 to module typeclass and generate typeclass.beam
+
+
+## Polymorphic
+
+in classic version of erlando, you must use specific type to get a monad such as
+
+```erlang
+error_m:return(A).
+```
+
+now you could use 
+
+```erlang
+M = monad:return(10).
+```
+
+monad:return/1 returns a undetermined type monad which could be converted to specific monad type by using
+
+```erlang
+undetermined:run(M, error_m).
+```
+
+or
+
+```erlang
+error_m:run(M).
+```
+
+undetermined type could be passed in typeclass functions such as 
+
+```erlang
+monad:'>>='(UndeterminedA, fun(A) -> UndeterminedB) :: UndeterminedB.
+```
+
+but it's not assumed work well in type functions such as
+
+```erlang
+error_m:'>>='(moand:return(10), fun(A) -> monad:return(A) end).
+```
+
+type could be auto detected in typeclass function 
+
+```erlang
+monad:'>>='(monad:return(10, error_m), fun(A) -> monad:return(A) end) :: {ok, 10}
+monad:'>>='(moand:return(10), fun(A) -> monad:return(A) end, error_m) :: {ok, 10}
+```
+
+but type could not be auto detechted when type is known in function return value:
+
+```erlang
+MA = monad:return(10),
+AMB = fun(A) -> monad:return(A, error_m) end,
+monad:'>>='(MA, AMB) :: #undetermined{typeclass = monad}.
+```
+
+## Alias types
+
+these type does not exits, it's just alias of it's monad_trans type.
+
+* state_m :: {state_t, identity}.
+* reader_m :: {reader_t, identity}.
+* writer_m :: {writer_t, identity}.
+* cont_m :: {cont_t, identity}
+* state_m:state(F) :: state_t:state(F, {state_t, identity}).
+* ... other state_m/reader_m/writer_m/cont_m functions
+
+it's -erlang_type attribute type define is empty and generates no pattern match in typeclass:type/1
+
+```erlang
+-erlando_type({state_m, []}).
+```
+
+by the way
+
+```erlang
+-erlando_type(state_t)
+```
+
+generates 
+
+```erlang
+type({state_t, _}) -> state_t
+```
+
+if no -erlando_type attribute type defined in other module.
+
 
 ## License
 
