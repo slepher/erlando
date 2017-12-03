@@ -18,7 +18,7 @@
 -type t(M) :: {reader_t, M}.
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
@@ -53,13 +53,13 @@
 -export([map/3, with/3]).
 -export([run/3]).
 
--transform(#{inner_type => functor,     behaviours => [functor]}).
--transform(#{inner_type => applicative, behaviours => [applicative]}).
--transform(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_reader]}).
--transform(#{inner_type => alternative, behaviours => [alternative]}).
--transform(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
--transform(#{args => monad,             functions => [map/2, with/2]}).
--transform(#{args => monad,             functions => [run/2]}).
+-gen_fun(#{inner_type => functor,     behaviours => [functor]}).
+-gen_fun(#{inner_type => applicative, behaviours => [applicative]}).
+-gen_fun(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_reader]}).
+-gen_fun(#{inner_type => alternative, behaviours => [alternative]}).
+-gen_fun(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
+-gen_fun(#{args => monad,             functions => [map/2, with/2]}).
+-gen_fun(#{args => monad,             functions => [run/2]}).
 
 -spec new(M) -> t(M) when M :: monad:class().
 new(M) ->

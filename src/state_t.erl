@@ -24,7 +24,7 @@
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/1, put/2]}).
 
 -behaviour(functor).
@@ -60,12 +60,12 @@
 -export([map/3, with/3]).
 -export([eval/3, exec/3, run/3]).
 
--transform(#{inner_type => functor,    behaviours => [functor]}).
--transform(#{inner_type => monad,      behaviours => [applicative]}).
--transform(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_state]}).
--transform(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
--transform(#{args => monad,            functions => [map/2, with/2]}).
--transform(#{args => monad,            functions => [eval/2, exec/2, run/2]}).
+-gen_fun(#{inner_type => functor,    behaviours => [functor]}).
+-gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
+-gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_state]}).
+-gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
+-gen_fun(#{args => monad,            functions => [map/2, with/2]}).
+-gen_fun(#{args => monad,            functions => [eval/2, exec/2, run/2]}).
 
 -spec new(M) -> TM when TM :: monad:class(), M :: monad:class().
 new(Inner) ->

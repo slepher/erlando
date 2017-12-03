@@ -15,7 +15,7 @@
 -export_type([function_instance/0]).
 -type function_instance() :: fun((_A) -> _B).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 
@@ -38,7 +38,7 @@
 -export([const/1]).
 -export([id/0, id/1]).
 
--transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_reader]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API

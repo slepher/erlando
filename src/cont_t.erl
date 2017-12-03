@@ -18,7 +18,7 @@
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
@@ -44,11 +44,11 @@
 -export([map/3, with/3]).
 -export([run/3, eval/2]).
 
--transform(#{inner_type => any,   behaviours => [functor, applicative, monad]}).
--transform(#{inner_type => monad, behaviours => [monad_trans, monad_cont]}).
--transform(#{args => monad,       functions => [shift/1, reset/1]}).
--transform(#{args => monad,       functions => [map/2, with/2]}).
--transform(#{args => monad,       functions => [run/2, eval/1]}).
+-gen_fun(#{inner_type => any,   behaviours => [functor, applicative, monad]}).
+-gen_fun(#{inner_type => monad, behaviours => [monad_trans, monad_cont]}).
+-gen_fun(#{args => monad,       functions => [shift/1, reset/1]}).
+-gen_fun(#{args => monad,       functions => [map/2, with/2]}).
+-gen_fun(#{args => monad,       functions => [run/2, eval/1]}).
 
 -spec new(M) -> TM when TM :: monad:class(), M :: monad:class().
 new(IM) ->

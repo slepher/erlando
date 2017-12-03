@@ -15,7 +15,7 @@
 -callback state(fun((S) -> {A, S}), M) -> monad:m(M, A) when M :: monad:class().
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("functor.hrl").
@@ -26,8 +26,8 @@
 -export([gets/2, modify/2]).
 -export([default_get/1, default_put/2, default_state/2]).
 
--transform(#{args => [?MODULE], functions => [get/0, put/1, state/1]}).
--transform(#{args => [?MODULE], functions => [gets/1, modify/1]}).
+-gen_fun(#{args => [?MODULE], functions => [get/0, put/1, state/1]}).
+-gen_fun(#{args => [?MODULE], functions => [gets/1, modify/1]}).
 
 %%%===================================================================
 %%% API

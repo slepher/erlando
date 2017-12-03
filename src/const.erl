@@ -10,7 +10,7 @@
 
 -erlando_type(?MODULE).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -23,7 +23,7 @@
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 -export([run_const/1]).
 
--transform(#{args => [?MODULE], behaviours => [functor, applicative]}).
+-gen_fun(#{args => [?MODULE], behaviours => [functor, applicative]}).
 
 %%%===================================================================
 %%% API

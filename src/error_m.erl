@@ -27,7 +27,7 @@
 -type ok(A) :: ok | {ok, A}.
 -type error(E) :: {error, E}.
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -44,7 +44,7 @@
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--transform(#{patterns => [?MODULE], gbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
 
 -spec fmap(fun((A) -> B), error_m(E, A)) -> error_m(E, B).
 fmap(F, EA) ->

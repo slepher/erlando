@@ -15,7 +15,7 @@
 -callback reader(fun((_R) -> A), M) -> monad:m(M, A) when M :: monad:class().
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("functor.hrl").
 -include("applicative.hrl").
@@ -25,8 +25,8 @@
 -export([default_ask/1, default_reader/2]).
 -export([asks/2]).
 
--transform(#{args => [?MODULE], functions => [ask/0, local/2, reader/1]}).
--transform(#{args => [?MODULE], functions => [asks/1]}).
+-gen_fun(#{args => [?MODULE], functions => [ask/0, local/2, reader/1]}).
+-gen_fun(#{args => [?MODULE], functions => [asks/1]}).
 
 %%%===================================================================
 %%% API

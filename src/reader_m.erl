@@ -10,7 +10,7 @@
 
 -erlando_type({?MODULE, []}).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -define(READER, {reader_t, identity}).
 
@@ -19,9 +19,9 @@
 -behaviour(monad).
 -behaviour(monad_reader).
 
--transform(#{remote => reader_t, inner_type => identity,
+-gen_fun(#{remote => reader_t, inner_type => identity,
              behaviours => [functor, applicative, monad, monad_reader]}).
--transform(#{remote => reader_t, args => identity, extra_call => {identity, run}, 
+-gen_fun(#{remote => reader_t, args => identity, extra_call => {identity, run}, 
              functions => [run/2]}).
 
 %%%===================================================================

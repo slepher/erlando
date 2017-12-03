@@ -25,7 +25,7 @@
 -callback '*>'(applicative:f(F, _A), applicative:f(F, B), F) -> applicative:f(F, B) when F :: applicative:class(). 
 -callback '<*'(applicative:f(F, A), applicative:f(F, _B), F) -> applicative:f(F, A) when F :: applicative:class(). 
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 -include("functor.hrl").
@@ -35,8 +35,8 @@
 -export(['default_<*>'/3, default_lift_a2/4, 'default_<*'/3, 'default_*>'/3]).
 -export([ap/3, '<**>'/3, lift_a3/5]).
 
--transform(#{args => [?MODULE], functions => [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
--transform(#{args => [?MODULE], functions => [ap/2, '<**>'/2, lift_a3/4]}).
+-gen_fun(#{args => [?MODULE], functions => [pure/1, '<*>'/2, lift_a2/3, '<*'/2, '*>'/2]}).
+-gen_fun(#{args => [?MODULE], functions => [ap/2, '<**>'/2, lift_a3/4]}).
 
 %%%===================================================================
 %%% API

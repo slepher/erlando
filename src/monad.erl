@@ -33,7 +33,7 @@
 -callback return(A, M) -> monad:m(M, A) when M :: monad:class(). 
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("functor.hrl").
 -include("applicative.hrl").
@@ -45,8 +45,8 @@
 %% utility function join
 -export([as/2, empty/1, run/2, id/1]).
 
--transform(#{args => [?MODULE], functions => ['>>='/2, '>>'/2, return/1]}).
--transform(#{args => [?MODULE], functions => [bind/2, then/2, join/1, lift_m/2]}).
+-gen_fun(#{args => [?MODULE], functions => ['>>='/2, '>>'/2, return/1]}).
+-gen_fun(#{args => [?MODULE], functions => [bind/2, then/2, join/1, lift_m/2]}).
 
 -spec '>>='(monad:m(M, A), fun((A) -> monad:m(M, B)), M) -> monad:m(M, B) when M :: monad:class().
 '>>='(UA, KUB, UMonad) ->

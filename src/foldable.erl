@@ -10,7 +10,7 @@
 
 -superclass([]).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -export_type([t/2]).
 
@@ -20,7 +20,7 @@
 %% API
 -export([fold_map/3]).
 
--transform(#{args => [?MODULE], functions => [fold_map/2]}).
+-gen_fun(#{args => [?MODULE], functions => [fold_map/2]}).
 
 %%%===================================================================
 %%% API

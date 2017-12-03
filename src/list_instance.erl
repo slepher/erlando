@@ -26,7 +26,7 @@
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 
@@ -56,9 +56,9 @@
 -export([mzero/0, mplus/2]).
 -export([mempty/0, mappend/2]).
 
--transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_fail]}).
--transform(#{patterns => [?TYPE], gbehaviours => [foldable, traversable]}).
--transform(#{patterns => [?TYPE], gbehaviours => [alternative, monad_plus, monoid]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [foldable, traversable]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [alternative, monad_plus, monoid]}).
 
 
 fmap(F, Xs) ->

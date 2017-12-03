@@ -10,7 +10,7 @@
 
 -erlando_type({?MODULE, []}).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -22,7 +22,7 @@
 -export([reset/1, shift/1]).
 -export([eval/1, run/2]).
 
--transform(#{remote => cont_t, inner_type => identity, 
+-gen_fun(#{remote => cont_t, inner_type => identity, 
              behaviours => [functor, applicative, monad, monad_cont]}).
 %%%===================================================================
 %%% API

@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 25 Jul 2017 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(monad_t_transform).
+-module(function_generator).
 
 %% API
 -export([parse_transform/2]).
@@ -15,7 +15,7 @@
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
     [Module] = ast_traverse:attributes(module, Forms),
-    MFs = ast_traverse:attributes_with_line(transform, Forms),
+    MFs = ast_traverse:attributes_with_line(gen_fun, Forms),
     Type = type(Forms),
     lists:foldl(
       fun({Line, Transform}, FormsAcc) ->
@@ -61,11 +61,9 @@ generate_forms(Module, Type, Line, Opts) ->
     ExtraPatterns = maps:get(patterns, Opts, []),
     ExtraPatternsGroup = maps:get(patterns_group, Opts, [ExtraPatterns]),
     ExtraArgs = maps:get(args, Opts, []),
-    Behaviours = maps:get(behaviours, Opts, []),
-    GBehaviours = maps:get(gbehaviours, Opts, []),
     ExtraCall = maps:get(extra_call, Opts, undefined),
-    Functions = maps:get(functions, Opts, []),
-    TFunctions = maps:get(tfunctions, Opts, []),
+    {Functions, DefaultArityMode} = get_functions_and_arity_mode(Opts),
+    ArityMode = maps:get(am, Opts, DefaultArityMode),
     {PatternsGroup, NExtraArgs} = 
         case maps:find(inner_type, Opts) of
             {ok, InnerType} ->
@@ -79,37 +77,62 @@ generate_forms(Module, Type, Line, Opts) ->
                 {ExtraPatternsGroup, ExtraArgs}
         end,
     NNExtraArgs = update_args(Remote, NExtraArgs),
-    SFunctions =
-        lists:foldl(
-          fun(Patterns, Acc) ->
-                  Callbacks = 
-                      lists:foldl(
-                        fun(Behaviour, Acc0) ->
-                                Callbacks = Behaviour:behaviour_info(callbacks),
-                                Callbacks ++ Acc0
-                        end, [], GBehaviours),
-                  NFunctions = 
-                      lists:map(
-                        fun({FName, Arity}) ->
-                                {FName, Arity + length(NNExtraArgs) - length(Patterns)}
-                        end, Functions ++ Callbacks),
-                  NFunctions ++ Acc
-          end, [], PatternsGroup),
-    AFunctions = 
-        lists:foldl(
-          fun(Behaviour, Acc) ->
-                  Callbacks = Behaviour:behaviour_info(callbacks),
-                  Callbacks ++ Acc
-          end,  SFunctions ++ TFunctions, Behaviours),
+    NFunctions =
+        case ArityMode of
+            target ->
+                lists:foldl(
+                  fun(Patterns, Acc) ->
+                          ArityDiff = length(NNExtraArgs) - length(Patterns),
+                          UFunctions = 
+                              lists:map(
+                                fun({FName, Arity}) ->
+                                        {FName, Arity + ArityDiff}
+                                end, Functions),
+                          UFunctions ++ Acc
+                  end, [], PatternsGroup);
+            source ->
+                Functions
+        end,
     lists:foldl(
       fun(Pattrens, Acc) ->
               Forms = 
                   lists:map(
                     fun({FName, Arity}) ->
-                            gen_function(Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall)
-                    end, AFunctions),
+                            gen_function(
+                              Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall)
+                    end, NFunctions),
               Forms ++ Acc
       end, [], PatternsGroup).
+
+get_functions_and_arity_mode(Opts) ->
+    case maps:find(functions, Opts) of
+        {ok, Functions} ->
+            {Functions, target};
+        error ->
+            case maps:find(sfunctions, Opts) of
+                {ok, BFunctions} ->
+                    {BFunctions, source};
+                error ->
+                    case maps:find(behaviours, Opts) of
+                        {ok, Behaviours} ->
+                            {behaviour_functions(Behaviours), source};
+                        error ->
+                            case maps:find(tbehaviours, Opts) of
+                                {ok, Behaviours} ->
+                                    {behaviour_functions(Behaviours), target};
+                                error ->
+                                    {[], source}
+                            end
+                    end
+            end
+    end.
+
+behaviour_functions(Behaviours) ->
+    lists:foldl(
+      fun(Behaviour, Acc0) ->
+              Callbacks = Behaviour:behaviour_info(callbacks),
+              Callbacks ++ Acc0
+      end, [], Behaviours).
 
 type(Forms) ->
     case lists:flatten(ast_traverse:attributes(erlando_type, Forms)) of
@@ -125,7 +148,6 @@ update_args(_Remote, Args) when is_list(Args) ->
     Args;
 update_args(Remote, Arg) ->
     [{Remote, Arg}].
-
 
 gen_function(Module, FName, Arity, Line, ExtraPatterns, ExtraArgs, ExtraCall) ->
     NArity = Arity - length(ExtraArgs), 

@@ -16,7 +16,7 @@
 -callback pass(monad:m(M, {A, fun(([W]) -> [W])}), M) -> monad:m(M, A) when M :: monad:class().
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 -include("functor.hrl").
@@ -26,8 +26,8 @@
 -export([writer/2, tell/2, listen/2, pass/2]).
 -export([listens/3, censor/3]).
 
--transform(#{args => [?MODULE], functions => [writer/1, tell/1, listen/1, pass/1]}).
--transform(#{args => [?MODULE], functions => [listens/2, censor/2]}).
+-gen_fun(#{args => [?MODULE], functions => [writer/1, tell/1, listen/1, pass/1]}).
+-gen_fun(#{args => [?MODULE], functions => [listens/2, censor/2]}).
 
 %%%===================================================================
 %%% API

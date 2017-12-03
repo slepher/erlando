@@ -10,7 +10,7 @@
 
 -superclass([]).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -export_type([m/1]).
 
@@ -22,7 +22,7 @@
 %% API
 -export([mempty/1, mappend/3]).
 
--transform(#{args => [?MODULE], functions => [mempty/0, mappend/2]}).
+-gen_fun(#{args => [?MODULE], functions => [mempty/0, mappend/2]}).
 %%%===================================================================
 %%% API
 %%%===================================================================

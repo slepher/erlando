@@ -17,7 +17,7 @@
 -type t(M) :: {writer_t, M}.
 
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 -include("erlando.hrl").
@@ -49,13 +49,13 @@
 -export([map/3]).
 -export([exec/2, eval/2, run/2]).
 
--transform(#{inner_type => functor,     behaviours => [functor]}).
--transform(#{inner_type => applicative, behaviours => [applicative]}).
--transform(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_writer]}).
--transform(#{inner_type => alternative, behaviours => [alternative]}).
--transform(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
--transform(#{args => monad,             functions => [map/2]}).
--transform(#{args => monad,             functions => [exec/1, eval/1, run/1]}).
+-gen_fun(#{inner_type => functor,     behaviours => [functor]}).
+-gen_fun(#{inner_type => applicative, behaviours => [applicative]}).
+-gen_fun(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_writer]}).
+-gen_fun(#{inner_type => alternative, behaviours => [alternative]}).
+-gen_fun(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
+-gen_fun(#{args => monad,             functions => [map/2]}).
+-gen_fun(#{args => monad,             functions => [exec/1, eval/1, run/1]}).
 
 -spec new(M) -> t(M) when M :: monad:class().
 new(M) ->

@@ -19,13 +19,13 @@
 
 -compile({parse_transform, do}).
 -compile({parse_transform, cut}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -export([mzero/1, mplus/3]).
 -export([guard/2, msum/2, mfilter/3]).
 
--transform(#{args => [?MODULE], functions => [mzero/0, mplus/2]}).
--transform(#{args => [?MODULE], functions => [guard/1, msum/1, mfilter/2]}).
+-gen_fun(#{args => [?MODULE], functions => [mzero/0, mplus/2]}).
+-gen_fun(#{args => [?MODULE], functions => [guard/1, msum/1, mfilter/2]}).
 
 -spec mzero(M) -> monad:m(M, _A) when M :: monad:class().
 mzero(UMonadPlus) ->

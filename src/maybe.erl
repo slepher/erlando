@@ -23,7 +23,7 @@
 
 -include("erlando.hrl").
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -46,8 +46,8 @@
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--transform(#{patterns => [?MODULE], gbehaviours => [functor, applicative, monad, monad_fail]}).
--transform(#{patterns => [?MODULE], gbehaviours => [alternative, monad_plus]}).
+-gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?MODULE], tbehaviours => [alternative, monad_plus]}).
 
 -spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
 fmap(F, {just, X}) ->

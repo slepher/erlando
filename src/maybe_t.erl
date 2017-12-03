@@ -18,7 +18,7 @@
 
 -compile({parse_transform, cut}).
 -compile({parse_transform, do}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
@@ -51,12 +51,12 @@
 -export([map/3]).
 -export([run/2]).
 
--transform(#{inner_type => functior,   behaviours => [functor]}).
--transform(#{inner_type => monad,      behaviours => [applicative]}).
--transform(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
--transform(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
--transform(#{args => monad,            functions => [map/2]}).
--transform(#{args => monad,            functions => [run/1]}).
+-gen_fun(#{inner_type => functior,   behaviours => [functor]}).
+-gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
+-gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
+-gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
+-gen_fun(#{args => monad,            functions => [map/2]}).
+-gen_fun(#{args => monad,            functions => [run/1]}).
 
 -spec new(M) -> t(M).
 new(IM) ->

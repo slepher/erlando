@@ -21,7 +21,7 @@
 -callback fmap(fun((A) -> B), functor:f(F, A), F) -> functor:f(F, B) when F :: functor:class().
 -callback '<$'(B, functor:f(F, _A), F) -> functor:f(F, B) when F :: functor:class().
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("op.hrl").
 
@@ -30,8 +30,8 @@
 -export(['<$>'/3]).
 -export(['default_<$'/3]).
 
--transform(#{args => [?MODULE], functions => [fmap/2, '<$'/2]}).
--transform(#{args => [?MODULE], functions => ['<$>'/2]}).
+-gen_fun(#{args => [?MODULE], functions => [fmap/2, '<$'/2]}).
+-gen_fun(#{args => [?MODULE], functions => ['<$>'/2]}).
 
 %%%===================================================================
 %%% API

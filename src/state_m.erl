@@ -14,7 +14,7 @@
 
 -type state_m(S, A) :: {state_t, fun((S) -> {identity, {S, A}})}.
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -define(STATE, {state_t, identity}).
@@ -24,9 +24,9 @@
 -behaviour(monad).
 -behaviour(monad_state).
 
--transform(#{remote => state_t, inner_type => identity,
+-gen_fun(#{remote => state_t, inner_type => identity,
              behaviours => [functor, applicative, monad, monad_state]}).
--transform(#{remote => state_t, args => identity, extra_call => {identity, run}, 
+-gen_fun(#{remote => state_t, args => identity, extra_call => {identity, run}, 
              functions => [eval/2, exec/2, run/2]}).
 
 %%%===================================================================

@@ -15,12 +15,12 @@
                 applicative:applicative(F, A), F) -> applicative:applicative(F, A).
 
 -compile({parse_transform, cut}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 %% API
 -export([empty/1, '<|>'/3]).
 
--transform(#{args => [?MODULE], functions => [empty/0, '<|>'/2]}).
+-gen_fun(#{args => [?MODULE], functions => [empty/0, '<|>'/2]}).
 
 %%%===================================================================
 %%% API

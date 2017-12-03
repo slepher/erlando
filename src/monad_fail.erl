@@ -10,7 +10,7 @@
 
 -superclass([monad]).
 
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -include("functor.hrl").
 -include("applicative.hrl").
@@ -21,7 +21,7 @@
 %% API
 -export([fail/2]).
 
--transform(#{args => [?MODULE], functions => [fail/1]}).
+-gen_fun(#{args => [?MODULE], functions => [fail/1]}).
 
 %%%===================================================================
 %%% API

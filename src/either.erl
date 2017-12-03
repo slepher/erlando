@@ -15,7 +15,7 @@
 -type either(L, R) :: {left, L} | {right, R}.
 
 -compile({parse_transform, cut}).
--compile({parse_transform, monad_t_transform}).
+-compile({parse_transform, function_generator}).
 
 -define(TYPE, ?MODULE).
 
@@ -37,7 +37,7 @@
 -export([left/1, right/1]).
 -export([either/2, swap/0]).
 
--transform(#{patterns => [?TYPE], gbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail]}).
 
 %%%===================================================================
 %%% API
