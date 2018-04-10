@@ -78,7 +78,7 @@ run_maybe_t(Other) ->
 fmap(F, MTA, {?MODULE, IM}) ->
     map(
       fun(FA) ->
-              functor:fmap(F, FA, IM)
+              functor:fmap(functor:fmap(F, _), FA, IM)
       end, MTA).
 
 '<$'(B, FA, {?MODULE, _IM} = MT) ->
