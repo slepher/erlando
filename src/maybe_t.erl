@@ -78,7 +78,7 @@ run_maybe_t(Other) ->
 fmap(F, MTA, {?MODULE, IM}) ->
     map(
       fun(FA) ->
-              functor:fmap(functor:fmap(F, _), FA, IM)
+              functor:fmap(maybe:fmap(F, _), FA, IM)
       end, MTA).
 
 '<$'(B, FA, {?MODULE, _IM} = MT) ->
@@ -89,7 +89,12 @@ fmap(F, MTA, {?MODULE, IM}) ->
     maybe_t(
       do([IM ||
              MF <- run_maybe_t(MTF),
-             maybe:'>>='(MF, fun(F) -> maybe:fmap(F, _) /'<$>'/ run_maybe_t(MTA) end)
+             case MF of
+                 nothing ->
+                     return(nothing);
+                 {just, F} ->
+                     maybe:fmap(F, _) /'<$>'/ run_maybe_t(MTA)
+             end
          ])).
 
 -spec lift_a2(fun((A, B) -> C), maybe_t(M, A), maybe_t(M, B)) -> maybe_t(M, C).
