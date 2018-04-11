@@ -26,10 +26,13 @@
 lift(UA, UMonadTrans) ->
     undetermined:new(
       fun(MonadTrans) when is_atom(MonadTrans) ->
-              MonadTrans:lift(UA, MonadTrans);
+              do_lift(UA, MonadTrans);
          ({MonadTrans, UMonad}) ->
               undetermined:map0(
                 fun(Monad, MA) ->
-                        MonadTrans:lift(MA, {MonadTrans, Monad})
+                        do_lift(MA, {MonadTrans, Monad})
                 end, UA, UMonad)
       end, UMonadTrans).
+
+do_lift(UMA, MonadTrans) ->
+    typeclass_trans:apply(lift, [UMA], MonadTrans, ?MODULE).
