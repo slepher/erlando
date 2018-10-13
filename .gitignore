@@ -5,3 +5,6 @@ ebin
 logs
 *.plt
 deps
+.rebar3
+_build
+rebar.lock
