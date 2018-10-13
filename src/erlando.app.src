@@ -1,6 +1,8 @@
-{application, erlando,
- [{description, "Syntax extensions for Erlang"},
+{application, erlando, [
+  {description, "Syntax extensions for Erlang"},
   {vsn, "0.3"},
   {modules, []},
   {registered, []},
-  {applications, []}]}.
+  {applications, [kernel, stdlib, sasl]},
+  {env, []}
+]}.
