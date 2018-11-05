@@ -1,9 +1,8 @@
 {application, erlando, [
   {description, "Syntax extensions for Erlang"},
-  {vsn, "0.4"},
+  {vsn, "0.5"},
   {modules, []},
   {registered, []},
-  {applications, [kernel, stdlib, sasl, syntax_tools]},
-  {mod, {erlando_app, []}},
+  {applications, [kernel, stdlib, sasl, syntax_tools, ast_traverse]},
   {env, []}
 ]}.

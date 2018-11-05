@@ -12,6 +12,7 @@
 
 %% API
 -export([register_application/1, register_modules/1]).
+-export([core/1]).
 -export([types/0, typeclasses/0, behaviours/0]).
 -export([type_with_remote/4, type_to_patterns/1, pattern_to_clause/3]).
 -export([start_link/0]).
@@ -134,7 +135,7 @@ handle_call({register_modules, Modules}, _From,
     do_load_module(NNTypes, NTypeclasses, NBehaviourModules),
     {reply, ok, State#state{behaviour_modules = NBehaviourModules,
                             typeclasses = NTypeclasses, types = NNTypes,
-                           exported_types = NETypes, mod_recs = NModRecs}};
+                            exported_types = NETypes, mod_recs = NModRecs}};
 
 handle_call(types, _From, #state{types = Types} = State) ->
     {reply, {ok, Types}, State};

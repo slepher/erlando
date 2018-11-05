@@ -29,7 +29,6 @@
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_cont).
--behaviour(monad_fail).
 -behaviour(monad_runner).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
@@ -38,7 +37,6 @@
 -export(['>>='/3, '>>'/3, return/2]).
 -export([lift/2]).
 -export([callCC/2]).
--export([fail/2]).
 -export([run_nargs/0, run_m/2]).
 -export([reset/2, shift/2]).
 -export([map/3, with/3]).
@@ -116,10 +114,6 @@ lift_a2(F, CTA, CTB, {?MODULE, _IM} = CT) ->
 -spec return(A, t(M)) -> cont_t(_R, M, A).
 return(A, {?MODULE, _IM}) ->
     cont_t(fun (K) -> K(A) end).
-
--spec fail(any(), t(M)) -> cont_t(_R, M, _A).
-fail(E, {?MODULE, IM}) ->
-    cont_t(fun (_) -> monad_fail:fail(E, IM) end).
 
 lift(X, {?MODULE, IM}) ->
     cont_t(fun (F) -> monad:'>>='(X, F, IM) end).

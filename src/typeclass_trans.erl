@@ -23,7 +23,6 @@ apply(F, Args, {T, M}, Typeclass) ->
 apply(F, Args, M, Typeclass) when is_atom(M) ->
     Module = typeclass:module(M, Typeclass),
     erlang:apply(Module, F, Args ++ [M]).
-
     
 %%--------------------------------------------------------------------
 %% @doc

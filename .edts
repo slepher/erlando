@@ -1,0 +1,2 @@
+:lib-dirs '("_build/default/lib")
+:app-include-dirs '("include")
