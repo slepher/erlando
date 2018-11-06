@@ -792,7 +792,7 @@ will call
 monad_reader_instance:ask(state_t).
 ```
 
-## compile typeclass and type check
+## compile typeclass.beam generate
 
 typeclass.beam is now generated compile time by rebar3_erlando rebar3 plugin
 
@@ -805,6 +805,8 @@ to rebar.config in your project
 otherwise, rebar.config in project which deps on erlando is no need to change.
 
 erlando_typeclass:register_application/1 is nolonger used.
+
+## runtime typeclass and type check
 
 * read attribute -superclass and collect typeclasses to a set
 * read attribute -erlando_type, -behaviour and genererate a map :: #{ {typeclass, type} => module}.
