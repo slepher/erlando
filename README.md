@@ -806,8 +806,6 @@ otherwise, rebar.config in project which deps on erlando is no need to change.
 
 erlando_typeclass:register_application/1 is nolonger used.
 
-## runtime typeclass and type check
-
 * read attribute -superclass and collect typeclasses to a set
 * read attribute -erlando_type, -behaviour and genererate a map :: #{ {typeclass, type} => module}.
 * read attribute -export_type and -type and use erlando_typeclass:type_with_remote/4 generate erlang type forms
