@@ -792,9 +792,19 @@ will call
 monad_reader_instance:ask(state_t).
 ```
 
-## runtime typeclass and type check
+## compile typeclass and type check
 
-erlando_typeclass:register_application/1 registers all modules in one application and do such things
+typeclass.beam is now generated compile time by rebar3_erlando rebar3 plugin
+
+if you want to use typeclass system by attribute -superclass|-erlando_type, you should add
+
+    {provider_hooks, [{post, [{compile, {erlando, compile}}]}]}.
+    
+to rebar.config in your project
+
+otherwise, rebar.config in project which deps on erlando is no need to change.
+
+erlando_typeclass:register_application/1 is nolonger used.
 
 * read attribute -superclass and collect typeclasses to a set
 * read attribute -erlando_type, -behaviour and genererate a map :: #{ {typeclass, type} => module}.
