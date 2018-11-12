@@ -9,7 +9,7 @@
 -module(erlando_typeclass).
 
 %% API
--export([]).
+-export([register_application/1]).
 
 %%%===================================================================
 %%% API

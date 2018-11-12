@@ -86,10 +86,15 @@ do_syntax([Expr | Exprs], Monad) ->
 pattern_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
     [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)}];
 pattern_syntax(Line, Pattern, Exprs, Monad) ->
+    String = ast_macro:from_abstract(Pattern),
     %% with a fail clause if the function does not match
     [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)},
-     {clause, Line, [{var, Line, '_'}], [],
-      [monad_call_expr(Line, Line, {atom, Line, monad_fail}, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
+     {clause, Line, [{var, Line, 'Var'}], [],
+      [monad_call_expr(Line, Line, {atom, Line, monad_fail}, 'fail',
+                       [{tuple, Line, [{atom, Line, 'monad_badmatch'},
+                                       {var, Line, 'Var'}, 
+                                       ast_quote:quote(Line), 
+                                       ast_quote:quote(String)]}])]}].
 
 monad_call_expr(Line, Line1, Monad, Function, Args) ->
     MonadModule =
