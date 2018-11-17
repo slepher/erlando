@@ -23,6 +23,7 @@
 -behaviour(functor).
 -behaviour(applicative).
 -behaviour(monad).
+-behaviour(monad_fail).
 -behaviour(monad_runner).
 
 -export_type([identity/1]).
@@ -32,10 +33,11 @@
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
+-export([fail/1]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad]}).
+-gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
 
 identity(A) ->
     {?MODULE, A}.
@@ -79,6 +81,9 @@ lift_a2(F, IA, IB) ->
 -spec return(A) -> identity(A).
 return(A) ->
     monad:default_return(A, ?MODULE).
+
+fail(M) ->
+    exit(M).
 
 run_nargs() ->
     0.
