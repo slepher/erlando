@@ -124,10 +124,8 @@ ap(AF, A, Applicative) ->
                      applicative:f(F, D) when F :: applicative:class(). 
 lift_a3(F, AA, AB, AC, Applicative) ->
     NF = 
-        fun(A) ->
-                fun(B) ->
-                        fun(C) -> F(A, B, C) end
-                end
+        fun(A, B) ->
+                fun(C) -> F(A, B, C) end
         end,
     '<*>'(lift_a2(NF, AA, AB, Applicative), AC, Applicative).
 

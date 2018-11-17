@@ -86,10 +86,8 @@ fmap(F, WTA, {?MODULE, IM}) ->
 -spec '<*>'(writer_t(W, M, fun((A) -> B)), writer_t(W, M, A)) -> writer_t(W, M, B).
 '<*>'(WTF, WTA, {?MODULE, IM}) ->
     AF = 
-        fun({F, W1}) ->
-                fun({A, W2}) ->
-                        {F(A), monoid:mappend(W1, W2)}
-                end
+        fun({F, W1}, {A, W2}) ->
+                {F(A), monoid:mappend(W1, W2)}
         end,
     writer_t(applicative:lift_a2(AF, run_writer_t(WTF), run_writer_t(WTA), IM)).
 

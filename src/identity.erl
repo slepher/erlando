@@ -82,8 +82,11 @@ lift_a2(F, IA, IB) ->
 return(A) ->
     monad:default_return(A, ?MODULE).
 
+-spec(fail(any()) -> no_return()).
 fail(M) ->
     exit(M).
+
+-spec(fail(any(), identity) -> no_return()).
 
 run_nargs() ->
     0.
