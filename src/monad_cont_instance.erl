@@ -45,7 +45,7 @@ lift_callCC(CallCC, F, {reader_t, _MonadCont}) ->
       fun(R) ->
               CallCC(
                 fun(CC) ->
-                        reader_t:run(fun(A) -> F(fun(_) -> CC(A) end) end, R)
+                        reader_t:run(reader_t:reader_t(fun(A) -> F(fun(_) -> CC(A) end) end), R)
                 end)
       end);
 lift_callCC(CallCC, F, {state_t, _MonadCont}) ->
