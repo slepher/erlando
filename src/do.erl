@@ -86,7 +86,7 @@ do_syntax([Expr | Exprs], Monad) ->
 pattern_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
     [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)}];
 pattern_syntax(Line, Pattern, Exprs, Monad) ->
-    String = ast_macro:from_abstract(Pattern),
+    String = ast_macro:to_string(Pattern),
     %% with a fail clause if the function does not match
     [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)},
      {clause, Line, [{var, Line, 'Var'}], [],
