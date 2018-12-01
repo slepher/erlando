@@ -43,7 +43,7 @@ walk(post, {call, Line, {atom, _Line1, do},
     {Node, MonadStack};
 
 %%  'return' and 'fail' syntax detection and transformation:
-walk(post, {call, Line, {atom, Line1, return}, [Arg]}, [Monad|_T] = MonadStack) ->
+walk(post, {call, Line, {atom, _Line1, return}, [Arg]}, [Monad|_T] = MonadStack) ->
     %% 'return' calls of a particular form:
     %% return(Argument), and
     %% Transformed to:
@@ -52,7 +52,7 @@ walk(post, {call, Line, {atom, Line1, return}, [Arg]}, [Monad|_T] = MonadStack) 
     {Node, MonadStack};
 
 %%  'return' and 'fail' syntax detection and transformation:
-walk(post, {call, Line, {atom, Line1, fail}, [Arg]}, [Monad|_T] = MonadStack) ->
+walk(post, {call, Line, {atom, _Line1, fail}, [Arg]}, [Monad|_T] = MonadStack) ->
     %% 'fail' calls of a particular form:
     %% fail(Argument)
     %% Transformed to:
