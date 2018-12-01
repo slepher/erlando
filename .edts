@@ -1,2 +1,2 @@
-:lib-dirs '("_build/default/lib")
+:lib-dirs '("_build/default/lib" "_checkouts")
 :app-include-dirs '("include")

@@ -17,6 +17,8 @@
 
 -module(do).
 
+-compile({parse_transform, ast_quote}).
+
 -export([parse_transform/2, format_error/1]).
 
 parse_transform(Forms, _Options) ->
@@ -33,21 +35,30 @@ walk(post, {call, Line, {atom, _Line1, do},
   when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% transform do block to monad:bind form and pop monad from monad stack when parse do block
     %% 'do' calls of a particular form:
-    {{call, Line,
-      {'fun', Line,
-       {clauses,
-        [{clause, Line, [], [], do_syntax(Qs, Monad)}]}}, []}, MonadStack};
+    Node = 
+        quote(
+            (fun() ->
+                     unquote_splicing(do_syntax(Qs, Monad))
+             end)(), Line),
+    {Node, MonadStack};
 
 %%  'return' and 'fail' syntax detection and transformation:
-walk(post, {call, Line, {atom, Line1, ReturnOrFail}, As0}, [Monad|_T] = MonadStack)
-  when ReturnOrFail =:= return orelse ReturnOrFail =:= fail ->
+walk(post, {call, Line, {atom, Line1, return}, [Arg]}, [Monad|_T] = MonadStack) ->
     %% 'return' calls of a particular form:
-    %%  return(Arguments), and
-    %% 'fail' calls of a particular form:
-    %%  fail(Arguments)
+    %% return(Argument), and
     %% Transformed to:
-    %% "monad:return(Monad, Args)" or "monad:fail(Monad, Args)" in monadic context
-    {monad_call_expr(Line, Line1, Monad, ReturnOrFail, As0), MonadStack};
+    %% "monad:return(Argument, Monad)" in monadic context
+    Node = quote(monad:return(unquote(Arg), unquote(Monad)), Line),
+    {Node, MonadStack};
+
+%%  'return' and 'fail' syntax detection and transformation:
+walk(post, {call, Line, {atom, Line1, fail}, [Arg]}, [Monad|_T] = MonadStack) ->
+    %% 'fail' calls of a particular form:
+    %% fail(Argument)
+    %% Transformed to:
+    %% 'monad_fail:fail(Argument, Monad)" in monadic context
+    Node = quote(monad_fail:fail(unquote(Arg), unquote(Monad)), Line),
+    {Node, MonadStack};
 
 walk(_Type, Form, MonadStack) ->
     {Form, MonadStack}.
@@ -63,8 +74,7 @@ do_syntax([{generate, Line,  Pattern, Expr} | Exprs], Monad) ->
     %% is transformed to
     %% "monad:'>>='(Monad, Expr, fun (Pattern) -> Tail')"
     %% without a fail to match clause
-    Args = [Expr, {'fun', Line, {clauses, pattern_syntax(Line, Pattern, Exprs, Monad)}}],
-    [monad_call_expr(Line, Line, Monad, '>>=', Args)];
+    [quote(monad:'>>='(unquote(Expr), unquote(bind_syntax(Line, Pattern, Exprs, Monad)), unquote(Monad)), Line)];
 do_syntax([Expr], _Monad) ->
     %% Don't do '>>' chaining on the last elem
     [Expr]; 
@@ -76,35 +86,27 @@ do_syntax([Expr | Exprs], Monad) ->
     %% "Expr, Tail" is transformed to "monad:'>>='(Monad, Expr, fun (_) -> Tail')"
     %% Line is always the 2nd element of Expr
     Line = element(2, Expr),
-    Args = [Expr,
-            {'fun', Line,
-             {clauses,
-              [{clause, Line,
-                [{var, Line, '_'}], [], do_syntax(Exprs, Monad)}]}}],
-    [monad_call_expr(Line, Line, Monad, '>>=', Args)].
+    [quote(monad:'>>='(unquote(Expr), fun(_) -> unquote_splicing(do_syntax(Exprs, Monad)) end, unquote(Monad)), Line)].
 
-pattern_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
-    [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)}];
-pattern_syntax(Line, Pattern, Exprs, Monad) ->
-    String = ast_macro:to_string(Pattern),
-    %% with a fail clause if the function does not match
-    [{clause, Line, [Pattern], [], do_syntax(Exprs, Monad)},
-     {clause, Line, [{var, Line, 'Var'}], [],
-      [monad_call_expr(Line, Line, {atom, Line, monad_fail}, 'fail',
-                       [{tuple, Line, [{atom, Line, 'monad_badmatch'},
-                                       {var, Line, 'Var'}, 
-                                       ast_quote:quote(Line), 
-                                       ast_quote:quote(String)]}])]}].
-
-monad_call_expr(Line, Line1, Monad, Function, Args) ->
-    MonadModule =
-        case Function of
-            fail ->
-                monad_fail;
-            _ ->
-                monad
-        end,
-    {call, Line, {remote, Line1, {atom, Line1, MonadModule}, {atom, Line1, Function}}, Args ++ [Monad]}.
+bind_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
+    quote(
+      fun(unquote_splicing, Pattern) ->
+              unquote_splicing(do_syntax(Exprs, Monad))
+      end, Line);
+bind_syntax(Line, Pattern, Exprs, Monad) ->
+    LineExpr = ast_quote:quote(Line, Line),
+    String = ast_quote:quote(ast_macro:to_string(Pattern), Line),
+    Clause1 = 
+        quote(
+          fun(unquote_splicing, Pattern) ->
+                  unquote_splicing(do_syntax(Exprs, Monad))
+          end, Line),
+    Clause2 = 
+        quote(
+          fun(Var) ->
+                  monad_fail:fail({monad_badmatch, Var, unquote(LineExpr), unquote(String)})
+          end, Line),
+    ast_quote:merge_clauses([Clause1, Clause2]).
 
 %% Use this function to report any parse_transform error. The
 %% resulting error message will be displayed as an ordinary
