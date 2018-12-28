@@ -78,8 +78,7 @@ do_syntax([{generate, Line,  Pattern, Expr} | Exprs], Monad) ->
 do_syntax([Expr], _Monad) ->
     %% Don't do '>>' chaining on the last elem
     [Expr]; 
-do_syntax([{match, _Line, _Pattern, _Expr} = Expr | Exprs],
-          Monad) ->
+do_syntax([{match, _Line, _Pattern, _Expr} = Expr | Exprs], Monad) ->
     %% Handles 'let binding' in do expression a-la Haskell
     [Expr|do_syntax(Exprs, Monad)];
 do_syntax([Expr | Exprs], Monad) ->
