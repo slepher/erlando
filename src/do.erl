@@ -90,12 +90,12 @@ do_syntax([Expr | Exprs], Monad) ->
 
 bind_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
     quote(
-      fun(unquote_splicing, Pattern) ->
+      fun(unquote = Pattern) ->
               unquote_splicing(do_syntax(Exprs, Monad))
       end, Line);
 bind_syntax(Line, Pattern, Exprs, Monad) ->
-    LineExpr = ast_quote:quote(Line, Line),
-    String = ast_quote:quote(ast_macro:to_string(Pattern), Line),
+    LineExpr = ast_quote:abstract(Line, Line),
+    String = ast_quote:abstract(ast_macro:to_string(Pattern), Line),
     Clause1 = 
         quote(
           fun(unquote_splicing, Pattern) ->
