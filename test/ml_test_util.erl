@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(ml_test_util).
 
--compile({parse_transform, do}).
+-include("do.hrl").
 
 %% API
 -export([left_identity/2, right_identity/1]).

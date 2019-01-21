@@ -1,0 +1,2 @@
+-include_lib("astranaut/include/macro.hrl").
+-use_macro({do_macro, do/1, [{import_as, do}]}).

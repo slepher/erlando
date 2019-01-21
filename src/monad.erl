@@ -32,7 +32,7 @@
 -callback '>>'(monad:m(M, _A), monad:m(M, B), M) -> monad:m(M, B) when M :: monad:class().
 -callback return(A, M) -> monad:m(M, A) when M :: monad:class(). 
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 
 -include("functor.hrl").

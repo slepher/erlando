@@ -10,7 +10,7 @@
 
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
--compile({parse_transform, do}).
+-include("do.hrl").
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("common_test/include/ct.hrl").

@@ -16,7 +16,7 @@
 %%
 
 -module(test_do).
--compile({parse_transform, do}).
+-include("do.hrl").
 
 -compile(export_all).
 

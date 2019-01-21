@@ -14,7 +14,7 @@
 -callback local(fun((R) -> R), monad:m(M, R), M) -> monad:m(M, R) when M :: monad:class().
 -callback reader(fun((_R) -> A), M) -> monad:m(M, A) when M :: monad:class().
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 
 -include("functor.hrl").

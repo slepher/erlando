@@ -32,7 +32,7 @@ To use any of these parse-transformers, you must add the necessary
 
     -module(test).
     -compile({parse_transform, cut}).
-    -compile({parse_transform, do}).
+    -include("do.hrl").
     -compile({parse_transform, import_as}).
     ...
 
@@ -743,7 +743,7 @@ as haskell, type could be defined in multi modules
 -type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/1, put/2]}).
 

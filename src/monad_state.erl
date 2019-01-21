@@ -14,7 +14,7 @@
 -callback put(_S, M)  -> monad:m(M, ok) when M :: monad:class().
 -callback state(fun((S) -> {A, S}), M) -> monad:m(M, A) when M :: monad:class().
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 

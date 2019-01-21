@@ -25,7 +25,7 @@
 -type list_instance() :: [any()].
 
 -compile({parse_transform, cut}).
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 
 -include("op.hrl").

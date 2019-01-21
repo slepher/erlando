@@ -16,7 +16,7 @@
 
 -module(test_cut).
 -compile({parse_transform, cut}).
--compile({parse_transform, do}).
+-include("do.hrl").
 
 -compile(export_all).
 

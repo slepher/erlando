@@ -15,7 +15,7 @@
 -callback listen(monad:m(M, A), M) -> monad:m(M, {A, [_W]}) when M :: monad:class().
 -callback pass(monad:m(M, {A, fun(([W]) -> [W])}), M) -> monad:m(M, A) when M :: monad:class().
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 
 -include("op.hrl").

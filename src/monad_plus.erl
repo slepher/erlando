@@ -17,7 +17,7 @@
 -callback mzero(M) -> monad:m(M, _A) when M :: monad:class().
 -callback mplus(monad:m(M, A), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, cut}).
 -compile({parse_transform, function_generator}).
 

@@ -23,7 +23,7 @@
 -type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/1, put/2]}).
 

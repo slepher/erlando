@@ -16,7 +16,7 @@
 -type inner_writer_t(W, M, A) :: monad:m(M, {A, monoid:m(W)}).
 -type t(M) :: {writer_t, M}.
 
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 
 -include("op.hrl").

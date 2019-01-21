@@ -17,7 +17,7 @@
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -compile({parse_transform, cut}).
--compile({parse_transform, do}).
+-include("do.hrl").
 -compile({parse_transform, function_generator}).
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 

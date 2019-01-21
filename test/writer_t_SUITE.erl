@@ -9,7 +9,7 @@
 -module(writer_t_SUITE).
 
 -compile(export_all).
--compile({parse_transform, do}).
+-include("do.hrl").
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("common_test/include/ct.hrl").

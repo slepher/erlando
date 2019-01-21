@@ -11,7 +11,7 @@
 -erlando_type([reader_t, writer_t, state_t, maybe_t, error_t]).
 
 -compile({parse_transform, cut}).
--compile({parse_transform, do}).
+-include("do.hrl").
 
 -behaviour(monad_cont).
 
