@@ -10,13 +10,13 @@
 
 -superclass([monad]).
 
--include("gen_fun.hrl").
+-callback fail(any(), M) -> monad:m(M, _A) when M :: monad:class().
 
+-include("gen_fun.hrl").
 -include("functor.hrl").
 -include("applicative.hrl").
 -include("monad.hrl").
 
--callback fail(any(), M) -> monad:m(M, _A) when M :: monad:class().
 
 %% API
 -export([fail/2]).

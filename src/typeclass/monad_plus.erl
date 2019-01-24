@@ -10,16 +10,16 @@
 
 -superclass([monad]).
 
--include("functor.hrl").
--include("applicative.hrl").
--include("monad.hrl").
-
 -callback mzero(M) -> monad:m(M, _A) when M :: monad:class().
 -callback mplus(monad:m(M, A), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 
 -include("do.hrl").
--compile({parse_transform, cut}).
 -include("gen_fun.hrl").
+-include("functor.hrl").
+-include("applicative.hrl").
+-include("monad.hrl").
+
+-compile({parse_transform, cut}).
 
 -export([mzero/1, mplus/3]).
 -export([guard/2, msum/2, mfilter/3]).
