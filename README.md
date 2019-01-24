@@ -744,7 +744,7 @@ as haskell, type could be defined in multi modules
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 -compile({no_auto_import, [get/1, put/2]}).
 
 -behaviour(functor).

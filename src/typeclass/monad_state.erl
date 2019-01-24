@@ -15,7 +15,7 @@
 -callback state(fun((S) -> {A, S}), M) -> monad:m(M, A) when M :: monad:class().
 
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("functor.hrl").

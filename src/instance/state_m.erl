@@ -14,7 +14,7 @@
 
 -type state_m(S, A) :: {state_t, fun((S) -> {identity, {S, A}})}.
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -define(STATE, {state_t, identity}).

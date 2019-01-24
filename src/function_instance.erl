@@ -15,7 +15,7 @@
 -export_type([function_instance/0]).
 -type function_instance() :: fun((_A) -> _B).
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 

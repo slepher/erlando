@@ -16,7 +16,7 @@
 -callback pass(monad:m(M, {A, fun(([W]) -> [W])}), M) -> monad:m(M, A) when M :: monad:class().
 
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 -include("functor.hrl").

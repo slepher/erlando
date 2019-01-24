@@ -17,7 +17,7 @@
 -type t(M) :: {writer_t, M}.
 
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 -include("erlando.hrl").

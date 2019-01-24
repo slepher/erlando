@@ -15,7 +15,7 @@
 -type either(L, R) :: {left, L} | {right, R}.
 
 -compile({parse_transform, cut}).
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -define(TYPE, ?MODULE).
 

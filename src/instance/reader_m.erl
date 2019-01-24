@@ -10,7 +10,7 @@
 
 -erlando_type({?MODULE, []}).
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -define(READER, {reader_t, identity}).
 

@@ -26,7 +26,7 @@
 
 -compile({parse_transform, cut}).
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 

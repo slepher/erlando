@@ -33,7 +33,7 @@
 -callback return(A, M) -> monad:m(M, A) when M :: monad:class(). 
 
 -include("do.hrl").
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("functor.hrl").
 -include("applicative.hrl").

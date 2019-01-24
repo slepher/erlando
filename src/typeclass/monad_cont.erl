@@ -12,7 +12,7 @@
 
 -callback callCC(fun((fun((A) -> monad:m(M, _B))) -> monad:m(M, A)), M) -> monad:m(M, A) when M :: monad:class().
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("functor.hrl").
 -include("applicative.hrl").

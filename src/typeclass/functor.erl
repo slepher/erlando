@@ -21,7 +21,7 @@
 -callback fmap(fun((A) -> B), functor:f(F, A), F) -> functor:f(F, B) when F :: functor:class().
 -callback '<$'(B, functor:f(F, _A), F) -> functor:f(F, B) when F :: functor:class().
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 

@@ -10,7 +10,7 @@
 
 -superclass([monad]).
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("functor.hrl").
 -include("applicative.hrl").

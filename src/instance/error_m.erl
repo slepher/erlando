@@ -27,7 +27,7 @@
 -type ok(A) :: ok | {ok, A}.
 -type error(E) :: {error, E}.
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).

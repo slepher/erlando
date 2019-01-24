@@ -19,7 +19,7 @@
 
 -include("do.hrl").
 -compile({parse_transform, cut}).
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -export([mzero/1, mplus/3]).
 -export([guard/2, msum/2, mfilter/3]).

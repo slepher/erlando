@@ -10,7 +10,7 @@
 
 -superclass([]).
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -export_type([m/1]).
 

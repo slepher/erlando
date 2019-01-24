@@ -15,7 +15,7 @@
                 applicative:applicative(F, A), F) -> applicative:applicative(F, A).
 
 -compile({parse_transform, cut}).
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 %% API
 -export([empty/1, '<|>'/3]).

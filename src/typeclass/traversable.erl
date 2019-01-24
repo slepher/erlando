@@ -20,7 +20,7 @@
 -callback map_m(fun((A) -> monad:m(M, B)), monad:m(M, A), T) -> monad:m(M, traversable:t(T, B)) when M :: monad:class(), T :: class().
 -callback sequence(traversable:t(T, monad:m(M, A)), T) -> monad:m(M, traversable:t(T, A)) when M :: monad:class(), T :: class().
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 %% API
 -export([sequence_a/2, traverse/3, sequence/2, map_m/3]).

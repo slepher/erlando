@@ -25,7 +25,7 @@
 -callback '*>'(applicative:f(F, _A), applicative:f(F, B), F) -> applicative:f(F, B) when F :: applicative:class(). 
 -callback '<*'(applicative:f(F, A), applicative:f(F, _B), F) -> applicative:f(F, A) when F :: applicative:class(). 
 
--compile({parse_transform, function_generator}).
+-include("gen_fun.hrl").
 
 -include("op.hrl").
 -include("functor.hrl").
