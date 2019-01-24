@@ -1,2 +1,3 @@
--transform(#{remote => functor, functions => [fmap/2, '<$'/2]}).
--transform(#{remote => functor, functions => [fmap/3, '<$'/3]}).
+-include("gen_fun.hrl").
+-gen_fun(#{remote => functor, functions => [fmap/2, '<$'/2]}).
+-gen_fun(#{remote => functor, functions => [fmap/3, '<$'/3]}).

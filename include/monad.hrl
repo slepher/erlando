@@ -1,2 +1,3 @@
--transform(#{remote => monad, functions => ['>>='/2, '>>'/2, return/1]}).
--transform(#{remote => monad, functions => ['>>='/3, '>>'/3, return/2]}).
+-include("gen_fun.hrl").
+-gen_fun(#{remote => monad, functions => ['>>='/2, '>>'/2, return/1]}).
+-gen_fun(#{remote => monad, functions => ['>>='/3, '>>'/3, return/2]}).
