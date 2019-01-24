@@ -15,7 +15,7 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    ast_traverse:map(fun walk/2, Forms).
+    astranaut_traverse:map(fun walk/2, Forms, #{traverse => pre}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -26,7 +26,7 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-walk(pre, {cons, Line, _H0, T0} = Cons) ->
+walk({cons, Line, _H0, T0} = Cons, _Attrs) ->
     case find_cons_cut_vars([Cons], T0) of
         {[], _H1T1} ->
             Cons;
@@ -34,7 +34,7 @@ walk(pre, {cons, Line, _H0, T0} = Cons) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [NCons]}]}}
     end;
-walk(pre, {lc, Line, E0, Qs0} = Lc) ->
+walk({lc, Line, E0, Qs0} = Lc, _Attrs) ->
     %% Note that it is nonsensical to allow a cut on E0, as in all
     %% useful cases, it is defined by some expression of Qs0. Cuts are
     %% allowed only on generators of Qs0.
@@ -46,7 +46,7 @@ walk(pre, {lc, Line, E0, Qs0} = Lc) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{lc, Line, E0, Qs1}]}]}}
     end;
-walk(pre, {bc, Line, E0, Qs0} = Bc) ->
+walk({bc, Line, E0, Qs0} = Bc, _Attrs) ->
     %% Notes for {lc,...} above apply here too.
     Qs = find_comprehension_cut_vars(Qs0),
     case Qs of
@@ -56,7 +56,7 @@ walk(pre, {bc, Line, E0, Qs0} = Bc) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{bc, Line, E0, Qs1}]}]}}
     end;
-walk(pre, {tuple, Line, Es0} = Tuple) ->
+walk({tuple, Line, Es0} = Tuple, _Attrs) ->
     case find_cut_vars(Es0) of
         {[],     _Es1} ->
             Tuple;
@@ -65,7 +65,7 @@ walk(pre, {tuple, Line, Es0} = Tuple) ->
                                       [{tuple, Line, Es1}]}]}}
     end;
 %% OTP 17.0: EEP 443: Map construction
-walk(pre, {map, Line, Fields0} = Map) ->
+walk({map, Line, Fields0} = Map, _Attrs) ->
     case find_map_cut_vars(Fields0) of
         {[],     _Fields1} ->
             Map;
@@ -73,7 +73,7 @@ walk(pre, {map, Line, Fields0} = Map) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{map, Line, Fields1}]}]}}
     end;
-walk(pre, {record, Line, Name, Inits0} = Record) ->
+walk({record, Line, Name, Inits0} = Record, _Attrs) ->
     case find_record_cut_vars(Inits0) of
         {[],     _Inits0} ->
             Record;
@@ -81,7 +81,7 @@ walk(pre, {record, Line, Name, Inits0} = Record) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{record, Line, Name, Inits1}]}]}}
     end;
-walk(pre, {record_field, Line, Rec0, Name, Field0} = Record) ->
+walk({record_field, Line, Rec0, Name, Field0} = Record, _Attrs) ->
     case find_cut_vars([Rec0]) of
         {[], _Rec1} ->
             Record;
@@ -90,7 +90,7 @@ walk(pre, {record_field, Line, Rec0, Name, Field0} = Record) ->
                            [{clause, Line, Pattern, [],
                              [{record_field, Line, Rec1, Name, Field0}]}]}}
     end;
-walk(pre, {record, Line, Rec0, Name, Upds0} = Record) ->
+walk({record, Line, Rec0, Name, Upds0} = Record, _Attrs) ->
     Rec = find_cut_vars([Rec0]),
     Upds = find_record_cut_vars(Upds0),
     case {Rec, Upds} of
@@ -100,7 +100,7 @@ walk(pre, {record, Line, Rec0, Name, Upds0} = Record) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern1++Pattern2, [],
                                       [{record, Line, Rec1, Name, Upds1}]}]}}
     end;
-walk(pre, {'case', Line, E0, Cs0} = Case) ->
+walk({'case', Line, E0, Cs0} = Case, _Attrs) ->
     case find_cut_vars([E0]) of
         {[], _E2} ->
             Case;
@@ -108,7 +108,7 @@ walk(pre, {'case', Line, E0, Cs0} = Case) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{'case', Line, E1, Cs0}]}]}}
     end;
-walk(pre, {call, Line, F0, As0} = Call) ->
+walk({call, Line, F0, As0} = Call, _Attrs) ->
     %% N.B. If F an atom then call to local function or BIF, if F a
     %% remote structure (see below) then call to other module,
     %% otherwise apply to "function".
@@ -125,7 +125,7 @@ walk(pre, {call, Line, F0, As0} = Call) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern1++Pattern2, [],
                                       [{call, Line, F1, As1}]}]}}
     end;
-walk(pre, {bin, Line, Fs0} = Bin) ->
+walk({bin, Line, Fs0} = Bin, _Attrs) ->
     case find_binary_cut_vars(Fs0) of
         {[], _Fs1} ->
             Bin;
@@ -133,7 +133,7 @@ walk(pre, {bin, Line, Fs0} = Bin) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{bin, Line, Fs1}]}]}}
     end;
-walk(pre, {op, Line, Op, L0, R0} = Op) ->
+walk({op, Line, Op, L0, R0} = Op, _Attrs) ->
     case find_cut_vars([L0, R0]) of
         {[], _L1R1} ->
             Op;
@@ -141,7 +141,7 @@ walk(pre, {op, Line, Op, L0, R0} = Op) ->
             {'fun', Line, {clauses, [{clause, Line, Pattern, [],
                                       [{op, Line, Op, L1, R1}]}]}}
     end;
-walk(_Type, Node) ->
+walk(Node, _Attrs) ->
     Node.
 
 %% Turns out you can't abstract out binary types:

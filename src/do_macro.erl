@@ -107,7 +107,7 @@ bind_expression(Line, {var, _Line, _Var} = Pattern, Exprs, Monad) ->
       end, Line);
 bind_expression(Line, Pattern, Exprs, Monad) ->
     LineExpr = astranaut:abstract(Line, Line),
-    String = astranaut:abstract(ast_macro:to_string(Pattern), Line),
+    String = astranaut:abstract(astranaut:to_string(Pattern), Line),
     quote(
       fun(unquote = Pattern) ->
               unquote_splicing(do_comprehensions(Exprs, Monad));

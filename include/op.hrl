@@ -1,4 +1,4 @@
--compile({parse_transform, userdef_operator}).
+-compile({parse_transform, overload_op}).
 -overloads([{functor, ['<$>', '<$']}, {applicative, ['<*>', '*>', '<*']}]).
 -overloads([{monad, ['>>=', '>>']}, {alternative, ['<|>']}]).
 -overloads([{function_instance, ['.']}]).
