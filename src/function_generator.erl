@@ -14,8 +14,8 @@
 %%% API
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
-    Opts =  [{attrs, [erlando_type]}, {as_attr, gen_fun}, {auto_export, true}, {merge_function, head}],
-    astranaut_macro:expand_macro(gen_fun_macro, gen_fun, 2, Opts, Forms).
+    Opts =  [{attrs, [erlando_type]}, {as_attr, gen_fun}, auto_export, {merge_function, head}],
+    astranaut_macro:transform_macro(gen_fun_macro, gen_fun, 2, Opts, Forms).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
