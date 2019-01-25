@@ -22,4 +22,4 @@
 -export([parse_transform/2]).
 
 parse_transform(Forms, _Options) ->
-    astranaut_macro:expand_macro(do_macro, do, 1, [{import_as, do}], Forms).
+    astranaut_macro:expand_macro(do_macro, do, 1, [{alias, do}, formatter], Forms).

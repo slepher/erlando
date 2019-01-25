@@ -38,7 +38,10 @@ do(_Ast) ->
 format_error(non_empty_do) ->
     "A 'do' construct cannot be empty";
 format_error(non_last_expression) ->
-    "The last statement in a 'do' construct must be an expression".
+    "The last statement in a 'do' construct must be an expression";
+format_error(Reason) ->
+    astranaut_traverse:format_error(Reason).
+
 
 %%--------------------------------------------------------------------
 %% @doc
