@@ -1,6 +1,6 @@
 {application, erlando, [
   {description, "Syntax extensions for Erlang"},
-  {vsn, "2.2.2"},
+  {vsn, "2.2.3"},
   {modules, []},
   {registered, []},
   {applications, [kernel, stdlib, sasl, syntax_tools, astranaut]},
