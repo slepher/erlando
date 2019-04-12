@@ -23,9 +23,14 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_state).
+-behaviour(monad_fail).
 
 -gen_fun(#{remote => state_t, inner_type => identity,
-             behaviours => [functor, applicative, monad, monad_state]}).
+           behaviours => [functor, applicative, monad, monad_state]}).
+
+-gen_fun(#{remote => monad_fail_instance, inner_type => identity,
+           behaviours => [monad_fail]}).
+
 -gen_fun(#{remote => state_t, args => identity, extra_call => {identity, run}, 
              functions => [eval/2, exec/2, run/2]}).
 
