@@ -58,7 +58,7 @@ map_m(A_MB, UA, UTraversable) ->
 sequence(UMA, UTraversable) ->
     undetermined:map(
       fun(Traversable, TMA) ->
-              typeclass_trans:apply(sequence_a, [TMA], Traversable, ?MODULE)
+              typeclass_trans:apply(sequence, [TMA], Traversable, ?MODULE)
       end, UMA, UTraversable).
 
 default_traverse(AF_B, TA, Traversable) ->
