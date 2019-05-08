@@ -32,7 +32,7 @@
            behaviours => [monad_fail]}).
 
 -gen_fun(#{remote => state_t, args => identity, extra_call => {identity, run}, 
-             functions => [eval/2, exec/2, run/2]}).
+           functions => [eval/2, exec/2, run/2]}).
 
 %%%===================================================================
 %%% API

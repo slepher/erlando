@@ -1,0 +1,5 @@
+-include_lib("astranaut/include/macro.hrl").
+-ifndef(ERLANDO_CUT).
+-define(ERLANDO_CUT, true).
+-compile({parse_transform, cut}).
+-endif.

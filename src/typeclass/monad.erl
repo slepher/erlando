@@ -115,4 +115,10 @@ run(M, Monad) ->
 %%% Internal functions
 %%%===================================================================
 'do_>>='(MA, KMB, Monad) ->
-    typeclass_trans:apply('>>=', [MA, KMB], Monad, ?MODULE).
+    MC = monad:return(ok, Monad),
+    case typeclass:type(MA) == typeclass:type(MC) of
+        true ->
+            typeclass_trans:apply('>>=', [MA, KMB], Monad, ?MODULE);
+        false ->
+            exit({type_not_match, Monad, MA})
+    end.
