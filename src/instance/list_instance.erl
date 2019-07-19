@@ -124,11 +124,11 @@ traverse(_A_FB, []) ->
 sequence_a(TFA) ->
     traversable:default_sequence_a(TFA, ?TYPE).
 
-map_m(A_MB, [MH|TM]) ->
+map_m(A_MB, [HA|TA]) ->
     do([monad ||
-           H <- MH,
-           T <- map_m(A_MB, TM),
-           return([H|T])
+           HB <- A_MB(HA),
+           TB <- map_m(A_MB, TA),
+           return([HB|TB])
        ]);
 map_m(_A_MB, []) ->
     monad:return([]).

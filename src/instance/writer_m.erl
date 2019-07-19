@@ -19,7 +19,7 @@
 -behaviour(monad_fail).
 
 -gen_fun(#{remote => writer_t, inner_type => identity,
-             behaviours => [functor, applicative, monad, monad_writer]}).
+           behaviours => [functor, applicative, monad, monad_writer]}).
 
 -gen_fun(#{remote => monad_fail_instance, inner_type => identity,
            behaviours => [monad_fail]}).
