@@ -1,3 +1,4 @@
+
 %%%-------------------------------------------------------------------
 %%% @author Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2017, Chen Slepher
@@ -27,6 +28,7 @@
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_fail).
+-behaviour(monad_error).
 -behaviour(alternative).
 -behaviour(monad_plus).
 -behaviour(monad_runner).
@@ -45,6 +47,7 @@
 -export([lift/2]).
 % impl of monad_fail.
 -export([fail/2]).
+-export([throw_error/2, catch_error/3]).
 -export([empty/1, '<|>'/3]).
 -export([mzero/1, mplus/3]).
 % impl of monad_runner.
@@ -54,7 +57,7 @@
 
 -gen_fun(#{inner_type => functior,   behaviours => [functor]}).
 -gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
+-gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail, monad_error]}).
 -gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
 -gen_fun(#{args => monad,            functions => [map/2, with/2]}).
 -gen_fun(#{args => monad,            functions => [run/1]}).
@@ -126,11 +129,12 @@ pure(A, {?MODULE, _IM} = ET) ->
 -spec '>>='(error_t(E, M, A), fun( (A) -> error_t(E, M, B) )) -> error_t(E, M, B).
 '>>='(ETA, KETB, {?MODULE, IM}) ->
     error_t(
-      do([IM || EA <- run_error_t(ETA),
-              case EA of
-                  {left, _Err}    -> return(EA);
-                  {right,  A}         -> run_error_t(KETB(A))
-              end
+      do([IM ||
+             EA <- run_error_t(ETA),
+             case EA of
+                 {left, _Err}    -> return(EA);
+                 {right,  A}     -> run_error_t(KETB(A))
+             end
        ])).
 
 -spec '>>'(error_t(E, M, _A), error_t(E, M, B)) -> error_t(E, M, B).
@@ -146,6 +150,19 @@ lift(MA, {?MODULE, IM}) ->
 
 fail(E, {?MODULE, IM}) ->
     error_t(monad:return(either:fail(E), IM)).
+
+throw_error(E, {?MODULE, IM}) ->
+    fail(E, {?MODULE, IM}).
+
+catch_error(ETA, EMB, {?MODULE, IM}) ->
+    error_t(
+      do([IM || 
+             EA <- run_error_t(ETA),
+             case EA of
+                 {left, Reason}    -> run_error_t(try_emb(Reason, EMB, IM));
+                 {right, _A}       -> return(EA)
+             end
+       ])).
 
 empty({?MODULE, _IM} = ET) ->
     mzero(ET).
@@ -189,3 +206,11 @@ with(F, X, {?MODULE, _IM}) ->
       fun(MA) ->
               fun({left, R}) -> {left, F(R)}; (Val) -> Val end /'<$>'/ MA
       end, X).
+
+try_emb(Reason, EMB, IM) ->
+    try
+        EMB(Reason)
+    catch
+        error:function_clause ->
+            throw_error(Reason, {?MODULE, IM})
+    end.

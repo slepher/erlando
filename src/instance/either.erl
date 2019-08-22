@@ -23,6 +23,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_fail).
+-behaviour(monad_error).
 -behaviour(monad_runner).
 
 -include("erlando.hrl").
@@ -32,12 +33,13 @@
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
+-export([throw_error/1, catch_error/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 -export([left/1, right/1]).
 -export([either/2, swap/0]).
 
--gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail, monad_error]}).
 
 %%%===================================================================
 %%% API
@@ -82,6 +84,19 @@ return(A) ->
 
 fail(E) ->
     {left, E}.
+
+throw_error(E) ->
+    fail(E).
+
+catch_error({left, L}, EMB) ->
+    try
+        undetermined:run(EMB(L), either)
+    catch
+        error:function_clause ->
+            {left, L}
+    end;
+catch_error({right, R}, _EMB) ->
+    {right, R}.
 
 run_nargs() ->
     0.

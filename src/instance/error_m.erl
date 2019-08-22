@@ -34,6 +34,7 @@
 -behaviour(monad).
 -behaviour(monad_fail).
 -behaviour(monad_runner).
+-behaviour(monad_error).
 
 -include("erlando.hrl").
 
@@ -41,10 +42,11 @@
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export(['>>='/2, '>>'/2, return/1]).
 -export([fail/1]).
+-export([throw_error/1, catch_error/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
 
--gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
+-gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail, monad_error]}).
 
 -spec fmap(fun((A) -> B), error_m(E, A)) -> error_m(E, B).
 fmap(F, EA) ->
@@ -103,6 +105,21 @@ return(A) ->
 -spec fail(E) -> error_m(E, _A).
 fail(E) ->
     {error, E}.
+
+throw_error(E) ->
+    fail(E).
+
+catch_error(ok, _KEB) ->
+    ok;
+catch_error({ok, A}, _KEB) ->
+    {ok, A};
+catch_error({error, Reason}, KEB) ->
+    try
+        undetermined:run(KEB(Reason), error_m)
+    catch
+        error:function_clause ->
+            {error, Reason}
+    end.
 
 run_nargs() ->
     0.

@@ -17,7 +17,6 @@
 -include("applicative.hrl").
 -include("monad.hrl").
 
-
 %% API
 -export([fail/2]).
 
