@@ -133,6 +133,7 @@ all() ->
      test_either_throw_error, test_either_catch_error,
      test_error_t_throw_error, test_error_t_catch_error,
      test_reader_t_throw_error, test_reader_t_catch_error,
+     test_reader_t_trans_error, test_reader_t_lift_error,
      test_writer_t_throw_error, test_writer_t_catch_error, test_writer_t_catch_error_2,
      test_state_t_throw_error,  test_state_t_catch_error
     ].
@@ -194,6 +195,14 @@ test_reader_t_catch_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
     test_catch_error(F).
 
+test_reader_t_trans_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    test_trans_error(F).
+
+test_reader_t_lift_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    test_lift_error(F).
+
 test_writer_t_throw_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(writer_t:eval(E)), L end,
     throw_error(F).
@@ -223,6 +232,24 @@ test_state_t_catch_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
     test_catch_error(F).
 
+test_trans_error(F) ->
+    M = monad_error:throw_error(error),
+    M1 = monad_error:trans_error(M, fun(error) -> error1 end),
+    M2 = monad_error:trans_error(M, fun(error1) -> error2 end),
+    Result1 = error1,
+    ?assertEqual(Result1, F(M1)),
+    Result2 = error,
+    ?assertEqual(Result2, F(M2)).
+
+test_lift_error(F) ->
+    M1 = monad_error:lift_error({error, 30}),
+    M2 = do([monad ||
+                Val <- monad_error:catch_error(M1, fun(E) -> monad:return(E + 20) end),
+                monad_error:lift_error({error, Val * 2})
+            ]),
+    Result = 100,
+    ?assertEqual(Result, F(M2)).
+
 throw_error(F) ->
     M = monad_error:throw_error(error),
     Result = error,
@@ -236,5 +263,3 @@ test_catch_error(F) ->
     ?assertEqual(Result1, F(M1)),
     Result2 = error,
     ?assertEqual(Result2, F(M2)).
-                              
-                   

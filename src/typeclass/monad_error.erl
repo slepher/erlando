@@ -18,10 +18,10 @@
 
 %% API
 -export([throw_error/2, catch_error/3]).
--export([lift_error/2]).
+-export([lift_error/2, trans_error/3]).
 
 -gen_fun(#{args => [?MODULE], functions => [throw_error/1, catch_error/2]}).
--gen_fun(#{args => [?MODULE], functions => [lift_error/1]}).
+-gen_fun(#{args => [?MODULE], functions => [lift_error/1, trans_error/2]}).
 
 %%%===================================================================
 %%% API
@@ -42,11 +42,16 @@ catch_error(UA, EUA, UMonadError) ->
 
 lift_error(Error, MonadError) ->
     case Error of
+        ok ->
+            monad:return(ok, MonadError);
         {ok, Val} ->
             monad:return(Val, MonadError);
         {error, Reason} ->
             throw_error(Reason, MonadError)
     end.
+
+trans_error(MEA, KE, MonadError) ->
+    catch_error(MEA, fun(E1) -> throw_error(KE(E1), MonadError) end, MonadError).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
