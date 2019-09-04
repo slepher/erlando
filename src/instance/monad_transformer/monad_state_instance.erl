@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(monad_state_instance).
 
--erlando_type([reader_t, writer_t, cont_t, maybe_t, error_t]).
+-erlando_type([reader_t, writer_t, cont_t, maybe_t, error_t, list_t]).
 
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 

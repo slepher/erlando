@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(monad_reader_instance).
 
--erlando_type([state_t, cont_t, maybe_t, error_t]).
+-erlando_type([state_t, cont_t, maybe_t, error_t, list_t]).
 
 -compile({parse_transform, cut}).
 -include("do.hrl").

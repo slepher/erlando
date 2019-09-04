@@ -51,7 +51,7 @@
 -export([map/3]).
 -export([run/2]).
 
--gen_fun(#{inner_type => functior,   behaviours => [functor]}).
+-gen_fun(#{inner_type => functor,    behaviours => [functor]}).
 -gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
 -gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
 -gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).

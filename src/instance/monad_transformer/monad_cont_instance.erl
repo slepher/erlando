@@ -8,9 +8,10 @@
 %%%-------------------------------------------------------------------
 -module(monad_cont_instance).
 
--erlando_type([reader_t, writer_t, state_t, maybe_t, error_t]).
+-erlando_type([reader_t, writer_t, state_t, maybe_t, error_t, list_t]).
 
 -compile({parse_transform, cut}).
+
 -include("do.hrl").
 
 -behaviour(monad_cont).
@@ -56,8 +57,16 @@ lift_callCC(CallCC, F, {state_t, _MonadCont}) ->
                         state_t:run(F(fun(A) -> state_t:state_t(fun(_)  -> CC({A, S}) end) end), S)
                 end)
       end);
-lift_callCC(CallCC, F, MonadTrans) when is_atom(MonadTrans) ->
-    lift_callCC(CallCC, F, {MonadTrans, monad_cont}).
+lift_callCC(CallCC, F, {list_t, MonadCont}) ->
+    list_t:list_t(
+      CallCC(
+        fun(CC) ->
+                list_t:run_list_t(
+                  F(
+                    fun(A) ->
+                            list_t:list_t(CC({cons, A, monad:return(nil, MonadCont)}))
+                    end))
+        end, MonadCont)).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

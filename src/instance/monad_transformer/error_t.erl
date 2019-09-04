@@ -55,12 +55,12 @@
 -export([map/3, with/3]).
 -export([run/2]).
 
--gen_fun(#{inner_type => functior,   behaviours => [functor]}).
+-gen_fun(#{inner_type => functor,    behaviours => [functor]}).
 -gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
 -gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail, monad_error]}).
 -gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
--gen_fun(#{args => monad,            functions => [map/2, with/2]}).
--gen_fun(#{args => monad,            functions => [run/1]}).
+-gen_fun(#{args => monad,            functions  => [map/2, with/2]}).
+-gen_fun(#{args => monad,            functions  => [run/1]}).
 
 -spec new(M) -> t(M) when M :: monad:class().
 new(M) ->
