@@ -49,7 +49,7 @@
 -gen_fun(#{args => [?MODULE], functions => [bind/2, then/2, join/1, lift_m/2]}).
 
 -spec '>>='(monad:m(M, A), fun((A) -> monad:m(M, B)), M) -> monad:m(M, B) when M :: monad:class().
-'>>='(UA, KUB, UMonad) ->
+'>>='(UA, KUB, UMonad) when is_function(KUB, 1) ->
     undetermined:map(
       fun(Monad, MA) ->
               KMB = fun(A) -> undetermined:run(KUB(A), Monad) end,
