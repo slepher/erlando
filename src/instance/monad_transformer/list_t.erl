@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author Chen Slepher <slepheric@gmail.com>
+%%% @Authorx Chen Slepher <slepheric@gmail.com>
 %%% @copyright (C) 2019, Chen Slepher
 %%% @doc
 %%%
@@ -8,12 +8,13 @@
 %%%-------------------------------------------------------------------
 -module(list_t).
 
--erlando_type({?MODULE, [list_t/3]}).
+-erlando_type({?MODULE, [list_t/2]}).
 
--type list_t(S, M, A) :: {list_t, monad:m(M, inner_t(S, M, A))}.
--type inner_t(S, M, A) :: {cons, A, monad:m(list_t(S, M, A))} | nil.
+-export_type([list_t/2]).
 
--compile({no_auto_import, [get/1, put/2]}).
+-type list_t(M, A) :: {list_t, mlist(M, A)}.
+-type mlist(M, A) :: monad:m(M, list(M, A)).
+-type list(M, A) :: {cons, A, mlist(M, A)} | nil.
 
 -include("do.hrl").
 -include("gen_fun.hrl").
@@ -36,7 +37,7 @@
 -export([lift/2]).
 -export([mzero/1, mplus/3]).
 -export([throw_error/2, catch_error/3]).
--export([map/3, lift_list/2]).
+-export([map/3, lift_list/2, run/2]).
 
 -gen_fun(#{inner_type => functor,      behaviours => [functor]}).
 -gen_fun(#{inner_type => applicative,  behaviours => [applicative]}).
@@ -45,6 +46,7 @@
 -gen_fun(#{inner_type => monad_error,  behaviours => [monad_error]}).
 -gen_fun(#{args => monad,              functions  => [map/2]}).
 -gen_fun(#{args => monad,              functions  => [lift_list/1]}).
+-gen_fun(#{args => functor,            functions  => [run/1]}).
 
 %%%===================================================================
 %%% API
@@ -54,9 +56,11 @@
 new(Inner) ->
     {?MODULE, Inner}.
 
+-spec list_t(mlist(M, A)) -> list_t(M, A).
 list_t(Inner) ->
     {?MODULE, Inner}.
 
+-spec run_list_t(list_t(M, A)) -> mlist(M, A).
 run_list_t({?MODULE, MListTA}) -> 
     MListTA;
 run_list_t(#undetermined{} = U) ->
@@ -64,73 +68,95 @@ run_list_t(#undetermined{} = U) ->
 run_list_t(Other) ->
     exit({invalid_monad, Other}).
 
-fmap(F, LTA, {?MODULE, IM}) ->
-    MConsA = run_list_t(LTA),
-    list_t(
-      functor:fmap(
-        fun(ConsA) ->
-                fmap_cons(F, ConsA, {?MODULE, IM})
-        end, MConsA, IM)).
+-spec fmap(fun((A) -> B), list_t(M, A), functor:class()) -> list_t(M, B).
+fmap(F, ListTA, {?MODULE, _Functor} = ListT) ->
+    map(fun(MListA) -> fmap_mlist(F, MListA, ListT) end, ListTA, ListT).
 
-'<$'(B, FA, {?MODULE, _IM} = MT) ->
-    functor:'default_<$'(B, FA, MT).
+-spec '<$'(B, list_t(M, _A)) -> list_t(M, B).
+'<$'(B, ListTA, {?MODULE, _Functor} = ListT) ->
+    functor:'default_<$'(B, ListTA, ListT).
 
-pure(A, {?MODULE, IM}) ->
-    list_t(applicative:pure({cons, A, applicative:pure(nil, IM)}, IM)).
+-spec pure(A, applicative:class()) -> list_t(_M, A).
+pure(A, {?MODULE, Applicative}) ->
+    list_t(applicative:pure(cons(A, applicative:pure(nil, Applicative)), Applicative)).
 
-'<*>'(LTF, LTA, {?MODULE, IM}) ->
-    list_t(ap_mcons(run_list_t(LTF), run_list_t(LTA), {?MODULE, IM})).
+-spec '<*>'(list_t(M, fun((A) -> B)), list_t(M, A), applicative:class()) -> list_t(M, B).
+'<*>'(ListTF, ListTA, {?MODULE, _Applicative} = ListT) ->
+    list_t(ap_mlist(run_list_t(ListTF), run_list_t(ListTA), ListT)).
 
-lift_a2(F, LTA, LTB, {?MODULE, IM}) ->
-    applicative:default_lift_a2(F, LTA, LTB, {?MODULE, IM}).
+-spec lift_a2(fun((A, B) -> C), list_t(M, A), list_t(M, B), applicative:class()) -> list_t(M, C).
+lift_a2(F, ListTA, ListTB, {?MODULE, _Applicative} = ListT) ->
+    applicative:default_lift_a2(F, ListTA, ListTB, ListT).
 
-'*>'(LTA, LTB, {?MODULE, IM}) ->
-    applicative:'default_*>'(LTA, LTB, {?MODULE, IM}).
+-spec '*>'(list_t(M, _A), list_t(M, B), applicative:class()) -> list_t(M, B).
+'*>'(LTA, LTB, {?MODULE, _Applicative} = ListT) ->
+    applicative:'default_*>'(LTA, LTB, ListT).
 
-'<*'(LTA, LTB, {?MODULE, IM}) ->
-    applicative:'default_<*'(LTA, LTB, {?MODULE, IM}).
+-spec '<*'(list_t(M, A), list_t(M, _B), applicative:class()) -> list_t(M, A).
+'<*'(LTA, LTB, {?MODULE, _Applicative} = ListT) ->
+    applicative:'default_<*'(LTA, LTB, ListT).
 
-'>>='(LTA, KLTB, {?MODULE, IM}) ->
-    join(fmap(KLTB, LTA, {?MODULE, IM}), {?MODULE, IM}).
+-spec '>>='(list_t(M, A), fun((A) -> list_t(M, B)), monad:class()) -> list_t(M, B).
+'>>='(ListTA, KListTB, {?MODULE, _Monad} = ListT) ->
+    join(fmap(KListTB, ListTA, ListT), ListT).
 
-return(A, {?MODULE, IM}) ->
-    monad:default_return(A, {?MODULE, IM}).
+-spec return(A, monad:class()) -> list_t(_M, A).
+return(A, {?MODULE, _Monad} = ListT) ->
+    monad:default_return(A, ListT).
 
-fail(E, {?MODULE, MonadFail}) ->
-    lift(monad_fail:fail(E, MonadFail), {?MODULE, MonadFail}).
+-spec fail(_E, monad:class()) -> list_t(_M, _A).
+fail(E, {?MODULE, MonadFail} = ListT) ->
+    lift(monad_fail:fail(E, MonadFail), ListT).
 
-lift(MA, {?MODULE, IM}) ->
-    list_t(functor:fmap(fun(A) -> {cons, A, monad:return(nil, IM)} end, MA, IM)).
+-spec lift(monad:m(M, A), monad:class()) -> list_t(M, A).
+lift(MA, {?MODULE, Monad}) ->
+    list_t(functor:fmap(fun(A) -> cons(A, monad:return(nil(), Monad)) end, MA, Monad)).
 
-mzero({?MODULE, IM}) ->
-    lift_list([], {?MODULE, IM}).
+-spec mzero(monad:class()) -> list_t(_M, _A).
+mzero({?MODULE, _Monad} = ListT) ->
+    lift_list([], ListT).
 
-mplus(ListTA, ListTB, {?MODULE, IM}) ->
-    list_t(mappend_mcons(run_list_t(ListTA), run_list_t(ListTB), {?MODULE, IM})).
+-spec mplus(list_t(M, A), list_t(M, A), monad:class()) -> list_t(M, A).
+mplus(ListTA, ListTB, {?MODULE, _Monad} = ListT) ->
+    list_t(mappend_mlist(run_list_t(ListTA), run_list_t(ListTB), ListT)).
 
+-spec throw_error(_E, monad:class()) -> list_t(_M, _A).
 throw_error(E, {?MODULE, MonadError}) ->
     lift(monad_error:throw_error(E, MonadError), {?MODULE, MonadError}).
 
-catch_error(LTA, ELTB, {?MODULE, MonadError}) ->
-    EMConsB = fun(E) -> run_list_t(ELTB(E)) end,
-    list_t(catch_error_mcons(run_list_t(LTA), EMConsB, {?MODULE, MonadError})).
+-spec catch_error(list_t(M, A), fun((_E) -> list_t(M, A)), monad:class()) -> list_t(M, A).
+catch_error(ListTA, EListTB, {?MODULE, _MonadError} = ListT) ->
+    MListA = run_list_t(ListTA),
+    EMListB = fun(E) -> run_list_t(EListTB(E)) end,
+    list_t(catch_error_mlist(MListA, EMListB, ListT)).
 
-map(F, LTA, {?MODULE, _IM}) ->
+-spec map(fun((mlist(M, A)) -> mlist(M, B)), list_t(M, A), monad:class()) -> list_t(M, B).
+map(F, LTA, {?MODULE, _Any}) ->
     list_t(F(run_list_t(LTA))).
 
-join(ListTListTA, {?MODULE, IM}) ->
-    MConsListTA = run_list_t(ListTListTA),
-    MConsMCons = 
-        functor:fmap(
-          fun(ConsListTA) -> 
-                  fmap_cons(fun run_list_t/1, ConsListTA, {?MODULE, IM})
-          end, MConsListTA),
-    list_t(join_mcons(MConsMCons, {?MODULE, IM})).
+-spec join(list_t(M, list_t(M, A)), monad:class()) -> list_t(M, A).
+join(ListTListTA, {?MODULE, _Monad} = ListT) ->
+    map(
+      fun(MListListTA) -> 
+              MListMListA = fmap_mlist(fun run_list_t/1, MListListTA, ListT),
+              join_mlist(MListMListA, ListT)
+      end, ListTListTA).
 
-lift_list([], {?MODULE, IM}) ->
-    list_t(monad:return(nil, IM));
-lift_list([H|T], {?MODULE, IM}) ->
-    list_t(monad:return({cons, H, run_list_t(lift_list(T, {?MODULE, IM}))}, IM)).
+-spec lift_list([A], monad:class()) -> list_t(_M, A).
+lift_list([], {?MODULE, Monad}) ->
+    list_t(monad:return(nil(), Monad));
+lift_list([H|T], {?MODULE, Monad} = ListT) ->
+    ListA = cons(H, run_list_t(lift_list(T, ListT))),
+    list_t(monad:return(ListA, Monad)).
+
+-spec run(list_t(M, A), functor:class()) -> monad:m(M, maybe:maybe({A, list_t(M, A)})).
+run(ListTA, {?MODULE, Functor}) ->
+    functor:fmap(
+      fun({cons, A, MConsA}) -> 
+              {just, {A, list_t(MConsA)}};
+         (nil) ->
+              nothing
+      end, run_list_t(ListTA), Functor).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -140,43 +166,60 @@ lift_list([H|T], {?MODULE, IM}) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-fmap_mcons(F, MConsA, {?MODULE, Functor}) ->
-    functor:fmap(fun(ConsA) -> fmap_cons(F, ConsA, {?MODULE, Functor}) end, MConsA, Functor).
+-spec fmap_mlist(fun((A) -> B), mlist(M, A), functor:class()) -> mlist(M, B).
+fmap_mlist(F, MListA, {?MODULE, Functor} = ListT) ->
+    functor:fmap(fun(ListA) -> fmap_list(F, ListA, ListT) end, MListA, Functor).
 
-fmap_cons(F, {cons, A, MConsA}, {?MODULE, Functor}) ->
-    {cons, F(A), fmap_mcons(F, MConsA, {?MODULE, Functor})};
-fmap_cons(_F, nil, {?MODULE, _Functor}) ->
-    nil.
+-spec fmap_list(fun((A) -> B), list(M, A), functor:class()) -> mlist(M, B).
+fmap_list(F, {cons, A, MListA}, {?MODULE, _Functor} = ListT) ->
+    cons(F(A), fmap_mlist(F, MListA, ListT));
+fmap_list(_F, nil, {?MODULE, _Functor}) ->
+    nil().
 
-ap_mcons(MConsF, MConsA, {?MODULE, IM}) ->
-    functor:fmap(fun(ConsF) -> ap_cons(ConsF, MConsA, {?MODULE, IM}) end, MConsF, {?MODULE, IM}).
+-spec ap_mlist(mlist(M, fun((A) -> B)), mlist(M, A), applicative:class()) -> mlist(M, B).
+ap_mlist(MListF, MListA, {?MODULE, Applicative} = ListT) ->
+    functor:fmap(fun(ListF) -> ap_list(ListF, MListA, ListT) end, MListF, Applicative).
 
-ap_cons({cons, F, MConsFA}, MConsA, {?MODULE, Applicative}) ->
-    mappend_mcons(fmap_mcons(F, MConsA, {?MODULE, Applicative}), 
-                  ap_mcons(MConsFA, MConsA, {?MODULE, Applicative}), {?MODULE, Applicative});
-ap_cons(nil, _MConsA, {?MODULE, Applicative}) ->
+-spec ap_list(list(M, fun((A) -> B)), mlist(M, A), applicative:class()) -> mlist(M, B).
+ap_list({cons, F, MListF}, MListA, {?MODULE, _Applicative} = ListT) ->
+    mappend_mlist(fmap_mlist(F, MListA, ListT), ap_mlist(MListF, MListA, ListT), ListT);
+ap_list(nil, _MListA, {?MODULE, Applicative}) ->
     applicative:pure(nil, Applicative).
 
-join_mcons(MConsMConsA, {?MODULE, IM}) ->
-    monad:'>>='(MConsMConsA, fun(MConsA) -> join_cons(MConsA, {?MODULE, IM}) end, IM).
+-spec join_mlist(mlist(M, mlist(M, A)), monad:class()) -> mlist(M, A).
+join_mlist(MListMListA, {?MODULE, Monad} = ListT) ->
+    monad:'>>='(MListMListA, fun(ListMListA) -> join_list(ListMListA, ListT) end, Monad).
 
-join_cons({cons, MConsA, MConsMConsA}, {?MODULE, IM}) ->
-    mappend_mcons(MConsA, join_mcons(MConsMConsA, {?MODULE, IM}), {?MODULE, IM});
-join_cons(nil, {?MODULE, IM}) ->
-    return(nil, {?MODULE, IM}).
+-spec join_list(list(M, mlist(M, A)), monad:class()) -> mlist(M, A).
+join_list({cons, MListA, MListMListA}, {?MODULE, _Monad} = ListT) ->
+    mappend_mlist(MListA, join_mlist(MListMListA, ListT), ListT);
+join_list(nil, {?MODULE, Monad}) ->
+    monad:return(nil, Monad).
 
-mappend_mcons(MConsA, MConsB, {?MODULE, IM}) ->
-    monad:'>>='(MConsA, fun(ConsA) -> mappend_cons(ConsA, MConsB, {?MODULE, IM}) end, IM).
+-spec mappend_mlist(mlist(M, A), mlist(M, A), monad:class()) -> mlist(M, A).
+mappend_mlist(MListA, MListB, {?MODULE, Monad} = ListT) ->
+    monad:'>>='(MListA, fun(ListA) -> mappend_list(ListA, MListB, ListT) end, Monad).
 
-mappend_cons({cons, A, MConsA}, MConsB, {?MODULE, IM}) ->    
-    monad:return({cons, A, mappend_mcons(MConsA, MConsB, {?MODULE, IM})}, IM);
-mappend_cons(nil, MConsB, {?MODULE, _IM}) -> 
-    MConsB.
+-spec mappend_list(list(M, A), mlist(M, A), monad:class()) -> mlist(M, A).
+mappend_list({cons, A, MListA}, MListB, {?MODULE, Monad} = ListT) ->
+    monad:return(cons(A, mappend_mlist(MListA, MListB, ListT)), Monad);
+mappend_list(nil, MListB, {?MODULE, _Monad}) -> 
+    MListB.
 
-catch_error_mcons(MConsA, EMConsB, {?MODULE, MonadError}) ->
-   functor:fmap(fun(ConsA) -> catch_error_cons(ConsA, EMConsB, {?MODULE, MonadError}) end, MConsA, MonadError).
+-spec catch_error_mlist(mlist(M, A), fun((_E) -> mlist(M, A)), monad:class()) -> mlist(M, A).
+catch_error_mlist(MListA, EMListB, {?MODULE, MonadError} = ListT) ->
+   functor:fmap(fun(ListA) -> catch_error_list(ListA, EMListB, ListT) end, MListA, MonadError).
 
-catch_error_cons({cons, A, MConsA}, EMConsB, {?MODULE, MonadError}) ->
-   {cons, A, catch_error_mcons(MConsA, EMConsB, {?MODULE, MonadError})};
-catch_error_cons(nil, _EMConsB, {?MODULE, _MonadError}) ->
-   nil.
+-spec catch_error_list(list(M, A), fun((_E) -> mlist(M, A)), monad:class()) -> list(M, A).
+catch_error_list({cons, A, MListA}, EMListB, {?MODULE, _MonadError} = ListT) ->
+   cons(A, catch_error_mlist(MListA, EMListB, ListT));
+catch_error_list(nil, _EMConsB, {?MODULE, _MonadError}) ->
+   nil().
+
+-spec cons(A, mlist(M, A)) -> list(M, A).
+cons(A, MListA) ->
+    {cons, A, MListA}.
+
+-spec nil() -> list(_M, _A).
+nil() ->
+    nil.
