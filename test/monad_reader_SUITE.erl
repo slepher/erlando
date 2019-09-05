@@ -122,9 +122,9 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_ask_error_t, test_ask_maybe_t, test_ask_reader_t, test_ask_state_t, test_ask_cont_t,
-     test_reader_error_t, test_reader_maybe_t, test_reader_reader_t, test_reader_state_t, test_reader_cont_t,
-     test_local_error_t, test_local_maybe_t, test_local_reader_t, test_local_state_t, test_local_cont_t
+    [test_ask_error_t, test_ask_maybe_t, test_ask_reader_t, test_ask_state_t, test_ask_cont_t, test_ask_list_t,
+     test_reader_error_t, test_reader_maybe_t, test_reader_reader_t, test_reader_state_t, test_reader_cont_t, test_reader_list_t,
+     test_local_error_t, test_local_maybe_t, test_local_reader_t, test_local_state_t, test_local_cont_t, test_local_list_t
     ].
 
 
@@ -167,6 +167,9 @@ test_ask_state_t(_Config) ->
 test_ask_cont_t(_Config) ->
     ask(fun(T) -> cont_t:eval(T) end).
 
+test_ask_list_t(_Config) ->
+    ask(fun(T) -> functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(T)) end).
+
 test_reader_error_t(_Config) ->
     asks(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
@@ -182,6 +185,9 @@ test_reader_state_t(_Config) ->
 test_reader_cont_t(_Config) ->
     reader(fun(T) -> cont_t:eval(T) end).
 
+test_reader_list_t(_Config) ->
+    reader(fun(T) -> functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(T)) end).
+
 test_local_error_t(_Config) ->
     local(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
@@ -196,6 +202,9 @@ test_local_state_t(_Config) ->
 
 test_local_cont_t(_Config) ->
     local(fun(T) -> cont_t:eval(T) end).
+
+test_local_list_t(_Config) ->
+    local(fun(T) -> functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(T)) end).
 
 ask(F) ->
     M = monad_reader:ask(),

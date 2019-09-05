@@ -11,6 +11,7 @@
 -compile(export_all).
 -compile(nowarn_export_all).
 
+-include("do.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("common_test/include/ct.hrl").
 
@@ -38,7 +39,6 @@ init_per_suite(Config) ->
 %% @end
 %%--------------------------------------------------------------------
 end_per_suite(_Config) ->
-    dbg:ctpl(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -109,7 +109,7 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_fmap, test_ap, test_bind, test_run, test_join].
+    [test_fmap, test_ap, test_bind, test_run, test_callCC, test_join, test_catch_error].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
@@ -164,6 +164,45 @@ test_run(_Config) ->
     ?assertEqual({list_t, {identity, {cons, a, {identity, {cons, b, {identity, nil}}}}}}, ListTC),
     IdentityC = list_t:run(ListTC),
     ?assertEqual({identity, [a, b]}, IdentityC).
+
+test_callCC(_Config) ->
+    M = 
+        do([monad ||
+               X <- monad_reader:ask(),
+               Y <- 
+                   monad_cont:callCC(
+                     fun(CC) ->
+                             case X of
+                                 X when is_integer(X) ->
+                                     return(X + 1);
+                                 _Other ->
+                                     CC(expected_integer)
+                             end
+                     end),
+               return(Y)
+           ]),
+    M1 = identity:run(reader_t:run(cont_t:eval(list_t:run(M)), 30)),
+    %M2 = identity:run(reader_t:run(cont_t:eval(list_t:run(M)), undefined)),
+    ?assertEqual([31], M1),
+    %?assertEqual([expected_integer], M2),
+    ok.
+
+test_catch_error(_Config) ->
+    Monad = list_t:new(error_t:new(identity)),
+    M1 = monad:return(1, Monad),
+    M2 = monad_error:throw_error(error, Monad),
+    M3 = monad_plus:mplus(M1, M2, Monad),
+    io:format("M3 is ~p~n", [M3]),
+    M4 = monad_error:catch_error(
+           M3,
+           fun(error) ->
+                   monad_error:throw_error(error1)
+           end),
+    io:format("M4 is ~p", [M4]),
+    %A = identity:run(error_t:run(list_t:run(M3))),
+    %?assertEqual({left, error1}, A),
+    ok.
+    
 
 test_join(_Config) ->
     ok.

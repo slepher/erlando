@@ -132,10 +132,12 @@ all() ->
     [test_error_m_throw_error, test_error_m_catch_error,
      test_either_throw_error, test_either_catch_error,
      test_error_t_throw_error, test_error_t_catch_error,
+     test_maybe_t_throw_error, test_maybe_t_catch_error,
      test_reader_t_throw_error, test_reader_t_catch_error,
      test_reader_t_trans_error, test_reader_t_lift_error,
      test_writer_t_throw_error, test_writer_t_catch_error, test_writer_t_catch_error_2,
-     test_state_t_throw_error,  test_state_t_catch_error
+     test_state_t_throw_error,  test_state_t_catch_error,
+     test_list_t_throw_error, test_list_t_catch_error
     ].
 
 
@@ -187,6 +189,14 @@ test_error_t_catch_error(_Config) ->
     F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
     test_catch_error(F).
 
+test_maybe_t_throw_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(maybe_t:run(E)), L end,
+    throw_error(F).
+
+test_maybe_t_catch_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(maybe_t:run(E)), L end,
+    test_catch_error(F).
+
 test_reader_t_throw_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
     throw_error(F).
@@ -230,6 +240,14 @@ test_state_t_throw_error(_Config) ->
 
 test_state_t_catch_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
+    test_catch_error(F).
+
+test_list_t_throw_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))), L end,
+    throw_error(F).
+
+test_list_t_catch_error(_Config) ->
+    F = fun(E) -> {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))), L end,
     test_catch_error(F).
 
 test_trans_error(F) ->

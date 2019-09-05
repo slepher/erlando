@@ -30,7 +30,7 @@
 
 %% API
 -export([new/1]).
-
+-export([list_t/1, run_list_t/1]).
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 -export(['>>='/3, return/2]).
@@ -210,14 +210,15 @@ append_flist(FListA, FListB, {?MODULE, Applicative} = ListT) ->
     applicative:lift_a2(FAB, FListA, FListB, Applicative).
 
 -spec append_list(list(M, A), list(M, A), monad:class()) -> list(M, A).
-append_list({cons, A, MListA}, ListB, {?MODULE, _Applicative} = ListT) ->
-    cons(A, append_flist(MListA, applicative:pure(ListB), ListT));
-append_list(nil, MListB, {?MODULE, _Monad}) -> 
-    MListB.
+append_list({cons, A, FListA}, ListB, {?MODULE, Applicative} = ListT) ->
+    cons(A, append_flist(FListA, applicative:pure(ListB, Applicative), ListT));
+append_list(nil, ListB, {?MODULE, _Monad}) ->
+    ListB.
 
 -spec catch_error_mlist(mlist(M, A), fun((_E) -> mlist(M, A)), monad:class()) -> mlist(M, A).
 catch_error_mlist(MListA, EMListB, {?MODULE, MonadError} = ListT) ->
-   functor:fmap(fun(ListA) -> catch_error_list(ListA, EMListB, ListT) end, MListA, MonadError).
+   MListB = monad_error:catch_error(MListA, EMListB, MonadError),
+   functor:fmap(fun(ListB) -> catch_error_list(ListB, EMListB, ListT) end, MListB, MonadError).
 
 -spec catch_error_list(list(M, A), fun((_E) -> mlist(M, A)), monad:class()) -> list(M, A).
 catch_error_list({cons, A, MListA}, EMListB, {?MODULE, _MonadError} = ListT) ->

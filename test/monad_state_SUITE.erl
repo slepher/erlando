@@ -172,6 +172,9 @@ test_state(_Config) ->
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
     M3 = writer_t:eval(M),
+    M4 = functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(M)),
     ?assertEqual({6, 5}, identity:run(state_t:run(M1, 5))),
     ?assertEqual({6, 5}, identity:run(state_t:run(M2, 5))),
-    ?assertEqual({6, 5}, identity:run(state_t:run(M3, 5))).
+    ?assertEqual({6, 5}, identity:run(state_t:run(M3, 5))),
+    ?assertEqual({6, 5}, identity:run(state_t:run(M4, 5))),
+    ok.

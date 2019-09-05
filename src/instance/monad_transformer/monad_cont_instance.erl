@@ -66,7 +66,7 @@ lift_callCC(CallCC, F, {list_t, MonadCont}) ->
                     fun(A) ->
                             list_t:list_t(CC({cons, A, monad:return(nil, MonadCont)}))
                     end))
-        end, MonadCont)).
+        end)).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
