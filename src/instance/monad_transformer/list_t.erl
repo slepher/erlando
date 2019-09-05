@@ -23,6 +23,7 @@
 -behaviour(applicative).
 -behaviour(monad).
 -behaviour(monad_trans).
+-behaviour(alternative).
 -behaviour(monad_plus).
 -behaviour(monad_fail).
 -behaviour(monad_error).
@@ -40,7 +41,7 @@
 -export([map/3, lift_list/2, run/2]).
 
 -gen_fun(#{inner_type => functor,      behaviours => [functor]}).
--gen_fun(#{inner_type => applicative,  behaviours => [applicative]}).
+-gen_fun(#{inner_type => applicative,  behaviours => [applicative, alternative]}).
 -gen_fun(#{inner_type => monad,        behaviours => [monad, monad_trans, monad_plus]}).
 -gen_fun(#{inner_type => monad_fail,   behaviours => [monad_fail]}).
 -gen_fun(#{inner_type => monad_error,  behaviours => [monad_error]}).
@@ -70,7 +71,7 @@ run_list_t(Other) ->
 
 -spec fmap(fun((A) -> B), list_t(M, A), functor:class()) -> list_t(M, B).
 fmap(F, ListTA, {?MODULE, _Functor} = ListT) ->
-    map(fun(MListA) -> fmap_mlist(F, MListA, ListT) end, ListTA, ListT).
+    map(fun(MListA) -> fmap_flist(F, MListA, ListT) end, ListTA, ListT).
 
 -spec '<$'(B, list_t(M, _A)) -> list_t(M, B).
 '<$'(B, ListTA, {?MODULE, _Functor} = ListT) ->
@@ -82,7 +83,7 @@ pure(A, {?MODULE, Applicative}) ->
 
 -spec '<*>'(list_t(M, fun((A) -> B)), list_t(M, A), applicative:class()) -> list_t(M, B).
 '<*>'(ListTF, ListTA, {?MODULE, _Monad} = ListT) ->
-    list_t(ap_mlist(run_list_t(ListTF), run_list_t(ListTA), ListT)).
+    list_t(ap_flist(run_list_t(ListTF), run_list_t(ListTA), ListT)).
 
 -spec lift_a2(fun((A, B) -> C), list_t(M, A), list_t(M, B), applicative:class()) -> list_t(M, C).
 lift_a2(F, ListTA, ListTB, {?MODULE, _Applicative} = ListT) ->
@@ -112,13 +113,20 @@ fail(E, {?MODULE, MonadFail} = ListT) ->
 lift(MA, {?MODULE, Monad}) ->
     list_t(functor:fmap(fun(A) -> cons(A, monad:return(nil(), Monad)) end, MA, Monad)).
 
+empty({?MODULE, _Applicative} = ListT) ->
+    lift_list([], ListT).
+
+-spec '<|>'(list_t(M, A), list_t(M, A), monad:class()) -> list_t(M, A).
+'<|>'(ListTA, ListTB, {?MODULE, _Applicative} = ListT) ->
+    list_t(append_flist(run_list_t(ListTA), run_list_t(ListTB), ListT)).
+
 -spec mzero(monad:class()) -> list_t(_M, _A).
 mzero({?MODULE, _Monad} = ListT) ->
-    lift_list([], ListT).
+    empty(ListT).
 
 -spec mplus(list_t(M, A), list_t(M, A), monad:class()) -> list_t(M, A).
 mplus(ListTA, ListTB, {?MODULE, _Monad} = ListT) ->
-    list_t(mappend_mlist(run_list_t(ListTA), run_list_t(ListTB), ListT)).
+    '<|>'(ListTA, ListTB, ListT).
 
 -spec throw_error(_E, monad:class()) -> list_t(_M, _A).
 throw_error(E, {?MODULE, MonadError}) ->
@@ -138,16 +146,16 @@ map(F, LTA, {?MODULE, _Any}) ->
 join(ListTListTA, {?MODULE, _Monad} = ListT) ->
     map(
       fun(MListListTA) -> 
-              MListMListA = fmap_mlist(fun run_list_t/1, MListListTA, ListT),
+              MListMListA = fmap_flist(fun run_list_t/1, MListListTA, ListT),
               join_mlist(MListMListA, ListT)
       end, ListTListTA).
 
 -spec lift_list([A], monad:class()) -> list_t(_M, A).
-lift_list([], {?MODULE, Monad}) ->
-    list_t(applicative:pure(nil(), Monad));
-lift_list([H|T], {?MODULE, Monad} = ListT) ->
+lift_list([], {?MODULE, Applicative}) ->
+    list_t(applicative:pure(nil(), Applicative));
+lift_list([H|T], {?MODULE, Applicative} = ListT) ->
     ListA = cons(H, run_list_t(lift_list(T, ListT))),
-    list_t(applicative:pure(ListA, Monad)).
+    list_t(applicative:pure(ListA, Applicative)).
 
 -spec run(list_t(M, A), functor:class()) -> monad:m(M, [A]).
 run(ListTA, {?MODULE, _Monad} = ListT) ->
@@ -161,25 +169,30 @@ run(ListTA, {?MODULE, _Monad} = ListT) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--spec fmap_mlist(fun((A) -> B), mlist(M, A), functor:class()) -> mlist(M, B).
-fmap_mlist(F, MListA, {?MODULE, Functor} = ListT) ->
-    functor:fmap(fun(ListA) -> fmap_list(F, ListA, ListT) end, MListA, Functor).
+-spec fmap_flist(fun((A) -> B), mlist(M, A), functor:class()) -> mlist(M, B).
+fmap_flist(F, FListA, {?MODULE, Functor} = ListT) ->
+    functor:fmap(fun(ListA) -> fmap_list(F, ListA, ListT) end, FListA, Functor).
 
 -spec fmap_list(fun((A) -> B), list(M, A), functor:class()) -> mlist(M, B).
 fmap_list(F, {cons, A, MListA}, {?MODULE, _Functor} = ListT) ->
-    cons(F(A), fmap_mlist(F, MListA, ListT));
+    cons(F(A), fmap_flist(F, MListA, ListT));
 fmap_list(_F, nil, {?MODULE, _Functor}) ->
     nil().
 
--spec ap_mlist(mlist(M, fun((A) -> B)), mlist(M, A), applicative:class()) -> mlist(M, B).
-ap_mlist(MListF, MListA, {?MODULE, Monad} = ListT) ->
-    monad:'>>='(MListF, fun(ListF) -> ap_list(ListF, MListA, ListT) end, Monad).
+-spec ap_flist(mlist(F, fun((A) -> B)), mlist(F, A), applicative:class()) -> mlist(F, B).
+ap_flist(FListF, FListA, {?MODULE, Applicative} = ListT) ->
+    FAB = fun(ListF, ListA) -> ap_list(ListF, ListA, ListT) end,
+    applicative:lift_a2(FAB, FListF, FListA, Applicative).
 
--spec ap_list(list(M, fun((A) -> B)), mlist(M, A), applicative:class()) -> mlist(M, B).
-ap_list({cons, F, MListF}, MListA, {?MODULE, _Monad} = ListT) ->
-    mappend_mlist(fmap_mlist(F, MListA, ListT), ap_mlist(MListF, MListA, ListT), ListT);
-ap_list(nil, _MListA, {?MODULE, Applicative}) ->
-    monad:return(nil, Applicative).
+-spec ap_list(list(F, fun((A) -> B)), list(F, A), applicative:class()) -> list(F, B).
+ap_list(_ListA, nil, {?MODULE, _Applicative}) ->
+    nil();
+ap_list(nil, _ListA, {?MODULE, _Applicative}) ->
+    nil();
+ap_list({cons, F, FListF}, {cons, A, FListA} = ListA, {?MODULE, Applicative} = ListT) ->
+    FListFA = fmap_flist(F, FListA, ListT),
+    FListFB = ap_flist(FListF, applicative:pure(ListA, Applicative), ListT),
+    cons(F(A), append_flist(FListFA, FListFB, ListT)).
 
 -spec join_mlist(mlist(M, mlist(M, A)), monad:class()) -> mlist(M, A).
 join_mlist(MListMListA, {?MODULE, Monad} = ListT) ->
@@ -187,18 +200,19 @@ join_mlist(MListMListA, {?MODULE, Monad} = ListT) ->
 
 -spec join_list(list(M, mlist(M, A)), monad:class()) -> mlist(M, A).
 join_list({cons, MListA, MListMListA}, {?MODULE, _Monad} = ListT) ->
-    mappend_mlist(MListA, join_mlist(MListMListA, ListT), ListT);
+    append_flist(MListA, join_mlist(MListMListA, ListT), ListT);
 join_list(nil, {?MODULE, Monad}) ->
     monad:return(nil, Monad).
 
--spec mappend_mlist(mlist(M, A), mlist(M, A), monad:class()) -> mlist(M, A).
-mappend_mlist(MListA, MListB, {?MODULE, Monad} = ListT) ->
-    monad:'>>='(MListA, fun(ListA) -> mappend_list(ListA, MListB, ListT) end, Monad).
+-spec append_flist(mlist(M, A), mlist(M, A), monad:class()) -> mlist(M, A).
+append_flist(FListA, FListB, {?MODULE, Applicative} = ListT) ->
+    FAB = fun(ListA, ListB) -> append_list(ListA, ListB, ListT) end,
+    applicative:lift_a2(FAB, FListA, FListB, Applicative).
 
--spec mappend_list(list(M, A), mlist(M, A), monad:class()) -> mlist(M, A).
-mappend_list({cons, A, MListA}, MListB, {?MODULE, Monad} = ListT) ->
-    monad:return(cons(A, mappend_mlist(MListA, MListB, ListT)), Monad);
-mappend_list(nil, MListB, {?MODULE, _Monad}) -> 
+-spec append_list(list(M, A), list(M, A), monad:class()) -> list(M, A).
+append_list({cons, A, MListA}, ListB, {?MODULE, _Applicative} = ListT) ->
+    cons(A, append_flist(MListA, applicative:pure(ListB), ListT));
+append_list(nil, MListB, {?MODULE, _Monad}) -> 
     MListB.
 
 -spec catch_error_mlist(mlist(M, A), fun((_E) -> mlist(M, A)), monad:class()) -> mlist(M, A).
