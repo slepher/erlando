@@ -90,26 +90,9 @@ fmap(F, ETA, {?MODULE, IM}) ->
     functor:'default_<$'(B, ETA, ET).
 
 -spec '<*>'(error_t(E, M, fun((A) -> B)), error_t(E, M, A)) -> error_t(E, M, B).
-'<*>'(ETF, ETA, {?MODULE, IM}) ->
-    error_t(
-      do([IM || 
-             EF <- run_error_t(ETF),
-             case EF of
-                 {left, _} ->
-                     return(EF);
-                 {right, F} ->
-                     do([IM ||
-                            EA <- ETA,
-                            case EA of
-                                {left, _} ->
-                                    return(EA);
-                                {right, A} ->
-                                    return({right, F(A)})
-                            end
-                        ])
-             end
-         ])
-     ).
+'<*>'(ErrorTF, ErrorTA, {?MODULE, Applicative}) ->
+    FAB = fun(EF, EA) -> either:'<*>'(EF, EA) end,
+    error_t(applicative:lift_a2(FAB, run_error_t(ErrorTF), run_error_t(ErrorTA), Applicative)).
 
 -spec lift_a2(fun((A, B) -> C), error_t(E, M, A), error_t(E, M, B)) -> error_t(E, M, C).
 lift_a2(F, ETA, ETB, {?MODULE, _IM} = ET) ->
