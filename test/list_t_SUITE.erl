@@ -109,7 +109,7 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_fmap, test_ap, test_bind, test_run, test_callCC, test_join, test_catch_error].
+    [test_fmap, test_ap, test_bind, test_run, test_callCC, test_join, test_lift_list, test_catch_error].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
@@ -129,7 +129,7 @@ my_test_case() ->
 %% @end
 %%--------------------------------------------------------------------
 test_fmap(_Config) -> 
-    ListTA = list_t:lift_list([a, b, c]), 
+    ListTA = list_t:from_list([a, b, c]), 
     F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8)  end,
     ListTB = functor:fmap(F, ListTA),
     MB = list_t:run(ListTB),
@@ -140,15 +140,15 @@ test_ap(_Config) ->
     MA = list_t:new(monad),
     FA = fun(A) -> A + 10 end,
     FB = fun(A) -> A - 3 end,
-    ListTA = list_t:lift_list([1, 2, 3], MA),
-    ListTF = list_t:lift_list([FA, FB], MA),
+    ListTA = list_t:from_list([1, 2, 3], MA),
+    ListTF = list_t:from_list([FA, FB], MA),
     ListTC = applicative:'<*>'(ListTF, ListTA, MA),
     MC = list_t:run(ListTC, MA),
     ?assertEqual([11, 12, 13, -2, -1, 0], identity:run(MC)),
     ok.
 
 test_bind(_Config) ->
-    ListTA = list_t:lift_list([a, b, c]), 
+    ListTA = list_t:from_list([a, b, c]), 
     F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8)  end,
     ListTB = monad:'>>='(ListTA, fun(A) -> B = F(A), monad_plus:mplus(monad:return(B), monad:return(B)) end),
     MB = list_t:run(ListTB),
@@ -164,6 +164,14 @@ test_run(_Config) ->
     ?assertEqual({list_t, {identity, {cons, a, {identity, {cons, b, {identity, nil}}}}}}, ListTC),
     IdentityC = list_t:run(ListTC),
     ?assertEqual({identity, [a, b]}, IdentityC).
+
+test_lift_list(_Config) ->
+    List = [{just, 3}, {just, 5}, nothing, {just, 6}],
+    ListT = list_t:lift_list(List),
+    Val = list_t:run(ListT),
+    ?assertEqual(nothing, Val),
+    ?assertEqual({just, {cons, 3, {just, {cons, 5, nothing}}}}, list_t:run_list_t(ListT)),
+    ok.
 
 test_callCC(_Config) ->
     M = 

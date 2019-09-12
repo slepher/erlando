@@ -38,7 +38,7 @@
 -export([lift/2]).
 -export([mzero/1, mplus/3]).
 -export([throw_error/2, catch_error/3]).
--export([map/3, lift_list/2, run/2]).
+-export([map/3, from_list/2, lift_list/2, run/2]).
 
 -gen_fun(#{inner_type => functor,      behaviours => [functor]}).
 -gen_fun(#{inner_type => applicative,  behaviours => [applicative, alternative]}).
@@ -46,7 +46,7 @@
 -gen_fun(#{inner_type => monad_fail,   behaviours => [monad_fail]}).
 -gen_fun(#{inner_type => monad_error,  behaviours => [monad_error]}).
 -gen_fun(#{args => monad,              functions  => [map/2]}).
--gen_fun(#{args => monad,              functions  => [lift_list/1]}).
+-gen_fun(#{args => applicative,        functions  => [from_list/1, lift_list/1]}).
 -gen_fun(#{args => monad,              functions  => [run/1]}).
 
 %%%===================================================================
@@ -114,7 +114,7 @@ lift(MA, {?MODULE, Monad}) ->
     list_t(functor:fmap(fun(A) -> cons(A, monad:return(nil(), Monad)) end, MA, Monad)).
 
 empty({?MODULE, _Applicative} = ListT) ->
-    lift_list([], ListT).
+    from_list([], ListT).
 
 -spec '<|>'(list_t(M, A), list_t(M, A), monad:class()) -> list_t(M, A).
 '<|>'(ListTA, ListTB, {?MODULE, _Applicative} = ListT) ->
@@ -150,12 +150,27 @@ join(ListTListTA, {?MODULE, _Monad} = ListT) ->
               join_mlist(MListMListA, ListT)
       end, ListTListTA).
 
--spec lift_list([A], monad:class()) -> list_t(_M, A).
-lift_list([], {?MODULE, Applicative}) ->
-    list_t(applicative:pure(nil(), Applicative));
-lift_list([H|T], {?MODULE, Applicative} = ListT) ->
-    ListA = cons(H, run_list_t(lift_list(T, ListT))),
-    list_t(applicative:pure(ListA, Applicative)).
+-spec from_list([A], applicative:class()) -> list_t(_M, A).
+from_list(List, ListT) ->
+    list_t(from_list_1(List, ListT)).
+
+from_list_1([], {?MODULE, Applicative}) ->
+    applicative:pure(nil(), Applicative);
+from_list_1([H|T], {?MODULE, Applicative} = ListT) ->
+    ListA = cons(H, from_list_1(T, ListT)),
+    applicative:pure(ListA, Applicative).
+
+-spec lift_list([monad:m(M, A)], applicative:class()) -> list_t(M, A).
+lift_list(List, ListT) ->
+    list_t:list_t(lift_list_1(List, ListT)).
+
+lift_list_1([], {?MODULE, Applicative}) ->
+    applicative:pure(nil(), Applicative);
+lift_list_1([FH|T], {?MODULE, Applicative} = ListT) ->
+    functor:fmap(
+      fun(H) ->
+              cons(H, lift_list_1(T, ListT))
+      end, FH, Applicative).
 
 -spec run(list_t(M, A), functor:class()) -> monad:m(M, [A]).
 run(ListTA, {?MODULE, _Monad} = ListT) ->
