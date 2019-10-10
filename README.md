@@ -1,5 +1,7 @@
 # Erlando
 
+![Travis CI](https://travis-ci.org/slepher/erlando.svg?branch=master)
+
 ## Requirements 
 
 Erlang OTP R19 or higher; rebar3.
