@@ -1,6 +1,8 @@
 # Erlando
 
+## Requirements 
 
+Erlang OTP R19 or higher; rebar3.
 
 ## Introduction
 
