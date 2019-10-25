@@ -1,0 +1,3 @@
+-include_lib("astranaut/include/macro.hrl").
+-use_macro({catch_error_macro, cat_error/1, [{alias, cat_error}]}).
+-use_macro({catch_error_macro, cat_error/2, [{alias, cat_error}]}).
