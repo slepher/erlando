@@ -155,7 +155,14 @@ put(S, {?MODULE, _IM} = ST) ->
 
 -spec state(fun((S) -> {A, S}), t(M)) -> state_t(S, M, A).
 state(F, {?MODULE, IM}) ->
-    state_t(fun (S) -> monad:return(F(S), IM) end).
+    state_t(fun (S) -> 
+                    case F(S) of
+                        {_Result, _S1} = FS ->
+                            monad:return(FS, IM);
+                        FS ->
+                            exit({invalid_return_type, 'monad_state:state', FS})
+                    end
+            end).
 
 empty({?MODULE, _IM} = ST) ->
     mzero(ST).
