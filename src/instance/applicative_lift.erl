@@ -22,6 +22,7 @@
 -type other(_A) :: {other, term()}.
 
 -include("gen_fun.hrl").
+-include("do.hrl").
 
 -behaviour(functor).
 -behaviour(applicative).
@@ -32,7 +33,7 @@
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
 -export([run_errors/1, hoist_errors/1, failure/1]).
--export([sequence_either/1]).
+-export([sequence_either/1, sequence_monad_error/1, sequence_monad_error/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -94,6 +95,20 @@ failure(E) ->
 
 sequence_either(FEA) ->
     run_errors(undetermined:run(traversable:traverse(fun hoist_errors/1, FEA), lift)).
+
+sequence_monad_error(FME) ->
+    sequence_monad_error(FME, monad).
+
+sequence_monad_error(FME, Monad) ->
+    do([Monad ||
+           Es <- traversable:traverse(fun(MEA) -> monad_error:run_error(MEA, Monad) end, FME),
+           case sequence_either(Es) of
+               {left, Es1} ->
+                   monad_fail:fail(Es1, Monad);
+               {right, A} ->
+                   monad:return(A, Monad)
+           end
+       ]).
 
 %%%===================================================================
 %%% Internal functions
