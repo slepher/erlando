@@ -102,14 +102,8 @@ sequence_monad_error(FME) ->
 sequence_monad_error(FME, Monad) ->
     do([Monad ||
            Es <- traversable:traverse(fun(MEA) -> monad_error:run_error(MEA, Monad) end, FME),
-           case sequence_either(Es) of
-               {left, Es1} ->
-                   monad_fail:fail(Es1, Monad);
-               {right, A} ->
-                   monad:return(A, Monad)
-           end
+           monad_error:lift_either(sequence_either(Es), Monad)
        ]).
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
