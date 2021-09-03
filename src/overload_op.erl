@@ -17,10 +17,9 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
 parse_transform(Forms, _Opts) ->
     ParseOps = parse_ops(Forms),
-    astranaut_traverse:map(fun(Node, Attr) -> walk(Node, Attr, ParseOps) end, Forms, #{traverse => pre}).
+    astranaut_return:to_compiler(astranaut:map(fun(Node, Attr) -> walk(Node, Attr, ParseOps) end, Forms, #{traverse => pre})).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -31,9 +30,8 @@ parse_transform(Forms, _Opts) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
 parse_ops(Forms) ->
-    Overloads = astranaut:attributes(overloads, Forms),
+    Overloads = astranaut_lib:analyze_forms_attributes(overloads, Forms),
     lists:foldl(
       fun(Overload, Acc0) ->
               lists:foldl(

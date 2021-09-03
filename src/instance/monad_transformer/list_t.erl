@@ -10,6 +10,8 @@
 
 -erlando_type({?MODULE, [list_t/2]}).
 
+-macro_options([debug_module]).
+
 -export_type([list_t/2]).
 
 -type list_t(M, A) :: {list_t, mlist(M, A)}.
@@ -33,7 +35,7 @@
 -export([list_t/1, run_list_t/1]).
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
--export(['>>='/3, return/2]).
+-export(['>>='/3, '>>'/3, return/2]).
 -export([fail/2]).
 -export([lift/2]).
 -export([mzero/1, mplus/3]).
@@ -100,6 +102,9 @@ lift_a2(F, ListTA, ListTB, {?MODULE, _Applicative} = ListT) ->
 -spec '>>='(list_t(M, A), fun((A) -> list_t(M, B)), monad:class()) -> list_t(M, B).
 '>>='(ListTA, KListTB, {?MODULE, _Monad} = ListT) ->
     join(fmap(KListTB, ListTA, ListT), ListT).
+
+'>>'(ListTA, ListTB, {?MODULE, _Monad} = ListT) ->
+    monad:'default_>>'(ListTA, ListTB, ListT).
 
 -spec return(A, monad:class()) -> list_t(_M, A).
 return(A, {?MODULE, _Monad} = ListT) ->

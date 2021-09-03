@@ -10,6 +10,8 @@
 
 -erlando_type({?MODULE, []}).
 
+-macro_options([debug_module]).
+
 -export_type([state_m/2]).
 
 -type state_m(S, A) :: {state_t, fun((S) -> {identity, {S, A}})}.

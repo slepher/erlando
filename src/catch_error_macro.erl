@@ -13,7 +13,7 @@
 
 %% API
 -export([cat_error/1, cat_error/2]).
--export([format_error/3]).
+-export([format_error/1, format_error/3]).
 
 %%%===================================================================
 %%% API
@@ -32,6 +32,9 @@ cat_error(Ast, quote = _A@Label) ->
 cat_error(Ast, OptsAst) ->
     Opts = astranaut:ast_to_options(OptsAst),
     do_cat_error(Ast, Opts).
+
+format_error(Error) ->
+    astranaut_macro:format_error(Error).
 
 format_error(Error, #{label := Label}, _AstString) ->
     {Label, Error};

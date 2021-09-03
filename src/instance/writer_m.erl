@@ -10,6 +10,8 @@
 
 -erlando_type({?MODULE, []}).
 
+-macro_options([debug_module]).
+
 -include("gen_fun.hrl").
 
 -behaviour(functor).

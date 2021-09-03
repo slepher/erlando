@@ -6,6 +6,8 @@
 %%% @end
 %%% Created : 10 Nov 2020 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
+%% this is a implementation of Control.Applicative.Lift
+%% https://hackage.haskell.org/package/transformers/docs/Control-Applicative-Lift.html
 -module(applicative_lift).
 
 -erlando_type({lift, [lift/2]}).

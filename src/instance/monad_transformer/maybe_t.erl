@@ -21,6 +21,8 @@
 -include("gen_fun.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
+-macro_options([debug_module]).
+
 -include("op.hrl").
 -include("erlando.hrl").
 

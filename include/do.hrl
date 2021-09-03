@@ -1,5 +1,6 @@
 -include_lib("astranaut/include/macro.hrl").
 -ifndef(ERLANDO_DO).
 -define(ERLANDO_DO, true).
--use_macro({do_macro, do/1, [{alias, do}, formatter]}).
+-import_macro(do_macro).
+-use_macro({do_macro, do/1, [{alias, do}]}).
 -endif.

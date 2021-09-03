@@ -8,10 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(do_macro).
 
--include_lib("astranaut/include/quote.hrl").
+-include_lib("astranaut/include/macro.hrl").
+
+-export_macro([do/1]).
 
 %% API
--export([do/1]).
 -export([format_error/1]).
 
 %%%===================================================================
