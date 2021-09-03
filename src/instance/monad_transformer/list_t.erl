@@ -10,8 +10,6 @@
 
 -erlando_type({?MODULE, [list_t/2]}).
 
--macro_options([debug_module]).
-
 -export_type([list_t/2]).
 
 -type list_t(M, A) :: {list_t, mlist(M, A)}.
