@@ -11,8 +11,9 @@
 -include_lib("astranaut/include/quote.hrl").
 -include_lib("astranaut/include/macro.hrl").
 
+-export_macro([cat_error/1, cat_error/2]).
+
 %% API
--export([cat_error/1, cat_error/2]).
 -export([format_error/1, format_error/3]).
 
 %%%===================================================================
@@ -30,7 +31,7 @@ cat_error(Ast) ->
 cat_error(Ast, quote = _A@Label) ->
     do_cat_error(Ast, #{label => Label});
 cat_error(Ast, OptsAst) ->
-    Opts = astranaut:ast_to_options(OptsAst),
+    Opts = erl_syntax:concrete(OptsAst),
     do_cat_error(Ast, Opts).
 
 format_error(Error) ->
@@ -45,8 +46,8 @@ format_error(Error, #{}, AstString) ->
 %%% Internal functions
 %%%===================================================================
 do_cat_error(Ast, Opts) ->
-    Opts1 = astranaut:abstract(Opts),
-    String = astranaut:abstract(list_to_binary(astranaut:to_string(Ast))),
+    Opts1 = astranaut_lib:abstract_form(Opts),
+    String = astranaut_lib:abstract_form(list_to_binary(astranaut_lib:ast_to_string(Ast))),
     quote(monad_error:catch_error(
             unquote(Ast),
             fun(Error) ->

@@ -137,14 +137,33 @@ gen_function(Module, Remote, FName, Arity, Line, ExtraPatterns, ExtraArgs, Extra
             _ ->
                 FName
         end,
-    GCall = [gen_call(Module, Remote, FName1, NArity, Line, ExtraArgs, ExtraCall)],
+    GCall = [gen_call(Module, Remote, FName, NArity, Line, ExtraArgs, ExtraCall)],
+    FName1 = 
+        case Remote of 
+            Remote when Remote == Module ->
+                if LenCurrent == LenRemote ->
+                        '__original__';
+                   true ->
+                        FName
+                end;
+            _ ->
+                FName
+        end,
     case FName1 of
         '__original__' ->
-            {function, Line, FName, UArity, 
-             [{clause, Line, GPatterns, [], GCall}]};
+            UPatterns = 
+                lists:map(
+                  fun(N) ->
+                          {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
+                  end, lists:seq(1, UArity)),
+            GCall1 = [gen_call(Module, Remote, FName1, UArity, Line, [], undefined)],
+            [{attribute, Line, export, [{FName, UArity}]}, 
+             {function, Line, FName, UArity, 
+              [{clause, Line, GPatterns, [], GCall}, {clause, Line, UPatterns, [], GCall1}]}];
         _ ->
-            {function, Line, FName, UArity, 
-             [{clause, Line, GPatterns, [], GCall}]}
+            [{attribute, Line, export, [{FName, UArity}]}, 
+             {function, Line, FName, UArity, 
+              [{clause, Line, GPatterns, [], GCall}]}]
     end.
 
 gen_call(Module, Remote, FName, Arity, Line, ExtraArgs, {RemoteF, Function}) ->
