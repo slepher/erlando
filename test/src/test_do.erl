@@ -34,10 +34,10 @@ test_join() ->
                            do([maybe_m || return(do([maybe_m || return(5)]))])).
 
 test_maybe() ->
-    nothing = maybe(atom),
-    {just, 9} = maybe(3).
+    nothing = monad_maybe(atom),
+    {just, 9} = monad_maybe(3).
 
-maybe(Arg) ->
+monad_maybe(Arg) ->
     do([maybe_m
         || monad_plus:guard(maybe_m, is_number(Arg)),
            return(Arg*Arg)]).

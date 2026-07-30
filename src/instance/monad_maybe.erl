@@ -13,13 +13,13 @@
 %% The Initial Developer of the Original Code is VMware, Inc.
 %% Copyright (c) 2011-2013 VMware, Inc.  All rights reserved.
 %%
--module(maybe).
+-module(monad_maybe).
 
--erlando_type({?MODULE, [maybe/1]}).
+-erlando_type({?MODULE, [monad_maybe/1]}).
 
--export_type([maybe/1]).
+-export_type([monad_maybe/1]).
 
--type maybe(A) :: {just, A} | nothing.
+-type monad_maybe(A) :: {just, A} | nothing.
 
 -include("erlando.hrl").
 
@@ -49,21 +49,21 @@
 -gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
 -gen_fun(#{patterns => [?MODULE], tbehaviours => [alternative, monad_plus]}).
 
--spec fmap(fun((A) -> B), maybe(A)) -> maybe(B).
+-spec fmap(fun((A) -> B), monad_maybe(A)) -> monad_maybe(B).
 fmap(F, {just, X}) ->
     {just, F(X)};
 fmap(_F, nothing) ->
     nothing.
 
--spec '<$'(B, maybe(_A)) -> maybe(B).
+-spec '<$'(B, monad_maybe(_A)) -> monad_maybe(B).
 '<$'(B, MA) ->
     functor:'default_<$'(B, MA, ?MODULE).
 
--spec pure(A) -> maybe(A).
+-spec pure(A) -> monad_maybe(A).
 pure(A) ->
     {just, A}.
 
--spec '<*>'(maybe(fun((A) -> B)), A) -> maybe(B).
+-spec '<*>'(monad_maybe(fun((A) -> B)), A) -> monad_maybe(B).
 '<*>'(nothing, _) ->
     nothing;
 '<*>'(_, nothing) ->
@@ -71,47 +71,47 @@ pure(A) ->
 '<*>'({just, F}, {just, A}) ->
     {just, F(A)}.
 
--spec lift_a2(fun((A, B) -> C), maybe(A), maybe(B)) -> maybe(C).
+-spec lift_a2(fun((A, B) -> C), monad_maybe(A), monad_maybe(B)) -> monad_maybe(C).
 lift_a2(F, RTA, RTB) ->
     applicative:default_lift_a2(F, RTA, RTB, ?MODULE).
 
--spec '*>'(maybe(_A), maybe(B)) -> maybe(B).
+-spec '*>'(monad_maybe(_A), monad_maybe(B)) -> monad_maybe(B).
 '*>'(RTA, RTB) ->
     applicative:'default_*>'(RTA, RTB, ?MODULE).
 
--spec '<*'(maybe(A), maybe(_B)) -> maybe(A).
+-spec '<*'(monad_maybe(A), monad_maybe(_B)) -> monad_maybe(A).
 '<*'(RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?MODULE).
 
--spec '>>='(maybe(A), fun( (A) -> maybe(B) )) -> maybe(B).
+-spec '>>='(monad_maybe(A), fun( (A) -> monad_maybe(B) )) -> monad_maybe(B).
 '>>='({just, X}, Fun) -> Fun(X);
 '>>='(nothing,  _Fun) -> nothing.
 
--spec '>>'(maybe(_A), maybe(B)) -> maybe(B).
+-spec '>>'(monad_maybe(_A), monad_maybe(B)) -> monad_maybe(B).
 '>>'(MA, MB) ->
     monad:'default_>>'(MA, MB, ?MODULE).
 
--spec return(A) -> maybe(A).
+-spec return(A) -> monad_maybe(A).
 return(A) -> 
     monad:default_return(A, ?MODULE).
 
--spec fail(any()) -> maybe(_A).
+-spec fail(any()) -> monad_maybe(_A).
 fail(_E) -> nothing.
 
 empty() ->
     nothing.
 
--spec '<|>'(maybe(A), maybe(A)) -> maybe(A).
+-spec '<|>'(monad_maybe(A), monad_maybe(A)) -> monad_maybe(A).
 '<|>'(nothing, MB) -> 
     MB;
 '<|>'(MA,     _MB) -> 
     MA.
 
--spec mzero() -> maybe(_A).
+-spec mzero() -> monad_maybe(_A).
 mzero() -> 
     empty().
 
--spec mplus(maybe(A), maybe(A)) -> maybe(A).
+-spec mplus(monad_maybe(A), monad_maybe(A)) -> monad_maybe(A).
 mplus(MA, MB) ->
     '<|>'(MA, MB).
 
@@ -119,7 +119,7 @@ mplus(MA, MB) ->
 run_nargs() ->
     0.
 
--spec run_m(maybe(A), [any()]) -> maybe(A).
+-spec run_m(monad_maybe(A), [any()]) -> monad_maybe(A).
 run_m(MA, []) ->
     MA.
 
@@ -128,4 +128,3 @@ run(#undetermined{} = UA) ->
     undetermined:run(UA, ?MODULE);
 run(Maybe) ->
     Maybe.
-

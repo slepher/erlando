@@ -393,7 +393,7 @@ values passed to it, and always invokes the subsequent expression function.
 What could we do if we did inspect the values passed to the sequencing
 combinators? One possibility results in the Maybe-monad:
 
-    -module(maybe).
+    -module(monad_maybe).
     -behaviour(monad).
     -export(['>>='/2, return/1, fail/1]).
     
@@ -642,8 +642,8 @@ reader_t:reader_t(R, M, A) :: {reader_t, fun((R) -> monad:m(M, A)})}.
 writer_t:writer_t(W, M, A) :: {writer_t, monad:m(M, {A, monoid:m(W)})}.
 cont_t:cont_t(R, M, A) :: {cont_t, fun((fun((A) -> monad:m(M, R))) -> monad:m(M, R))}.
 error_t:error_t(E, M, A) :: {error_t, monad:m(M, either:either(E, A))}.
-maybe_t:maybe_t(M, A) :: {maybe_t, monad:m(M, maybe:maybe(A))}.
-maybe:maybe(A) :: {just, A} | nothing.
+maybe_t:maybe_t(M, A) :: {maybe_t, monad:m(M, monad_maybe:monad_maybe(A))}.
+monad_maybe:monad_maybe(A) :: {just, A} | nothing.
 either:either(E, A) :: {right, A} | {left, E}.
 error_m:error_m(E, A) :: {ok, A} | ok, | {error, E}.
 identity:identity(A) :: {identity, A}.
@@ -659,7 +659,7 @@ function_instance:function_instance(R, A) :: fun((R) -> A).
 ## renamed modules
 
 * identity_m -> identity
-* maybe_m -> maybe
+* maybe_m -> monad_maybe
 
 ## Typeclasses
 

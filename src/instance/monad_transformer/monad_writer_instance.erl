@@ -59,7 +59,7 @@ lift_listen(Listen, MTWMA, {maybe_t, MonadWriter}) ->
       fun(WMA) ->
               do([MonadWriter || 
                      {MA, W} <- Listen(WMA),
-                     return(functor:fmap(fun(A) -> {A, W} end, MA, maybe))
+                     return(functor:fmap(fun(A) -> {A, W} end, MA, monad_maybe))
                  ])
       end, MTWMA);
 lift_listen(Listen, ETWMA, {error_t, MonadWriter}) ->

@@ -157,7 +157,7 @@ test_error_m_fail(_Config) ->
     fail(F).
 
 test_maybe_fail(_Config) ->
-    F = fun(M) -> nothing = maybe:run(M), error end,
+    F = fun(M) -> nothing = monad_maybe:run(M), error end,
     fail(F).
 
 test_either_fail(_Config) ->

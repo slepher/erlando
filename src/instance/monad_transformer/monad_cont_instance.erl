@@ -32,7 +32,7 @@ lift_callCC(CallCC, F, {maybe_t, _MonadCont}) ->
     maybe_t:maybe_t(
       CallCC(
         fun(CC) ->
-                maybe_t:run_maybe_t(F(fun(A) -> maybe_t:maybe_t(CC(monad:return(A, maybe))) end))
+                maybe_t:run_maybe_t(F(fun(A) -> maybe_t:maybe_t(CC(monad:return(A, monad_maybe))) end))
         end));
 lift_callCC(CallCC, F, {error_t, _MonadCont}) ->
     error_t:error_t(
