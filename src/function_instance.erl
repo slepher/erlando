@@ -19,12 +19,11 @@
 
 -erlando_instance(
    #{type => {?TYPE, [function_instance/0]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [?TYPE]}},
-          {applicative, #{adapter => target, patterns => [?TYPE]}},
-          {monad, #{adapter => target, patterns => [?TYPE]}},
-          {monad_reader, #{adapter => target, patterns => [?TYPE]}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [?TYPE],
+            capabilities => [functor, applicative, monad, monad_reader]}],
+     manual => [monad_runner]}).
 
 %% API
 -export([fmap/2, '<$'/2]).

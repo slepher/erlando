@@ -13,13 +13,12 @@
 
 -erlando_instance(
    #{type => {?MODULE, []},
-     capabilities =>
-         [{functor, #{requires => identity, adapter => source, remote => cont_t}},
-          {applicative, #{requires => identity, adapter => source, remote => cont_t}},
-          {monad, #{requires => identity, adapter => source, remote => cont_t}},
-          {monad_cont, #{requires => identity, adapter => source, remote => cont_t}},
-          {monad_fail, #{requires => identity, adapter => source,
-                         remote => monad_fail_instance}}]}).
+     adapters =>
+         [#{mode => source, requires => identity, remote => cont_t,
+            capabilities => [functor, applicative, monad, monad_cont]},
+          #{mode => source, requires => identity,
+            remote => monad_fail_instance,
+            capabilities => [monad_fail]}]}).
 
 -define(CONT, {cont_t, identity}).
 

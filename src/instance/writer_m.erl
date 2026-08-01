@@ -13,13 +13,12 @@
 
 -erlando_instance(
    #{type => {?MODULE, []},
-     capabilities =>
-         [{functor, #{requires => identity, adapter => source, remote => writer_t}},
-          {applicative, #{requires => identity, adapter => source, remote => writer_t}},
-          {monad, #{requires => identity, adapter => source, remote => writer_t}},
-          {monad_writer, #{requires => identity, adapter => source, remote => writer_t}},
-          {monad_fail, #{requires => identity, adapter => source,
-                         remote => monad_fail_instance}}]}).
+     adapters =>
+         [#{mode => source, requires => identity, remote => writer_t,
+            capabilities => [functor, applicative, monad, monad_writer]},
+          #{mode => source, requires => identity,
+            remote => monad_fail_instance,
+            capabilities => [monad_fail]}]}).
 
 -gen_fun(#{remote => writer_t, args => identity, extra_call => {identity, run},
              functions => [eval/1, exec/1, run/1]}).

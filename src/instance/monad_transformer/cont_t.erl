@@ -25,13 +25,12 @@
 
 -erlando_instance(
    #{type => {?MODULE, [cont_t/3]},
-     capabilities =>
-         [{functor, #{requires => any, adapter => source}},
-          {applicative, #{requires => any, adapter => source}},
-          {monad, #{requires => any, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_cont, #{requires => monad, adapter => source}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => source, requires => any,
+            capabilities => [functor, applicative, monad]},
+          #{mode => source, requires => monad,
+            capabilities => [monad_trans, monad_cont]}],
+     manual => [monad_runner]}).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/3, '<$'/3]).

@@ -96,7 +96,7 @@ Monad 和 Applicative 法则在 Identity 上观察完整 Transformer 结果；Mo
 
 ## 验证结果
 
-- `rebar3 ct`：150 项通过。
+- `rebar3 ct`：154 项通过。
 - `rebar3 xref`：通过。
 - `rebar3 dialyzer`：通过。
 - `rebar3 cover --verbose`：通过，无 `typeclass.beam` 警报。
@@ -107,6 +107,7 @@ Monad 和 Applicative 法则在 Identity 上观察完整 Transformer 结果；Mo
 原未决架构项已经解决：
 
 - `-erlando_instance(...)` 同时生成类型注册、behaviour、capability Adapter 和版本化 `erlando_instance_meta`。
+- 相同 Adapter 策略通过 `adapters => [#{...}]` map 分组声明，宏再展开成完整逐 capability metadata；手写 capability 使用 `manual` 列表。
 - `rebar3_erlando` 使用 metadata 的精确 `{Type, Typeclass}` mapping，不再对新声明做笛卡尔积推断。
 - `monad_cont_instance` 的 dispatch map 同时生成公开 callback 分派，并直接引用逐 type 私有语义 Adapter。
 - 插件检查 required/optional callbacks、mapping 冲突、`gen_fun` capability 漂移、dispatch 覆盖和 Adapter arity。

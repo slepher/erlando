@@ -20,15 +20,16 @@
 -include("erlando.hrl").
 -erlando_instance(
    #{type => {?MODULE, [list_t/2]},
-     capabilities =>
-         [{functor, #{requires => functor, adapter => source}},
-          {applicative, #{requires => monad, adapter => source}},
-          {alternative, #{requires => monad, adapter => source}},
-          {monad, #{requires => monad, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_plus, #{requires => monad, adapter => source}},
-          {monad_fail, #{requires => monad_fail, adapter => source}},
-          {monad_error, #{requires => monad_error, adapter => source}}]}).
+     adapters =>
+         [#{mode => source, requires => functor,
+            capabilities => [functor]},
+          #{mode => source, requires => monad,
+            capabilities =>
+                [applicative, alternative, monad, monad_trans, monad_plus]},
+          #{mode => source, requires => monad_fail,
+            capabilities => [monad_fail]},
+          #{mode => source, requires => monad_error,
+            capabilities => [monad_error]}]}).
 
 %% API
 -export([new/1]).

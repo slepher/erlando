@@ -12,9 +12,10 @@
 
 -erlando_instance(
    #{type => ?MODULE,
-     capabilities =>
-         [{functor, #{adapter => source, args => [?MODULE]}},
-          {applicative, #{adapter => source, args => [?MODULE]}}]}).
+     adapters =>
+         [#{mode => source,
+            args => [?MODULE],
+            capabilities => [functor, applicative]}]}).
 
 -include("erlando.hrl").
 

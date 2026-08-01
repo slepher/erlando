@@ -24,16 +24,15 @@
 
 -erlando_instance(
    #{type => ?MODULE,
-     capabilities =>
-         [{functor, #{requires => functor, adapter => source}},
-          {applicative, #{requires => monad, adapter => source}},
-          {monad, #{requires => monad, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_fail, #{requires => monad, adapter => source}},
-          {monad_error, #{requires => monad, adapter => source}},
-          {alternative, #{requires => monad_plus, adapter => source}},
-          {monad_plus, #{requires => monad_plus, adapter => source}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => source, requires => functor,
+            capabilities => [functor]},
+          #{mode => source, requires => monad,
+            capabilities =>
+                [applicative, monad, monad_trans, monad_fail, monad_error]},
+          #{mode => source, requires => monad_plus,
+            capabilities => [alternative, monad_plus]}],
+     manual => [monad_runner]}).
 
 -include("op.hrl").
 -include("erlando.hrl").

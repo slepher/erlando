@@ -25,15 +25,18 @@
 
 -erlando_instance(
    #{type => {?MODULE, [reader_t/3]},
-     capabilities =>
-         [{functor, #{requires => functor, adapter => source}},
-          {applicative, #{requires => applicative, adapter => source}},
-          {monad, #{requires => monad, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_reader, #{requires => monad, adapter => source}},
-          {alternative, #{requires => alternative, adapter => source}},
-          {monad_plus, #{requires => monad_plus, adapter => source}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => source, requires => functor,
+            capabilities => [functor]},
+          #{mode => source, requires => applicative,
+            capabilities => [applicative]},
+          #{mode => source, requires => monad,
+            capabilities => [monad, monad_trans, monad_reader]},
+          #{mode => source, requires => alternative,
+            capabilities => [alternative]},
+          #{mode => source, requires => monad_plus,
+            capabilities => [monad_plus]}],
+     manual => [monad_runner]}).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor

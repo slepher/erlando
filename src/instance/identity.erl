@@ -20,12 +20,11 @@
 
 -erlando_instance(
    #{type => {?MODULE, [identity/1]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [?MODULE]}},
-          {applicative, #{adapter => target, patterns => [?MODULE]}},
-          {monad, #{adapter => target, patterns => [?MODULE]}},
-          {monad_fail, #{adapter => target, patterns => [?MODULE]}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [?MODULE],
+            capabilities => [functor, applicative, monad, monad_fail]}],
+     manual => [monad_runner]}).
 
 -export_type([identity/1]).
 -type identity(A) :: {?MODULE, A}.

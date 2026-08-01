@@ -26,9 +26,10 @@
 
 -erlando_instance(
    #{type => {lift, [lift/2]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [lift]}},
-          {applicative, #{adapter => target, patterns => [lift]}}]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [lift],
+            capabilities => [functor, applicative]}]}).
 
 %% API
 -export([fmap/2, '<$'/2]).

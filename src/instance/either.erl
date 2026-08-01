@@ -19,13 +19,12 @@
 
 -erlando_instance(
    #{type => {?MODULE, [either/2]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [?TYPE]}},
-          {applicative, #{adapter => target, patterns => [?TYPE]}},
-          {monad, #{adapter => target, patterns => [?TYPE]}},
-          {monad_fail, #{adapter => target, patterns => [?TYPE]}},
-          {monad_error, #{adapter => target, patterns => [?TYPE]}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [?TYPE],
+            capabilities =>
+                [functor, applicative, monad, monad_fail, monad_error]}],
+     manual => [monad_runner]}).
 
 -include("erlando.hrl").
 

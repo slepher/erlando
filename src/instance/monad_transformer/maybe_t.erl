@@ -24,15 +24,14 @@
 
 -erlando_instance(
    #{type => ?MODULE,
-     capabilities =>
-         [{functor, #{requires => functor, adapter => source}},
-          {applicative, #{requires => monad, adapter => source}},
-          {monad, #{requires => monad, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_fail, #{requires => monad, adapter => source}},
-          {alternative, #{requires => monad_plus, adapter => source}},
-          {monad_plus, #{requires => monad_plus, adapter => source}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => source, requires => functor,
+            capabilities => [functor]},
+          #{mode => source, requires => monad,
+            capabilities => [applicative, monad, monad_trans, monad_fail]},
+          #{mode => source, requires => monad_plus,
+            capabilities => [alternative, monad_plus]}],
+     manual => [monad_runner]}).
 
 %% API
 -export([new/1, maybe_t/1, run_maybe_t/1]).

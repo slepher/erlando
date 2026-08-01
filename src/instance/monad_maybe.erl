@@ -25,14 +25,13 @@
 
 -erlando_instance(
    #{type => {?MODULE, [monad_maybe/1]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [?MODULE]}},
-          {applicative, #{adapter => target, patterns => [?MODULE]}},
-          {monad, #{adapter => target, patterns => [?MODULE]}},
-          {monad_fail, #{adapter => target, patterns => [?MODULE]}},
-          {alternative, #{adapter => target, patterns => [?MODULE]}},
-          {monad_plus, #{adapter => target, patterns => [?MODULE]}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [?MODULE],
+            capabilities =>
+                [functor, applicative, monad, monad_fail,
+                 alternative, monad_plus]}],
+     manual => [monad_runner]}).
 
 %% impl of functor.
 -export([fmap/2, '<$'/2]).

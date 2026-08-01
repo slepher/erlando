@@ -713,11 +713,11 @@ typeclass is also a behaviour in erlang
 -include("erlando_instance.hrl").
 -erlando_instance(#{
     type => {identity, [identity/1]},
-    capabilities => [
-        {functor, #{adapter => target, patterns => [identity]}},
-        {applicative, #{adapter => target, patterns => [identity]}},
-        {monad, #{adapter => target, patterns => [identity]}}
-    ]
+    adapters => [#{
+        mode => target,
+        patterns => [identity],
+        capabilities => [functor, applicative, monad]
+    }]
 }).
 -export_type([identity/1]).
 -type identity(A) :: {?MODULE, A}.
@@ -734,12 +734,11 @@ name of type could be different from module
 -include("erlando_instance.hrl").
 -erlando_instance(#{
     type => {function, [function_instance/0]},
-    capabilities => [
-        {functor, #{adapter => target, patterns => [function]}},
-        {applicative, #{adapter => target, patterns => [function]}},
-        {monad, #{adapter => target, patterns => [function]}},
-        {monad_reader, #{adapter => target, patterns => [function]}}
-    ]
+    adapters => [#{
+        mode => target,
+        patterns => [function],
+        capabilities => [functor, applicative, monad, monad_reader]
+    }]
 }).
 -export_type([function_instance/0]).
 -type function_instance() :: fun((_A) -> _B).
@@ -754,12 +753,13 @@ as haskell, type could be defined in multi modules
 -include("erlando_instance.hrl").
 -erlando_instance(#{
     type => {?MODULE, [state_t/3]},
-    capabilities => [
-        {functor, #{requires => functor, adapter => source}},
-        {applicative, #{requires => monad, adapter => source}},
-        {monad, #{requires => monad, adapter => source}},
-        {monad_trans, #{requires => monad, adapter => source}},
-        {monad_state, #{requires => monad, adapter => source}}
+    adapters => [
+        #{mode => source,
+          requires => functor,
+          capabilities => [functor]},
+        #{mode => source,
+          requires => monad,
+          capabilities => [applicative, monad, monad_trans, monad_state]}
     ]
 }).
 

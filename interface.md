@@ -145,50 +145,39 @@ proplists:get_all_values(erlando_instance_meta, Attributes)
 ```erlang
 -erlando_instance(#{
     type => {?MODULE, [state_t/3]},
-    capabilities => [
-        {functor, #{
+    adapters => [
+        #{
+            mode => source,
             requires => functor,
-            adapter => source
-        }},
-        {applicative, #{
+            capabilities => [functor]
+        },
+        #{
+            mode => source,
             requires => monad,
-            adapter => source
-        }},
-        {monad, #{
-            requires => monad,
-            adapter => source
-        }},
-        {monad_trans, #{
-            requires => monad,
-            adapter => source
-        }},
-        {monad_state, #{
-            requires => monad,
-            adapter => source
-        }},
-        {alternative, #{
+            capabilities =>
+                [applicative, monad, monad_trans, monad_state]
+        },
+        #{
+            mode => source,
             requires => monad_plus,
-            adapter => source
-        }},
-        {monad_plus, #{
-            requires => monad_plus,
-            adapter => source
-        }},
-        {monad_runner, manual}
-    ]
+            capabilities => [alternative, monad_plus]
+        }
+    ],
+    manual => [monad_runner]
 }).
 ```
 
 字段含义：
 
 - `type`：生成现有 `erlando_type` metadata，供类型识别和实例注册使用。
-- `capabilities`：该 type 实现的 typeclass Interface。
-- `requires`：生成 convenience Adapter 时要求的底层 capability。
-- `adapter => source`：根据 typeclass callback 生成面向调用者的低 arity Adapter。
-- `adapter => target`：为核心实现补充 type/descriptor 参数。
-- `manual`：Module 自己实现并导出 callback，不生成 convenience Adapter。
+- `adapters`：按相同生成策略分组的 Adapter map 列表。
+- `capabilities`：该 Adapter 分组覆盖的 typeclass Interface。
+- `requires`：生成 convenience Adapter 时要求的底层 capability；使用固定 `args` 的 source Adapter 可以省略。
+- `mode => source`：根据 typeclass callback 生成面向调用者的低 arity Adapter。
+- `mode => target`：为核心实现补充 type/descriptor 参数。
+- `manual`：Module 自己实现并导出 callback、不生成 convenience Adapter 的 capability 列表。
 
-具体字段名和 source/target 命名可在原型阶段调整，但必须保留“底层约束”“Adapter 策略”和“手写实现”三个概念。
+旧的逐 capability `capabilities` tuple 列表继续作为兼容输入。宏会先把两种源码语法规范化成相同的逐 capability schema 1 metadata；两种语法重复声明同一 capability 时编译失败。
 
 `map/run/with` 等非 capability helper 继续显式使用 `gen_fun`：
 

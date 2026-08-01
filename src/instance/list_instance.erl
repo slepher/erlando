@@ -33,17 +33,13 @@
 
 -erlando_instance(
    #{type => {list, [list_instance/0]},
-     capabilities =>
-         [{functor, #{adapter => target, patterns => [?TYPE]}},
-          {applicative, #{adapter => target, patterns => [?TYPE]}},
-          {monad, #{adapter => target, patterns => [?TYPE]}},
-          {monad_fail, #{adapter => target, patterns => [?TYPE]}},
-          {foldable, #{adapter => target, patterns => [?TYPE]}},
-          {traversable, #{adapter => target, patterns => [?TYPE]}},
-          {alternative, #{adapter => target, patterns => [?TYPE]}},
-          {monad_plus, #{adapter => target, patterns => [?TYPE]}},
-          {monoid, #{adapter => target, patterns => [?TYPE]}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => target,
+            patterns => [?TYPE],
+            capabilities =>
+                [functor, applicative, monad, monad_fail, foldable,
+                 traversable, alternative, monad_plus, monoid]}],
+     manual => [monad_runner]}).
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).

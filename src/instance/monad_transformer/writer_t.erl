@@ -23,15 +23,18 @@
 
 -erlando_instance(
    #{type => {?MODULE, [writer_t/3]},
-     capabilities =>
-         [{functor, #{requires => functor, adapter => source}},
-          {applicative, #{requires => applicative, adapter => source}},
-          {monad, #{requires => monad, adapter => source}},
-          {monad_trans, #{requires => monad, adapter => source}},
-          {monad_writer, #{requires => monad, adapter => source}},
-          {alternative, #{requires => alternative, adapter => source}},
-          {monad_plus, #{requires => monad_plus, adapter => source}},
-          monad_runner]}).
+     adapters =>
+         [#{mode => source, requires => functor,
+            capabilities => [functor]},
+          #{mode => source, requires => applicative,
+            capabilities => [applicative]},
+          #{mode => source, requires => monad,
+            capabilities => [monad, monad_trans, monad_writer]},
+          #{mode => source, requires => alternative,
+            capabilities => [alternative]},
+          #{mode => source, requires => monad_plus,
+            capabilities => [monad_plus]}],
+     manual => [monad_runner]}).
 
 -export([new/1, writer_t/1, run_writer_t/1]).
 -export([fmap/3, '<$'/3]).
