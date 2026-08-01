@@ -11,7 +11,7 @@
 -superclass([monad]).
 
 -callback ask(M) -> monad:m(M, _R) when M :: monad:class().
--callback local(fun((R) -> R), monad:m(M, R), M) -> monad:m(M, R) when M :: monad:class().
+-callback local(fun((R) -> R), monad:m(M, A), M) -> monad:m(M, A) when M :: monad:class().
 -callback reader(fun((_R) -> A), M) -> monad:m(M, A) when M :: monad:class().
 
 -include("do.hrl").

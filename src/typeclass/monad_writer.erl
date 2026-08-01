@@ -10,10 +10,11 @@
 
 -superclass([monad]).
 
--callback writer({A, [_W]}, M) -> monad:m(M, A) when M :: monad:class().
--callback tell([_W], M) -> monad:m(M, _A) when M :: monad:class().
--callback listen(monad:m(M, A), M) -> monad:m(M, {A, [_W]}) when M :: monad:class().
--callback pass(monad:m(M, {A, fun(([W]) -> [W])}), M) -> monad:m(M, A) when M :: monad:class().
+-callback writer({A, monoid:m(_W)}, M) -> monad:m(M, A) when M :: monad:class().
+-callback tell(monoid:m(_W), M) -> monad:m(M, ok) when M :: monad:class().
+-callback listen(monad:m(M, A), M) -> monad:m(M, {A, monoid:m(_W)}) when M :: monad:class().
+-callback pass(monad:m(M, {A, fun((monoid:m(W)) -> monoid:m(W))}), M) -> monad:m(M, A)
+    when M :: monad:class().
 
 -include("do.hrl").
 -include("gen_fun.hrl").

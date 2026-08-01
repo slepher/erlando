@@ -28,6 +28,8 @@
 -behaviour(monad).
 -behaviour(monad_trans).
 -behaviour(monad_fail).
+-behaviour(alternative).
+-behaviour(monad_plus).
 -behaviour(monad_runner).
 
 %% API

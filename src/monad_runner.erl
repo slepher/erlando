@@ -39,7 +39,7 @@ run_m(UA, Args) ->
                           [] ->
                               MA;
                           _ ->
-                              exit(invalid_run_nargs, {Module, N})
+                              exit({invalid_run_nargs, {Module, N}})
                       end
               end
       end, UA, ?MODULE).

@@ -16,7 +16,7 @@
 
 -type t(_F, _A) :: any().
 
--callback fold_map(fun((A) -> monoid:monoid(M)), foldable:t(T, A), T) -> monoid:monoid(M).
+-callback fold_map(fun((A) -> monoid:m(M)), foldable:t(T, A), T) -> monoid:m(M).
 %% API
 -export([fold_map/3]).
 
@@ -25,11 +25,11 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec fold_map(fun((A) -> monoid:monoid(M)), foldable:t(T, A), T) -> monoid:monoid(M).
+-spec fold_map(fun((A) -> monoid:m(M)), foldable:t(T, A), T) -> monoid:m(M).
 fold_map(F, UA, UFoldable) ->
     undetermined:map(
       fun(Foldable, TA) -> 
-              typeclass_trans:apply(foldmap, [F, TA], Foldable, ?MODULE)
+              typeclass_trans:apply(fold_map, [F, TA], Foldable, ?MODULE)
       end, UA, UFoldable).
 
 %%--------------------------------------------------------------------

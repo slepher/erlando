@@ -113,7 +113,7 @@ run_m(As, []) ->
 fold_map(F, As) ->
     lists:foldr(
       fun(A, Acc) ->
-              monoid:mappend(Acc, F(A))
+              monoid:mappend(F(A), Acc)
       end, monoid:mempty(), As).
 
 traverse(A_FB, [H|T]) ->
