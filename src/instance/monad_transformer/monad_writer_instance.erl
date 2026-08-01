@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(monad_writer_instance).
 
--erlando_type([state_t, reader_t, maybe_t, error_t]).
+-erlando_type([state_t, reader_t, maybe_t, error_t, except_t]).
 
 -include("do.hrl").
 
@@ -70,6 +70,14 @@ lift_listen(Listen, ETWMA, {error_t, MonadWriter}) ->
                      return(functor:fmap(fun(A) -> {A, W} end, EA, either))
                  ])
       end, ETWMA);
+lift_listen(Listen, ETWMA, {except_t, MonadWriter}) ->
+    except_t:map(
+      fun(WMA) ->
+              do([MonadWriter ||
+                     {EA, W} <- Listen(WMA),
+                     return(functor:fmap(fun(A) -> {A, W} end, EA, either))
+                 ])
+      end, ETWMA);
 lift_listen(Listen, RTWMA, {reader_t, _MonadWriter}) ->
     reader_t:map(Listen, RTWMA);
 lift_listen(Listen, STWMA, {state_t, MonadWriter}) ->
@@ -101,6 +109,22 @@ lift_pass(Pass, MTWMAF, {maybe_t, MonadWriter}) ->
       end, MTWMAF);
 lift_pass(Pass, ETWMAF, {error_t, MonadWriter}) ->
     error_t:map(
+      fun(WMAF) ->
+              Pass(
+                do([MonadWriter ||
+                       EAF <- WMAF,
+                       return(
+                         case EAF of
+                             {right, {A, F}} ->
+                                 {{right, A}, F};
+                             {left, Reason} ->
+                                 {{left, Reason}, function_instance:id()}
+                         end)
+                   ])
+               )
+      end, ETWMAF);
+lift_pass(Pass, ETWMAF, {except_t, MonadWriter}) ->
+    except_t:map(
       fun(WMAF) ->
               Pass(
                 do([MonadWriter ||

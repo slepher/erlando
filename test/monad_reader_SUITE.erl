@@ -122,9 +122,9 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_ask_error_t, test_ask_maybe_t, test_ask_reader_t, test_ask_state_t, test_ask_cont_t, test_ask_list_t,
-     test_reader_error_t, test_reader_maybe_t, test_reader_reader_t, test_reader_state_t, test_reader_cont_t, test_reader_list_t,
-     test_local_error_t, test_local_maybe_t, test_local_reader_t, test_local_state_t, test_local_cont_t, test_local_list_t
+    [test_ask_error_t, test_ask_except_t, test_ask_maybe_t, test_ask_reader_t, test_ask_state_t, test_ask_cont_t, test_ask_list_t,
+     test_reader_error_t, test_reader_except_t, test_reader_maybe_t, test_reader_reader_t, test_reader_state_t, test_reader_cont_t, test_reader_list_t,
+     test_local_error_t, test_local_except_t, test_local_maybe_t, test_local_reader_t, test_local_state_t, test_local_cont_t, test_local_list_t
     ].
 
 
@@ -155,6 +155,9 @@ all() ->
 test_ask_error_t(_Config) ->
     ask(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
+test_ask_except_t(_Config) ->
+    ask(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
+
 test_ask_maybe_t(_Config) ->
     ask(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
@@ -173,6 +176,9 @@ test_ask_list_t(_Config) ->
 test_reader_error_t(_Config) ->
     asks(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
+test_reader_except_t(_Config) ->
+    asks(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
+
 test_reader_maybe_t(_Config) ->
     reader(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
 
@@ -190,6 +196,9 @@ test_reader_list_t(_Config) ->
 
 test_local_error_t(_Config) ->
     local(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
+
+test_local_except_t(_Config) ->
+    local(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_local_maybe_t(_Config) ->
     local(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).

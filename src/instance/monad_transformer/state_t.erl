@@ -14,6 +14,8 @@
 %% Copyright (c) 2011-2013 VMware, Inc.  All rights reserved.
 %%
 
+%% @doc Strict StateT. State transitions are evaluated when the transformed
+%% computation is run, and each bind passes the produced state to the next step.
 -module(state_t).
 
 -erlando_type({?MODULE, [state_t/3]}).

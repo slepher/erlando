@@ -114,12 +114,7 @@ catch_error(ok, _KEB) ->
 catch_error({ok, A}, _KEB) ->
     {ok, A};
 catch_error({error, Reason}, KEB) ->
-    try
-        undetermined:run(KEB(Reason), error_m)
-    catch
-        error:function_clause ->
-            {error, Reason}
-    end.
+    undetermined:run(KEB(Reason), error_m).
 
 run_nargs() ->
     0.

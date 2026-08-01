@@ -132,6 +132,10 @@ all() ->
     [test_error_m_throw_error, test_error_m_catch_error,
      test_either_throw_error, test_either_catch_error,
      test_error_t_throw_error, test_error_t_catch_error,
+     test_except_t_throw_error, test_except_t_catch_error,
+     test_except_t_error_t_conversion,
+     test_catch_error_exposes_handler_function_clause,
+     test_lift_either,
      test_maybe_t_throw_error, test_maybe_t_catch_error,
      test_reader_t_throw_error, test_reader_t_catch_error,
      test_reader_t_trans_error, test_reader_t_lift_error,
@@ -188,6 +192,47 @@ test_error_t_throw_error(_Config) ->
 test_error_t_catch_error(_Config) ->
     F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
     test_catch_error(F).
+
+test_except_t_throw_error(_Config) ->
+    ExceptT = except_t:new(identity),
+    M = monad_error:throw_error(error, ExceptT),
+    ?assertEqual({left, error}, identity:run(except_t:run(M, ExceptT))).
+
+test_except_t_catch_error(_Config) ->
+    ExceptT = except_t:new(identity),
+    M0 = monad_error:throw_error(error, ExceptT),
+    M1 = monad_error:catch_error(
+           M0, fun(error) -> monad_error:throw_error(error1, ExceptT) end, ExceptT),
+    M2 = monad_error:catch_error(
+           M1, fun(error1) -> monad_error:throw_error(error2, ExceptT) end, ExceptT),
+    ?assertEqual({left, error1}, identity:run(except_t:run(M1, ExceptT))),
+    ?assertEqual({left, error2}, identity:run(except_t:run(M2, ExceptT))).
+
+test_except_t_error_t_conversion(_Config) ->
+    ErrorT = error_t:throw_error(reason, error_t:new(identity)),
+    ExceptT = except_t:from_error_t(ErrorT),
+    ?assertEqual({left, reason}, identity:run(except_t:run(ExceptT))),
+    RoundTrip = except_t:to_error_t(ExceptT),
+    ?assertEqual({left, reason}, identity:run(error_t:run(RoundTrip))).
+
+test_catch_error_exposes_handler_function_clause(_Config) ->
+    Handler = fun(other_reason) -> monad:return(recovered) end,
+    ?assertError(function_clause,
+                 error_m:catch_error({error, reason}, Handler)),
+    ?assertError(function_clause,
+                 either:catch_error({left, reason}, Handler)),
+    ErrorT = error_t:throw_error(reason, error_t:new(identity)),
+    ?assertError(function_clause,
+                 identity:run(error_t:run(error_t:catch_error(ErrorT, Handler)))),
+    ExceptT = except_t:throw_error(reason, except_t:new(identity)),
+    ?assertError(function_clause,
+                 identity:run(except_t:run(except_t:catch_error(ExceptT, Handler)))).
+
+test_lift_either(_Config) ->
+    ?assertEqual({left, reason},
+                 either:run(monad_error:lift_either({left, reason}, either))),
+    ?assertEqual({right, value},
+                 either:run(monad_error:lift_either({right, value}, either))).
 
 test_maybe_t_throw_error(_Config) ->
     F = fun(E) -> {left, L} = either:run(maybe_t:run(E)), L end,
@@ -253,10 +298,10 @@ test_list_t_catch_error(_Config) ->
 test_trans_error(F) ->
     M = monad_error:throw_error(error),
     M1 = monad_error:trans_error(M, fun(error) -> error1 end),
-    M2 = monad_error:trans_error(M, fun(error1) -> error2 end),
+    M2 = monad_error:trans_error(M1, fun(error1) -> error2 end),
     Result1 = error1,
     ?assertEqual(Result1, F(M1)),
-    Result2 = error,
+    Result2 = error2,
     ?assertEqual(Result2, F(M2)).
 
 test_lift_error(F) ->
@@ -276,8 +321,8 @@ throw_error(F) ->
 test_catch_error(F) ->
     M = monad_error:throw_error(error),
     M1 = monad_error:catch_error(M, fun(error) -> monad_error:throw_error(error1) end),
-    M2 = monad_error:catch_error(M, fun(error1) -> monad_error:throw_error(error2) end),
+    M2 = monad_error:catch_error(M1, fun(error1) -> monad_error:throw_error(error2) end),
     Result1 = error1,
     ?assertEqual(Result1, F(M1)),
-    Result2 = error,
+    Result2 = error2,
     ?assertEqual(Result2, F(M2)).

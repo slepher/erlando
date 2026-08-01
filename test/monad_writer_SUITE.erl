@@ -126,19 +126,19 @@ all(doc) ->
     ["Describe the main purpose of this suite"].
 
 all() -> 
-    [test_writer_error_t, test_writer_maybe_t, 
+    [test_writer_error_t, test_writer_except_t, test_writer_maybe_t,
      test_writer_reader_t, test_writer_state_t,
      test_writer_writer_t,
 
-     test_tell_error_t, test_tell_maybe_t, 
+     test_tell_error_t, test_tell_except_t, test_tell_maybe_t,
      test_tell_reader_t, test_tell_state_t,
      test_tell_writer_t,
 
-     test_listen_error_t, test_listen_maybe_t, 
+     test_listen_error_t, test_listen_except_t, test_listen_maybe_t,
      test_listen_reader_t, test_listen_state_t,
      test_listen_writer_t,
 
-     test_pass_error_t, test_pass_maybe_t, 
+     test_pass_error_t, test_pass_except_t, test_pass_maybe_t,
      test_pass_reader_t, test_pass_state_t,
      test_pass_writer_t
     ].
@@ -172,6 +172,9 @@ all() ->
 test_writer_error_t(_Config) ->
     writer(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
+test_writer_except_t(_Config) ->
+    writer(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
+
 test_writer_maybe_t(_Config) ->
     writer(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
 
@@ -186,6 +189,9 @@ test_writer_writer_t(_Config) ->
 
 test_tell_error_t(_Config) ->
     tell(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
+
+test_tell_except_t(_Config) ->
+    tell(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_tell_maybe_t(_Config) ->
     tell(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
@@ -202,6 +208,9 @@ test_tell_writer_t(_Config) ->
 test_listen_error_t(_Config) ->
     listen(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
 
+test_listen_except_t(_Config) ->
+    listen(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
+
 test_listen_maybe_t(_Config) ->
     listen(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
 
@@ -216,6 +225,9 @@ test_listen_writer_t(_Config) ->
 
 test_pass_error_t(_Config) ->
     pass(fun(M) -> functor:fmap(fun({right, V}) -> V end, error_t:run(M)) end).
+
+test_pass_except_t(_Config) ->
+    pass(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_pass_maybe_t(_Config) ->
     pass(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).

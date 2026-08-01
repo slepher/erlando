@@ -125,6 +125,7 @@ end_per_testcase(_TestCase, _Config) ->
 %%--------------------------------------------------------------------
 all() -> 
     [test_error_m_fail, test_maybe_fail, test_either_fail, test_error_t_fail,
+     test_except_t_fail,
      test_maybe_t_fail, test_reader_t_fail, test_writer_t_fail, test_state_t_fail, test_cont_t_fail].
 
 
@@ -167,6 +168,11 @@ test_either_fail(_Config) ->
 test_error_t_fail(_Config) ->
     F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
     fail(F).
+
+test_except_t_fail(_Config) ->
+    ExceptT = except_t:new(error_m),
+    M = monad_fail:fail(error, ExceptT),
+    ?assertEqual({error, error}, error_m:run(except_t:run(M, ExceptT))).
 
 test_maybe_t_fail(_Config) ->
     F = fun(E) -> nothing = identity:run(maybe_t:run(E)), error end,

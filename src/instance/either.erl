@@ -89,12 +89,7 @@ throw_error(E) ->
     fail(E).
 
 catch_error({left, L}, EMB) ->
-    try
-        undetermined:run(EMB(L), either)
-    catch
-        error:function_clause ->
-            {left, L}
-    end;
+    undetermined:run(EMB(L), either);
 catch_error({right, R}, _EMB) ->
     {right, R}.
 

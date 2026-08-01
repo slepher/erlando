@@ -52,10 +52,10 @@ lift_error(Error, MonadError) ->
 
 lift_either(Either, MonadError) ->
     case Either of
-        {left, Val} ->
-            monad:return(Val, MonadError);
-        {right, Reason} ->
-            throw_error(Reason, MonadError)
+        {left, Reason} ->
+            throw_error(Reason, MonadError);
+        {right, Val} ->
+            monad:return(Val, MonadError)
     end.
 
 trans_error(MEA, KE, MonadError) ->

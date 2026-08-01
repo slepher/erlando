@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(monad_cont_instance).
 
--erlando_type([reader_t, writer_t, state_t, maybe_t, error_t, list_t]).
+-erlando_type([reader_t, writer_t, state_t, maybe_t, error_t, except_t, list_t]).
 
 -compile({parse_transform, cut}).
 
@@ -32,13 +32,19 @@ lift_callCC(CallCC, F, {maybe_t, _MonadCont}) ->
     maybe_t:maybe_t(
       CallCC(
         fun(CC) ->
-                maybe_t:run_maybe_t(F(fun(A) -> maybe_t:maybe_t(CC(monad:return(A, monad_maybe))) end))
+                maybe_t:run_maybe_t(F(fun(A) -> maybe_t:maybe_t(CC({just, A})) end))
         end));
 lift_callCC(CallCC, F, {error_t, _MonadCont}) ->
     error_t:error_t(
       CallCC(
         fun(CC) ->
-                error_t:run_error_t(F(fun(A) -> error_t:error_t(CC(monad:return(A, error))) end))
+                error_t:run_error_t(F(fun(A) -> error_t:error_t(CC({right, A})) end))
+        end));
+lift_callCC(CallCC, F, {except_t, _MonadCont}) ->
+    except_t:except_t(
+      CallCC(
+        fun(CC) ->
+                except_t:run_except_t(F(fun(A) -> except_t:except_t(CC({right, A})) end))
         end));
 
 lift_callCC(CallCC, F, {reader_t, _MonadCont}) ->
@@ -46,9 +52,18 @@ lift_callCC(CallCC, F, {reader_t, _MonadCont}) ->
       fun(R) ->
               CallCC(
                 fun(CC) ->
-                        reader_t:run(reader_t:reader_t(fun(A) -> F(fun(_) -> CC(A) end) end), R)
+                        reader_t:run(
+                          F(fun(A) -> reader_t:reader_t(fun(_) -> CC(A) end) end),
+                          R)
                 end)
       end);
+lift_callCC(CallCC, F, {writer_t, _MonadCont}) ->
+    writer_t:writer_t(
+      CallCC(
+        fun(CC) ->
+                writer_t:run_writer_t(
+                  F(fun(A) -> writer_t:writer_t(CC({A, monoid:mempty()})) end))
+        end));
 lift_callCC(CallCC, F, {state_t, _MonadCont}) ->
     state_t:state_t(
       fun(S) ->

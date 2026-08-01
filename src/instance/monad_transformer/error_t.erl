@@ -142,7 +142,7 @@ catch_error(ETA, EMB, {?MODULE, IM}) ->
       do([IM || 
              EA <- run_error_t(ETA),
              case EA of
-                 {left, Reason}    -> run_error_t(try_emb(Reason, EMB, IM));
+                 {left, Reason}    -> run_error_t(EMB(Reason));
                  {right, _A}       -> return(EA)
              end
        ])).
@@ -189,11 +189,3 @@ with(F, X, {?MODULE, _IM}) ->
       fun(MA) ->
               fun({left, R}) -> {left, F(R)}; (Val) -> Val end /'<$>'/ MA
       end, X).
-
-try_emb(Reason, EMB, IM) ->
-    try
-        EMB(Reason)
-    catch
-        error:function_clause ->
-            throw_error(Reason, {?MODULE, IM})
-    end.

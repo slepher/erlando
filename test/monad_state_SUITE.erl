@@ -122,7 +122,7 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_get, test_put, test_state].
+    [test_get, test_put, test_state, test_except_t_state].
 
 
 %%--------------------------------------------------------------------
@@ -178,3 +178,10 @@ test_state(_Config) ->
     ?assertEqual({6, 5}, identity:run(state_t:run(M3, 5))),
     ?assertEqual({6, 5}, identity:run(state_t:run(M4, 5))),
     ok.
+
+test_except_t_state(_Config) ->
+    StateT = state_t:new(identity),
+    ExceptT = except_t:new(StateT),
+    M = monad_state:state(fun(S) -> {S + 1, S} end, ExceptT),
+    State = except_t:run(M, ExceptT),
+    ?assertEqual({{right, 6}, 5}, identity:run(state_t:run(State, 5, StateT))).

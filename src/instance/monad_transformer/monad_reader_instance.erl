@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(monad_reader_instance).
 
--erlando_type([state_t, cont_t, maybe_t, error_t, list_t]).
+-erlando_type([state_t, cont_t, maybe_t, error_t, except_t, list_t]).
 
 -compile({parse_transform, cut}).
 -include("do.hrl").
@@ -47,6 +47,8 @@ lift_local(Ask, Local, F, CTMRA, {cont_t, MonadReader}) ->
                      Local(F, cont_t:run(CTMRA, fun(A) -> Local(fun(_) -> R end, CC(A)) end))
                  ])
       end);
+lift_local(_Ask, Local, F, ListTMRA, {list_t, _MonadReader} = ListT) ->
+    list_t:hoist(fun(MRA) -> Local(F, MRA) end, ListTMRA, ListT);
 lift_local(_Ask, Local, F, MTMRA, {MonadTrans, MonadReader}) ->
     MonadTrans:map(
       fun(MRA) ->
@@ -63,4 +65,3 @@ lift_local(Ask, Local, F, MRA, MonadTrans) when is_atom(MonadTrans) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
