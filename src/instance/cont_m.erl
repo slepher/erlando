@@ -8,26 +8,23 @@
 %%%-------------------------------------------------------------------
 -module(cont_m).
 
--erlando_type({?MODULE, []}).
-
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_cont).
--behaviour(monad_fail).
+-erlando_instance(
+   #{type => {?MODULE, []},
+     capabilities =>
+         [{functor, #{requires => identity, adapter => source, remote => cont_t}},
+          {applicative, #{requires => identity, adapter => source, remote => cont_t}},
+          {monad, #{requires => identity, adapter => source, remote => cont_t}},
+          {monad_cont, #{requires => identity, adapter => source, remote => cont_t}},
+          {monad_fail, #{requires => identity, adapter => source,
+                         remote => monad_fail_instance}}]}).
 
 -define(CONT, {cont_t, identity}).
 
 -export([reset/1, shift/1]).
 -export([eval/1, run/2]).
-
--gen_fun(#{remote => cont_t, inner_type => identity, 
-             behaviours => [functor, applicative, monad, monad_cont]}).
-
--gen_fun(#{remote => monad_fail_instance, inner_type => identity,
-           behaviours => [monad_fail]}).
 
 %%%===================================================================
 %%% API

@@ -8,9 +8,12 @@
 %%%-------------------------------------------------------------------
 -module(monad_error_instance).
 
--erlando_type([maybe_t, state_t, reader_t, writer_t]).
+-include("erlando_instance.hrl").
 
--behaviour(monad_error).
+-erlando_instance(
+   #{types => [maybe_t, state_t, reader_t, writer_t],
+     capability => monad_error,
+     implementation => generic}).
 
 %% API
 -export([throw_error/2, catch_error/3]).

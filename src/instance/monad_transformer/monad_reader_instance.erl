@@ -8,12 +8,14 @@
 %%%-------------------------------------------------------------------
 -module(monad_reader_instance).
 
--erlando_type([state_t, cont_t, maybe_t, error_t, except_t, list_t]).
-
 -compile({parse_transform, cut}).
 -include("do.hrl").
+-include("erlando_instance.hrl").
 
--behaviour(monad_reader).
+-erlando_instance(
+   #{types => [state_t, cont_t, maybe_t, error_t, except_t, list_t],
+     capability => monad_reader,
+     implementation => generic}).
 
 %% API
 -export([ask/1, local/3, reader/2]).

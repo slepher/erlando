@@ -19,7 +19,7 @@ typeclass API
         → monad_*_instance 跨层实例
 ```
 
-当前唯一明确保留的架构改进项，是让 capability 注册、函数分派、behaviour、exports 和 `gen_fun` 共享单一事实来源。该项涉及生成与注册机制重构，不属于本轮修改。
+capability 注册、函数分派、behaviour、exports 和 capability Adapter 现已统一到 `-erlando_instance(...)` 声明。`rebar3_erlando` 优先读取版本化 BEAM metadata，并为旧属性保留兼容回退。
 
 ## 已解决问题
 
@@ -96,19 +96,20 @@ Monad 和 Applicative 法则在 Identity 上观察完整 Transformer 结果；Mo
 
 ## 验证结果
 
-- `rebar3 ct`：146 项通过。
+- `rebar3 ct`：150 项通过。
 - `rebar3 xref`：通过。
 - `rebar3 dialyzer`：通过。
 - `rebar3 cover --verbose`：通过，无 `typeclass.beam` 警报。
 - 当前总行覆盖率：约 37%。
 
-## 唯一未决项
+## 实例声明统一性
 
-能力信息目前仍在多个位置表达：
+原未决架构项已经解决：
 
-- `-erlando_type(...)` 注册动态实例。
-- `-behaviour(...)` 声明 callback 契约。
-- `-gen_fun(...)` 生成转发 API。
-- `lift_callCC/lift_local/lift_listen/...` 等函数分支提供实际实现。
+- `-erlando_instance(...)` 同时生成类型注册、behaviour、capability Adapter 和版本化 `erlando_instance_meta`。
+- `rebar3_erlando` 使用 metadata 的精确 `{Type, Typeclass}` mapping，不再对新声明做笛卡尔积推断。
+- `monad_cont_instance` 的 dispatch map 同时生成公开 callback 分派，并直接引用逐 type 私有语义 Adapter。
+- 插件检查 required/optional callbacks、mapping 冲突、`gen_fun` capability 漂移、dispatch 覆盖和 Adapter arity。
+- 全部内置实例已迁移；旧 `-erlando_type/-behaviour/-gen_fun` 组合仍可供外部项目兼容使用。
 
-未来可以让实例实现声明生成注册信息，或增加编译期注册覆盖验证。但这属于生成器和实例注册架构调整；当前已知分支均有行为测试覆盖，不影响本轮行为正确性。
+普通 helper forwarding（如 `map/run/with`）仍使用 `gen_fun`，因为它们不是 capability 注册信息。

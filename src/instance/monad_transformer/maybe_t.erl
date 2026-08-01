@@ -8,8 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(maybe_t).
 
--erlando_type(?MODULE).
-
 -export_type([maybe_t/2]).
 
 -opaque maybe_t(M, A) :: {maybe_t, inner_t(M, A)}.
@@ -19,18 +17,22 @@
 -compile({parse_transform, cut}).
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 -include("op.hrl").
 -include("erlando.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_fail).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => ?MODULE,
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => monad, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_fail, #{requires => monad, adapter => source}},
+          {alternative, #{requires => monad_plus, adapter => source}},
+          {monad_plus, #{requires => monad_plus, adapter => source}},
+          monad_runner]}).
 
 %% API
 -export([new/1, maybe_t/1, run_maybe_t/1]).
@@ -52,10 +54,6 @@
 -export([map/3]).
 -export([run/2]).
 
--gen_fun(#{inner_type => functor,    behaviours => [functor]}).
--gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail]}).
--gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
 -gen_fun(#{args => monad,            functions => [map/2]}).
 -gen_fun(#{args => monad,            functions => [run/1]}).
 

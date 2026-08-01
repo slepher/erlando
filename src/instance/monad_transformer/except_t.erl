@@ -5,8 +5,6 @@
 %%%-------------------------------------------------------------------
 -module(except_t).
 
--erlando_type(?MODULE).
-
 -export_type([except_t/3]).
 
 -opaque except_t(E, M, A) :: {except_t, inner_t(E, M, A)}.
@@ -16,16 +14,20 @@
 -include("do.hrl").
 -compile({parse_transform, cut}).
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_fail).
--behaviour(monad_error).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => ?MODULE,
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => monad, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_fail, #{requires => monad, adapter => source}},
+          {monad_error, #{requires => monad, adapter => source}},
+          {alternative, #{requires => monad, adapter => source}},
+          {monad_plus, #{requires => monad, adapter => source}},
+          monad_runner]}).
 
 -include("erlando.hrl").
 
@@ -41,10 +43,6 @@
 -export([map_except_t/2, with_except_t/2]).
 -export([from_error_t/1, to_error_t/1]).
 
--gen_fun(#{inner_type => functor,    behaviours => [functor]}).
--gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_fail, monad_error]}).
--gen_fun(#{inner_type => monad,      behaviours => [alternative, monad_plus]}).
 -gen_fun(#{args => monad,            functions => [map/2, with/2]}).
 -gen_fun(#{args => monad,            functions => [run/1]}).
 

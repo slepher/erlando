@@ -1,0 +1,6 @@
+-include_lib("astranaut/include/macro.hrl").
+-ifndef(ERLANDO_INSTANCE).
+-define(ERLANDO_INSTANCE, true).
+-import_macro(erlando_instance_macro).
+-use_macro({erlando_instance_macro, erlando_instance/2, []}).
+-endif.

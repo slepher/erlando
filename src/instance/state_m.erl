@@ -8,28 +8,25 @@
 %%%-------------------------------------------------------------------
 -module(state_m).
 
--erlando_type({?MODULE, []}).
-
 -export_type([state_m/2]).
 
 -type state_m(S, A) :: {state_t, fun((S) -> {identity, {S, A}})}.
 
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -define(STATE, {state_t, identity}).
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_state).
--behaviour(monad_fail).
-
--gen_fun(#{remote => state_t, inner_type => identity,
-           behaviours => [functor, applicative, monad, monad_state]}).
-
--gen_fun(#{remote => monad_fail_instance, inner_type => identity,
-           behaviours => [monad_fail]}).
+-erlando_instance(
+   #{type => {?MODULE, []},
+     capabilities =>
+         [{functor, #{requires => identity, adapter => source, remote => state_t}},
+          {applicative, #{requires => identity, adapter => source, remote => state_t}},
+          {monad, #{requires => identity, adapter => source, remote => state_t}},
+          {monad_state, #{requires => identity, adapter => source, remote => state_t}},
+          {monad_fail, #{requires => identity, adapter => source,
+                         remote => monad_fail_instance}}]}).
 
 -gen_fun(#{remote => state_t, args => identity, extra_call => {identity, run}, 
            functions => [eval/2, exec/2, run/2]}).

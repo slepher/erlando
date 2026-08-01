@@ -15,23 +15,24 @@
 %%
 -module(monad_maybe).
 
--erlando_type({?MODULE, [monad_maybe/1]}).
-
 -export_type([monad_maybe/1]).
 
 -type monad_maybe(A) :: {just, A} | nothing.
 
 -include("erlando.hrl").
 
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [monad_maybe/1]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?MODULE]}},
+          {applicative, #{adapter => target, patterns => [?MODULE]}},
+          {monad, #{adapter => target, patterns => [?MODULE]}},
+          {monad_fail, #{adapter => target, patterns => [?MODULE]}},
+          {alternative, #{adapter => target, patterns => [?MODULE]}},
+          {monad_plus, #{adapter => target, patterns => [?MODULE]}},
+          monad_runner]}).
 
 %% impl of functor.
 -export([fmap/2, '<$'/2]).
@@ -45,9 +46,6 @@
 %% impl of monad runner.
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
-
--gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
--gen_fun(#{patterns => [?MODULE], tbehaviours => [alternative, monad_plus]}).
 
 -spec fmap(fun((A) -> B), monad_maybe(A)) -> monad_maybe(B).
 fmap(F, {just, X}) ->

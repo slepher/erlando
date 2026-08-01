@@ -18,8 +18,6 @@
 %% computation is run, and each bind passes the produced state to the next step.
 -module(state_t).
 
--erlando_type({?MODULE, [state_t/3]}).
-
 -export_type([state_t/3]).
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
 -type inner_t(S, M, A) :: fun((S) -> monad:m(M, {A, S})).
@@ -27,16 +25,20 @@
 
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -compile({no_auto_import, [get/1, put/2]}).
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_state).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [state_t/3]},
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => monad, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_state, #{requires => monad, adapter => source}},
+          {alternative, #{requires => monad_plus, adapter => source}},
+          {monad_plus, #{requires => monad_plus, adapter => source}},
+          monad_runner]}).
 
 -include("op.hrl").
 -include("erlando.hrl").
@@ -62,10 +64,6 @@
 -export([map/3, with/3]).
 -export([eval/3, exec/3, run/3]).
 
--gen_fun(#{inner_type => functor,    behaviours => [functor]}).
--gen_fun(#{inner_type => monad,      behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,      behaviours => [monad, monad_trans, monad_state]}).
--gen_fun(#{inner_type => monad_plus, behaviours => [alternative, monad_plus]}).
 -gen_fun(#{args => monad,            functions => [map/2, with/2]}).
 -gen_fun(#{args => monad,            functions => [eval/2, exec/2, run/2]}).
 

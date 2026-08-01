@@ -16,8 +16,6 @@
 
 -module(error_m).
 
--erlando_type({error_m, [error_m/2]}).
-
 -export_type([error_m/2, ok/1, error/1]).
 
 %% This is really instance (Error e) => Monad (Either e) with 'error'
@@ -27,14 +25,17 @@
 -type ok(A) :: ok | {ok, A}.
 -type error(E) :: {error, E}.
 
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(monad_runner).
--behaviour(monad_error).
+-erlando_instance(
+   #{type => {error_m, [error_m/2]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?MODULE]}},
+          {applicative, #{adapter => target, patterns => [?MODULE]}},
+          {monad, #{adapter => target, patterns => [?MODULE]}},
+          {monad_fail, #{adapter => target, patterns => [?MODULE]}},
+          {monad_error, #{adapter => target, patterns => [?MODULE]}},
+          monad_runner]}).
 
 -include("erlando.hrl").
 
@@ -45,8 +46,6 @@
 -export([throw_error/1, catch_error/2]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
-
--gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail, monad_error]}).
 
 -spec fmap(fun((A) -> B), error_m(E, A)) -> error_m(E, B).
 fmap(F, EA) ->

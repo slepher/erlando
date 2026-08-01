@@ -8,8 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(cont_t).
 
--erlando_type({?MODULE, [cont_t/3]}).
-
 -export_type([cont_t/3]).
 
 -type cont_t(R, M, A) :: {cont_t, inner_t(R, M, A)}.
@@ -19,17 +17,21 @@
 -compile({parse_transform, cut}).
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
 -include("erlando.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_cont).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [cont_t/3]},
+     capabilities =>
+         [{functor, #{requires => any, adapter => source}},
+          {applicative, #{requires => any, adapter => source}},
+          {monad, #{requires => any, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_cont, #{requires => monad, adapter => source}},
+          monad_runner]}).
 
 -export([new/1, cont_t/1, run_cont_t/1]).
 -export([fmap/3, '<$'/3]).
@@ -42,8 +44,6 @@
 -export([map/3, with/3]).
 -export([run/3, eval/2]).
 
--gen_fun(#{inner_type => any,   behaviours => [functor, applicative, monad]}).
--gen_fun(#{inner_type => monad, behaviours => [monad_trans, monad_cont]}).
 -gen_fun(#{args => monad,       functions => [shift/1, reset/1]}).
 -gen_fun(#{args => monad,       functions => [map/2, with/2]}).
 -gen_fun(#{args => monad,       functions => [run/2, eval/1]}).

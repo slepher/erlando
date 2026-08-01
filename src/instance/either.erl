@@ -8,23 +8,24 @@
 %%%-------------------------------------------------------------------
 -module(either).
 
--erlando_type({?MODULE, [either/2]}).
-
 -export_type([either/2]).
 
 -type either(L, R) :: {left, L} | {right, R}.
 
 -compile({parse_transform, cut}).
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
 -define(TYPE, ?MODULE).
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(monad_error).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [either/2]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?TYPE]}},
+          {applicative, #{adapter => target, patterns => [?TYPE]}},
+          {monad, #{adapter => target, patterns => [?TYPE]}},
+          {monad_fail, #{adapter => target, patterns => [?TYPE]}},
+          {monad_error, #{adapter => target, patterns => [?TYPE]}},
+          monad_runner]}).
 
 -include("erlando.hrl").
 
@@ -38,8 +39,6 @@
 -export([run/1]).
 -export([left/1, right/1]).
 -export([either/2, swap/0]).
-
--gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail, monad_error]}).
 
 %%%===================================================================
 %%% API

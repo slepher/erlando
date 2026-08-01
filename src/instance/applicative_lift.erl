@@ -10,8 +10,6 @@
 %% https://hackage.haskell.org/package/transformers/docs/Control-Applicative-Lift.html
 -module(applicative_lift).
 
--erlando_type({lift, [lift/2]}).
-
 -export_type([lift/1, pure/1, other/1]).
 
 -define(TYPE, lift).
@@ -23,13 +21,14 @@
 -type pure(A) :: {pure, A}.
 -type other(_A) :: {other, term()}.
 
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -include("do.hrl").
 
--behaviour(functor).
--behaviour(applicative).
-
--gen_fun(#{patterns => [lift], tbehaviours => [functor, applicative]}).
+-erlando_instance(
+   #{type => {lift, [lift/2]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [lift]}},
+          {applicative, #{adapter => target, patterns => [lift]}}]}).
 
 %% API
 -export([fmap/2, '<$'/2]).

@@ -8,8 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(writer_t).
 
--erlando_type({?MODULE, [writer_t/3]}).
-
 -export_type([writer_t/3]).
 
 -type writer_t(W, M, A) :: {writer_t, inner_writer_t(W, M, A)}.
@@ -18,18 +16,22 @@
 
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
 -include("op.hrl").
 -include("erlando.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_writer).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [writer_t/3]},
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => applicative, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_writer, #{requires => monad, adapter => source}},
+          {alternative, #{requires => alternative, adapter => source}},
+          {monad_plus, #{requires => monad_plus, adapter => source}},
+          monad_runner]}).
 
 -export([new/1, writer_t/1, run_writer_t/1]).
 -export([fmap/3, '<$'/3]).
@@ -49,11 +51,6 @@
 -export([map/3]).
 -export([exec/2, eval/2, run/2]).
 
--gen_fun(#{inner_type => functor,     behaviours => [functor]}).
--gen_fun(#{inner_type => applicative, behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_writer]}).
--gen_fun(#{inner_type => alternative, behaviours => [alternative]}).
--gen_fun(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
 -gen_fun(#{args => monad,             functions => [map/2]}).
 -gen_fun(#{args => monad,             functions => [exec/1, eval/1, run/1]}).
 

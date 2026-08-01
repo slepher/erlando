@@ -10,20 +10,21 @@
 
 -define(TYPE, function).
 
--erlando_type({?TYPE, [function_instance/0]}).
-
 -export_type([function_instance/0]).
 -type function_instance() :: fun((_A) -> _B).
 
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
 -include("op.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_reader).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?TYPE, [function_instance/0]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?TYPE]}},
+          {applicative, #{adapter => target, patterns => [?TYPE]}},
+          {monad, #{adapter => target, patterns => [?TYPE]}},
+          {monad_reader, #{adapter => target, patterns => [?TYPE]}},
+          monad_runner]}).
 
 %% API
 -export([fmap/2, '<$'/2]).
@@ -37,8 +38,6 @@
 -export(['.'/2]).
 -export([const/1]).
 -export([id/0, id/1]).
-
--gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_reader]}).
 
 %%%===================================================================
 %%% API

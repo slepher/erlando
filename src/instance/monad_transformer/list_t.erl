@@ -8,8 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(list_t).
 
--erlando_type({?MODULE, [list_t/2]}).
-
 -export_type([list_t/2]).
 
 -type list_t(M, A) :: {list_t, mlist(M, A)}.
@@ -18,15 +16,19 @@
 
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -include("erlando.hrl").
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_fail).
--behaviour(monad_error).
+-erlando_instance(
+   #{type => {?MODULE, [list_t/2]},
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => monad, adapter => source}},
+          {alternative, #{requires => monad, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_plus, #{requires => monad, adapter => source}},
+          {monad_fail, #{requires => monad_fail, adapter => source}},
+          {monad_error, #{requires => monad_error, adapter => source}}]}).
 
 %% API
 -export([new/1]).
@@ -40,11 +42,6 @@
 -export([throw_error/2, catch_error/3]).
 -export([map/3, hoist/3, from_list/2, lift_list/2, run/2]).
 
--gen_fun(#{inner_type => functor,      behaviours => [functor]}).
--gen_fun(#{inner_type => monad,        behaviours => [applicative, alternative]}).
--gen_fun(#{inner_type => monad,        behaviours => [monad, monad_trans, monad_plus]}).
--gen_fun(#{inner_type => monad_fail,   behaviours => [monad_fail]}).
--gen_fun(#{inner_type => monad_error,  behaviours => [monad_error]}).
 -gen_fun(#{args => monad,              functions  => [map/2]}).
 -gen_fun(#{args => monad,              functions  => [hoist/2]}).
 -gen_fun(#{args => applicative,        functions  => [from_list/1, lift_list/1]}).

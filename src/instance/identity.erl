@@ -16,15 +16,16 @@
 
 -module(identity).
 
--erlando_type({?MODULE, [identity/1]}).
+-include("erlando_instance.hrl").
 
--include("gen_fun.hrl").
-
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [identity/1]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?MODULE]}},
+          {applicative, #{adapter => target, patterns => [?MODULE]}},
+          {monad, #{adapter => target, patterns => [?MODULE]}},
+          {monad_fail, #{adapter => target, patterns => [?MODULE]}},
+          monad_runner]}).
 
 -export_type([identity/1]).
 -type identity(A) :: {?MODULE, A}.
@@ -36,8 +37,6 @@
 -export([fail/1]).
 -export([run_nargs/0, run_m/2]).
 -export([run/1]).
-
--gen_fun(#{patterns => [?MODULE], tbehaviours => [functor, applicative, monad, monad_fail]}).
 
 identity(A) ->
     {?MODULE, A}.

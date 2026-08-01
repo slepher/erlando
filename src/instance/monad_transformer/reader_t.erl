@@ -8,8 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(reader_t).
 
--erlando_type({?MODULE, [reader_t/3]}).
-
 -export_type([reader_t/3]).
 
 -type reader_t(R, M, A) :: {reader_t, inner_reader_t(R, M, A)}.
@@ -19,19 +17,23 @@
 
 -include("do.hrl").
 -include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 -compile({no_auto_import, [get/0, get/1, put/1, put/2]}).
 
 -include("op.hrl").
 -include("erlando.hrl").
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_reader).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monad_runner).
+-erlando_instance(
+   #{type => {?MODULE, [reader_t/3]},
+     capabilities =>
+         [{functor, #{requires => functor, adapter => source}},
+          {applicative, #{requires => applicative, adapter => source}},
+          {monad, #{requires => monad, adapter => source}},
+          {monad_trans, #{requires => monad, adapter => source}},
+          {monad_reader, #{requires => monad, adapter => source}},
+          {alternative, #{requires => alternative, adapter => source}},
+          {monad_plus, #{requires => monad_plus, adapter => source}},
+          monad_runner]}).
 
 -export([new/1, reader_t/1, run_reader_t/1]).
 % impl of functor
@@ -53,11 +55,6 @@
 -export([map/3, with/3]).
 -export([run/3]).
 
--gen_fun(#{inner_type => functor,     behaviours => [functor]}).
--gen_fun(#{inner_type => applicative, behaviours => [applicative]}).
--gen_fun(#{inner_type => monad,       behaviours => [monad, monad_trans, monad_reader]}).
--gen_fun(#{inner_type => alternative, behaviours => [alternative]}).
--gen_fun(#{inner_type => monad_plus,  behaviours => [monad_plus]}).
 -gen_fun(#{args => monad,             functions => [map/2, with/2]}).
 -gen_fun(#{args => monad,             functions => [run/2]}).
 

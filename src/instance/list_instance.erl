@@ -18,31 +18,32 @@
 
 -module(list_instance).
 
--erlando_type({list, [list_instance/0]}).
-
 -export_type([list_instance/0]).
 
 -type list_instance() :: [any()].
 
 -compile({parse_transform, cut}).
 -include("do.hrl").
--include("gen_fun.hrl").
+-include("erlando_instance.hrl").
 
 -include("op.hrl").
 
 -define(TYPE, list).
 
 
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_fail).
--behaviour(monad_runner).
--behaviour(foldable).
--behaviour(traversable).
--behaviour(alternative).
--behaviour(monad_plus).
--behaviour(monoid).
+-erlando_instance(
+   #{type => {list, [list_instance/0]},
+     capabilities =>
+         [{functor, #{adapter => target, patterns => [?TYPE]}},
+          {applicative, #{adapter => target, patterns => [?TYPE]}},
+          {monad, #{adapter => target, patterns => [?TYPE]}},
+          {monad_fail, #{adapter => target, patterns => [?TYPE]}},
+          {foldable, #{adapter => target, patterns => [?TYPE]}},
+          {traversable, #{adapter => target, patterns => [?TYPE]}},
+          {alternative, #{adapter => target, patterns => [?TYPE]}},
+          {monad_plus, #{adapter => target, patterns => [?TYPE]}},
+          {monoid, #{adapter => target, patterns => [?TYPE]}},
+          monad_runner]}).
 
 -export([fmap/2, '<$'/2]).
 -export([pure/1, '<*>'/2, lift_a2/3, '*>'/2, '<*'/2]).
@@ -55,11 +56,6 @@
 -export([empty/0, '<|>'/2]).
 -export([mzero/0, mplus/2]).
 -export([mempty/0, mappend/2]).
-
--gen_fun(#{patterns => [?TYPE], tbehaviours => [functor, applicative, monad, monad_fail]}).
--gen_fun(#{patterns => [?TYPE], tbehaviours => [foldable, traversable]}).
--gen_fun(#{patterns => [?TYPE], tbehaviours => [alternative, monad_plus, monoid]}).
-
 
 fmap(F, Xs) ->
     [F(X) || X <- Xs].

@@ -710,27 +710,39 @@ typeclass is also a behaviour in erlang
 
 ```erlang
 -module(identity).
--erlando_type([identity, [identity/1]).
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
+-include("erlando_instance.hrl").
+-erlando_instance(#{
+    type => {identity, [identity/1]},
+    capabilities => [
+        {functor, #{adapter => target, patterns => [identity]}},
+        {applicative, #{adapter => target, patterns => [identity]}},
+        {monad, #{adapter => target, patterns => [identity]}}
+    ]
+}).
 -export_type([identity/1]).
 -type identity(A) :: {?MODULE, A}.
 ```
 
 type identity instance of typeclass functor, application and monad.
+The macro emits the Erlang behaviours, generated callback adapters, type
+registration and versioned BEAM metadata from this single declaration.
 
 name of type could be different from module
 
 ```erlang
 -module(function_instance).
--erlando_type({function, [function_instance/0]}).
+-include("erlando_instance.hrl").
+-erlando_instance(#{
+    type => {function, [function_instance/0]},
+    capabilities => [
+        {functor, #{adapter => target, patterns => [function]}},
+        {applicative, #{adapter => target, patterns => [function]}},
+        {monad, #{adapter => target, patterns => [function]}},
+        {monad_reader, #{adapter => target, patterns => [function]}}
+    ]
+}).
 -export_type([function_instance/0]).
 -type function_instance() :: fun((_A) -> _B).
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_reader).
 ```
 
 function_instance defines type function
@@ -739,8 +751,17 @@ as haskell, type could be defined in multi modules
 
 ```erlang
 -module(state_t).
-
--erlando_type({?MODULE, [state_t/3]}).
+-include("erlando_instance.hrl").
+-erlando_instance(#{
+    type => {?MODULE, [state_t/3]},
+    capabilities => [
+        {functor, #{requires => functor, adapter => source}},
+        {applicative, #{requires => monad, adapter => source}},
+        {monad, #{requires => monad, adapter => source}},
+        {monad_trans, #{requires => monad, adapter => source}},
+        {monad_state, #{requires => monad, adapter => source}}
+    ]
+}).
 
 -export_type([state_t/3]).
 -type state_t(S, M, A) :: {state_t, inner_t(S, M, A)}.
@@ -748,28 +769,27 @@ as haskell, type could be defined in multi modules
 -type t(M) :: monad_trans:monad_trans(?MODULE, M).
 
 -include("do.hrl").
--include("gen_fun.hrl").
 -compile({no_auto_import, [get/1, put/2]}).
-
--behaviour(functor).
--behaviour(applicative).
--behaviour(monad).
--behaviour(monad_trans).
--behaviour(monad_state).
 ```
 
 state_t is instance of functor, applicative, monad, monad_trans, monad_state in module state_t
 
 ```erlang
--erlando_type([state_t, cont_t, maybe_t, error_t]).
--behaviour(monad_reader).
+-erlando_instance(#{
+    types => [state_t, cont_t, maybe_t, error_t],
+    capability => monad_reader,
+    implementation => generic
+}).
 ```
 
 state_t is instance of monad_reader in module monad_reader_instance
 
 ```erlang
--erlando_type([state_t, reader_t, maybe_t, error_t]).
--behaviour(monad_writer).
+-erlando_instance(#{
+    types => [state_t, reader_t, maybe_t, error_t],
+    capability => monad_writer,
+    implementation => generic
+}).
 ```
 
 state_t is instance of monad_writer in module monad_writer_instance
@@ -800,7 +820,8 @@ monad_reader_instance:ask(state_t).
 
 typeclass.beam is now generated compile time by rebar3_erlando rebar3 plugin
 
-if you want to use typeclass system by attribute -superclass|-erlando_type, you should add
+if you want to use the typeclass system with `-superclass`,
+`-erlando_instance` or the legacy `-erlando_type/-behaviour` attributes, add
 
     {provider_hooks, [{post, [{compile, {erlando, compile}}]}]}.
     
@@ -811,7 +832,7 @@ otherwise, rebar.config in project which deps on erlando is no need to change.
 erlando_typeclass:register_application/1 is nolonger used.
 
 * read attribute -superclass and collect typeclasses to a set
-* read attribute -erlando_type, -behaviour and genererate a map :: #{ {typeclass, type} => module}.
+* read versioned `erlando_instance_meta` and generate an exact map :: #{ {typeclass, type} => module}; legacy `-erlando_type/-behaviour` declarations remain supported.
 * read attribute -export_type and -type and use erlando_typeclass:type_with_remote/4 generate erlang type forms
 
 ```erlang

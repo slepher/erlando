@@ -11,6 +11,7 @@
 -include_lib("astranaut/include/macro.hrl").
 
 -export_macro([{gen_fun/2, [{inject_attrs, erlando_type}, {as_attr, gen_fun}]}]).
+-export([generate_forms/2]).
 
 %%%===================================================================
 %%% API
@@ -64,7 +65,7 @@ generate_forms(Opts, #{module := Module, pos := Line, erlando_type := ErlandoTyp
             source ->
                 Functions
         end,
-    lists:foldl(
+    GeneratedForms = lists:foldl(
       fun(Pattrens, Acc) ->
               Forms = 
                   lists:map(
@@ -73,7 +74,8 @@ generate_forms(Opts, #{module := Module, pos := Line, erlando_type := ErlandoTyp
                               Module, Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall)
                     end, NFunctions),
               Forms ++ Acc
-      end, [], PatternsGroup).
+      end, [], PatternsGroup),
+    [{attribute, Line, gen_fun_meta, {1, Opts}} | GeneratedForms].
 
 get_functions_and_arity_mode(Opts) ->
     case maps:find(functions, Opts) of

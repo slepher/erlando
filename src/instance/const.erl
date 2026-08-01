@@ -8,12 +8,13 @@
 %%%-------------------------------------------------------------------
 -module(const).
 
--erlando_type(?MODULE).
+-include("erlando_instance.hrl").
 
--include("gen_fun.hrl").
-
--behaviour(functor).
--behaviour(applicative).
+-erlando_instance(
+   #{type => ?MODULE,
+     capabilities =>
+         [{functor, #{adapter => source, args => [?MODULE]}},
+          {applicative, #{adapter => source, args => [?MODULE]}}]}).
 
 -include("erlando.hrl").
 
@@ -22,8 +23,6 @@
 -export([fmap/3, '<$'/3]).
 -export([pure/2, '<*>'/3, lift_a2/4, '*>'/3, '<*'/3]).
 -export([run_const/1]).
-
--gen_fun(#{args => [?MODULE], behaviours => [functor, applicative]}).
 
 %%%===================================================================
 %%% API
