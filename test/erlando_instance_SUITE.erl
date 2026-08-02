@@ -11,7 +11,7 @@ all() ->
      test_monad_cont_dispatch_metadata,
      test_all_metadata_mappings_are_registered,
      test_remote_adapter_group,
-     test_legacy_capabilities_normalize_identically,
+     test_top_level_capabilities_is_rejected,
      test_duplicate_capability_is_rejected,
      test_source_adapter_requires_context].
 
@@ -118,37 +118,28 @@ test_remote_adapter_group(_Config) ->
     ?assertEqual(environment,
                  reader_m:run(monad_reader:ask(reader_m), environment)).
 
-test_legacy_capabilities_normalize_identically(_Config) ->
-    Legacy =
-        #{type => {fixture_type, []},
-          capabilities =>
-              [{functor, #{adapter => target, patterns => [fixture_type]}},
-               monad_runner]},
-    Shorthand =
-        #{type => {fixture_type, []},
-          adapters =>
-              [#{mode => target,
-                 patterns => [fixture_type],
-                 capabilities => [functor]}],
-          manual => [monad_runner]},
-    ?assertEqual(metadata_from_spec(Legacy), metadata_from_spec(Shorthand)).
+test_top_level_capabilities_is_rejected(_Config) ->
+    Spec =
+        #{type => fixture_type,
+          capabilities => [monad_runner]},
+    ?assertError(
+       {unsupported_erlando_instance_key, capabilities},
+       erlando_instance_macro:erlando_instance(
+         Spec, #{module => fixture_instance, pos => 1})).
 
 test_duplicate_capability_is_rejected(_Config) ->
     Spec =
         #{type => duplicate_fixture,
-          capabilities => [monad_runner],
+          adapters =>
+              [#{mode => target,
+                 patterns => [duplicate_fixture],
+                 capabilities => [monad_runner]}],
           manual => [monad_runner]},
     ?assertError(
        {duplicate_erlando_instance_declaration,
         capabilities, [monad_runner, monad_runner]},
        erlando_instance_macro:erlando_instance(
          Spec, #{module => duplicate_fixture, pos => 1})).
-
-metadata_from_spec(Spec) ->
-    Forms = erlando_instance_macro:erlando_instance(
-              Spec, #{module => fixture_instance, pos => 1}),
-    {attribute, 1, erlando_instance_meta, {1, Metadata}} = hd(Forms),
-    Metadata.
 
 test_source_adapter_requires_context(_Config) ->
     Group = #{mode => source, capabilities => [functor]},

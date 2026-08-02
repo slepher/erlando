@@ -6,6 +6,7 @@
                 [{inject_attrs, true}, {as_attr, erlando_instance}]}]).
 
 erlando_instance(Spec, #{module := Module, pos := Line} = Attrs) when is_map(Spec) ->
+    ok = validate_spec(Spec),
     TypeDeclarations = type_declarations(Spec),
     TypeNames0 = [type_name(Type) || Type <- TypeDeclarations],
     TypeNames = unique_values(types, TypeNames0),
@@ -43,13 +44,13 @@ type_name(Name) when is_atom(Name) ->
 type_name(Type) ->
     erlang:error({invalid_erlando_instance_type, Type}).
 
-normalize_capabilities(Capabilities) when is_list(Capabilities) ->
-    [normalize_capability(Capability) || Capability <- Capabilities];
-normalize_capabilities(Capabilities) ->
-    erlang:error({invalid_erlando_instance_capabilities, Capabilities}).
+validate_spec(Spec) ->
+    case maps:is_key(capabilities, Spec) of
+        true -> erlang:error({unsupported_erlando_instance_key, capabilities});
+        false -> ok
+    end.
 
 capabilities(Spec) ->
-    Explicit = explicit_capabilities(maps:get(capabilities, Spec, [])),
     Singular =
         case maps:find(capability, Spec) of
             {ok, Typeclass} when is_atom(Typeclass) ->
@@ -62,8 +63,7 @@ capabilities(Spec) ->
     AdapterCapabilities =
         normalize_adapter_groups(maps:get(adapters, Spec, [])),
     Manual = normalize_manual_capabilities(maps:get(manual, Spec, [])),
-    normalize_capabilities(
-      Explicit ++ Singular ++ AdapterCapabilities ++ Manual).
+    Singular ++ AdapterCapabilities ++ Manual.
 
 normalize_adapter_groups(Groups) when is_list(Groups) ->
     lists:append([normalize_adapter_group(Group) || Group <- Groups]);
@@ -73,7 +73,8 @@ normalize_adapter_groups(Groups) ->
 normalize_adapter_group(
   #{mode := Mode, capabilities := Capabilities} = Group)
   when (Mode =:= source orelse Mode =:= target), is_list(Capabilities) ->
-    case valid_adapter_context(Mode, Group) of
+    case valid_adapter_context(Mode, Group)
+         andalso lists:all(fun is_atom/1, Capabilities) of
         true ->
             Adapter0 = maps:remove(capabilities, maps:remove(mode, Group)),
             Adapter = Adapter0#{adapter => Mode},
@@ -85,30 +86,17 @@ normalize_adapter_group(Group) ->
     erlang:error({invalid_erlando_instance_adapter_group, Group}).
 
 normalize_manual_capabilities(Capabilities) when is_list(Capabilities) ->
-    Capabilities;
+    case lists:all(fun is_atom/1, Capabilities) of
+        true -> [{Typeclass, manual} || Typeclass <- Capabilities];
+        false -> erlang:error({invalid_erlando_instance_manual, Capabilities})
+    end;
 normalize_manual_capabilities(Capabilities) ->
     erlang:error({invalid_erlando_instance_manual, Capabilities}).
-
-explicit_capabilities(Capabilities) when is_list(Capabilities) ->
-    Capabilities;
-explicit_capabilities(Capabilities) ->
-    erlang:error({invalid_erlando_instance_capabilities, Capabilities}).
 
 valid_adapter_context(source, Group) ->
     maps:is_key(requires, Group) orelse maps:is_key(args, Group);
 valid_adapter_context(target, _Group) ->
     true.
-
-normalize_capability(Typeclass) when is_atom(Typeclass) ->
-    {Typeclass, manual};
-normalize_capability({Typeclass, manual}) when is_atom(Typeclass) ->
-    {Typeclass, manual};
-normalize_capability({Typeclass, Adapter})
-  when is_atom(Typeclass),
-       (is_map(Adapter) orelse is_tuple(Adapter) orelse Adapter =:= generic) ->
-    {Typeclass, Adapter};
-normalize_capability(Capability) ->
-    erlang:error({invalid_erlando_instance_capability, Capability}).
 
 adapter_forms(_Typeclass, manual, _Attrs) ->
     [];
