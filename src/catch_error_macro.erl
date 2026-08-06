@@ -35,7 +35,7 @@ cat_error(Ast, OptsAst) ->
     do_cat_error(Ast, Opts).
 
 format_error(Error) ->
-    astranaut_macro:format_error(Error).
+    astranaut_lib:format_default_error(Error).
 
 format_error(Error, #{label := Label}, _AstString) ->
     {Label, Error};

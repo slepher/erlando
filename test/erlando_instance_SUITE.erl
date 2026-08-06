@@ -13,7 +13,8 @@ all() ->
      test_remote_adapter_group,
      test_top_level_capabilities_is_rejected,
      test_duplicate_capability_is_rejected,
-     test_source_adapter_requires_context].
+     test_source_adapter_requires_context,
+     test_format_error].
 
 test_state_t_metadata_is_retained(_Config) ->
     Beam = filename:join([code:lib_dir(erlando), "ebin", "state_t.beam"]),
@@ -122,8 +123,8 @@ test_top_level_capabilities_is_rejected(_Config) ->
     Spec =
         #{type => fixture_type,
           capabilities => [monad_runner]},
-    ?assertError(
-       {unsupported_erlando_instance_key, capabilities},
+    ?assertEqual(
+       {error, {unsupported_erlando_instance_key, capabilities}},
        erlando_instance_macro:erlando_instance(
          Spec, #{module => fixture_instance, pos => 1})).
 
@@ -135,16 +136,26 @@ test_duplicate_capability_is_rejected(_Config) ->
                  patterns => [duplicate_fixture],
                  capabilities => [monad_runner]}],
           manual => [monad_runner]},
-    ?assertError(
-       {duplicate_erlando_instance_declaration,
-        capabilities, [monad_runner, monad_runner]},
+    ?assertEqual(
+       {error, {duplicate_erlando_instance_declaration,
+                capabilities, [monad_runner, monad_runner]}},
        erlando_instance_macro:erlando_instance(
          Spec, #{module => duplicate_fixture, pos => 1})).
 
 test_source_adapter_requires_context(_Config) ->
     Group = #{mode => source, capabilities => [functor]},
     Spec = #{type => invalid_source_fixture, adapters => [Group]},
-    ?assertError(
-       {invalid_erlando_instance_adapter_group, Group},
+    ?assertEqual(
+       {error, {invalid_erlando_instance_adapter_group, Group}},
        erlando_instance_macro:erlando_instance(
          Spec, #{module => invalid_source_fixture, pos => 1})).
+
+test_format_error(_Config) ->
+    ?assert(is_list(erlando_instance_macro:format_error(
+                      missing_erlando_instance_type))),
+    ?assert(is_list(erlando_instance_macro:format_error(
+                      {invalid_erlando_instance_adapter_group, #{}}))),
+    ?assert(is_list(erlando_instance_macro:format_error(
+                      {duplicate_erlando_instance_declaration,
+                       types, [a, a]}))),
+    ?assert(is_list(erlando_instance_macro:format_error(undefined_type))).

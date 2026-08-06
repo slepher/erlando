@@ -11,13 +11,21 @@
 -include_lib("astranaut/include/macro.hrl").
 
 -export_macro([{gen_fun/2, [{inject_attrs, erlando_type}, {as_attr, gen_fun}]}]).
--export([generate_forms/2]).
+-export([generate_forms/2, format_error/1]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 gen_fun(Opts, Attrs) ->
-    generate_forms(Opts, Attrs).
+    try
+        generate_forms(Opts, Attrs)
+    catch
+        error:Reason ->
+            {error, Reason}
+    end.
+
+format_error(undefined_type) ->
+    io_lib:format("inner_type is specified but the erlando type is undefined", []).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

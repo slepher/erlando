@@ -5,7 +5,38 @@
 -export_macro([{erlando_instance/2,
                 [{inject_attrs, true}, {as_attr, erlando_instance}]}]).
 
+-export([format_error/1]).
+
 erlando_instance(Spec, #{module := Module, pos := Line} = Attrs) when is_map(Spec) ->
+    try
+        do_erlando_instance(Spec, Module, Line, Attrs)
+    catch
+        error:Reason ->
+            {error, Reason}
+    end.
+
+format_error(missing_erlando_instance_type) ->
+    io_lib:format("erlando_instance declaration is missing type or types", []);
+format_error({invalid_erlando_instance_type, Type}) ->
+    io_lib:format("invalid erlando_instance type: ~p", [Type]);
+format_error({unsupported_erlando_instance_key, Key}) ->
+    io_lib:format("unsupported erlando_instance key: ~p", [Key]);
+format_error({invalid_erlando_instance_capability, Typeclass}) ->
+    io_lib:format("invalid erlando_instance capability: ~p", [Typeclass]);
+format_error({invalid_erlando_instance_adapters, Groups}) ->
+    io_lib:format("invalid erlando_instance adapters: ~p", [Groups]);
+format_error({invalid_erlando_instance_adapter_group, Group}) ->
+    io_lib:format("invalid erlando_instance adapter group: ~p", [Group]);
+format_error({invalid_erlando_instance_manual, Capabilities}) ->
+    io_lib:format("invalid erlando_instance manual capabilities: ~p", [Capabilities]);
+format_error({invalid_erlando_instance_adapter, Typeclass, Adapter}) ->
+    io_lib:format("invalid erlando_instance adapter for ~p: ~p", [Typeclass, Adapter]);
+format_error({duplicate_erlando_instance_declaration, Kind, Values}) ->
+    io_lib:format("duplicate erlando_instance ~p declaration: ~p", [Kind, Values]);
+format_error(undefined_type) ->
+    io_lib:format("inner_type is set but the erlando type is undefined", []).
+
+do_erlando_instance(Spec, Module, Line, Attrs) ->
     ok = validate_spec(Spec),
     TypeDeclarations = type_declarations(Spec),
     TypeNames0 = [type_name(Type) || Type <- TypeDeclarations],
