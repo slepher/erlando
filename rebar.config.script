@@ -1,0 +1,29 @@
+%% -*- erlang -*-
+%% Keep rebar.config as the release source of truth. Integration CI can
+%% explicitly opt into moving master branches without changing project plugins.
+case os:getenv("ERLANDO_DEPENDENCY_MODE") of
+    false ->
+        CONFIG;
+    "" ->
+        CONFIG;
+    "master" ->
+        ConfigWithDeps = lists:keyreplace(
+          deps,
+          1,
+          CONFIG,
+          {deps, [
+              {'astranaut', {git, "https://github.com/slepher/astranaut.git",
+                             {branch, "master"}}}
+          ]}),
+        lists:keyreplace(
+          plugins,
+          1,
+          ConfigWithDeps,
+          {plugins, [
+              {rebar3_erlando,
+               {git, "https://github.com/slepher/rebar3_erlando.git",
+                {branch, "master"}}}
+          ]});
+    Mode ->
+        erlang:error({invalid_erlando_dependency_mode, Mode})
+end.
