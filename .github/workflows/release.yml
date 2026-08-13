@@ -1,0 +1,101 @@
+name: release-2.11.8
+
+on:
+  push:
+    tags: [ '*' ]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Required ref; must be an existing bare SemVer tag (or refs/tags/ tag)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release / OTP ${{ matrix.otp }}
+    runs-on: ubuntu-latest
+    container: erlang:${{ matrix.otp }}
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ['29', '28', '27', '26', '25', '24', '23', '22', '21']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Validate SemVer release ref
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          set -eu
+          tag="${RELEASE_REF#refs/tags/}"
+          export RELEASE_TAG="$tag"
+          erl -noshell -eval '
+            Tag = os:getenv("RELEASE_TAG"),
+            Pattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$",
+            case re:run(Tag, Pattern, [{capture, none}]) of
+                match -> io:format("Valid SemVer release ref: ~s~n", [Tag]);
+                nomatch ->
+                    io:format(standard_error, "Invalid SemVer release ref: ~s~n", [Tag]),
+                    halt(1)
+            end,
+            halt().
+          '
+
+      - name: Assert release dependency configuration
+        run: |
+          set -eu
+          test -z "${ERLANDO_DEPENDENCY_MODE:-}"
+          erl -noshell -eval '
+            {ok, Config} = file:consult("rebar.config"),
+            {deps, Deps} = lists:keyfind(deps, 1, Config),
+            1 = length(Deps),
+            true = lists:all(
+              fun({_Name, {git, _Url, {tag, Tag}}})
+                    when is_list(Tag), Tag =/= [] -> true;
+                 (_) -> false
+              end,
+              Deps),
+            {plugins, Plugins} = lists:keyfind(plugins, 1, Config),
+            {rebar3_erlando, {git, _PluginUrl, {tag, PluginTag}}} =
+              lists:keyfind(rebar3_erlando, 1, Plugins),
+            true = is_list(PluginTag),
+            {project_plugins, ProjectPlugins} = lists:keyfind(project_plugins, 1, Config),
+            {rebar3_docker_ci, {git, _DockerUrl, {tag, DockerTag}}} =
+              lists:keyfind(rebar3_docker_ci, 1, ProjectPlugins),
+            true = is_list(DockerTag),
+            false = lists:any(
+              fun({_Name, {git, _Url, {branch, _Branch}}}) -> true;
+                 (_) -> false
+              end,
+              Deps ++ Plugins ++ ProjectPlugins),
+            io:format("release config has tagged runtime and plugin dependencies~n"),
+            halt().
+          '
+
+      - name: Verify cold checkout (no cache or tracked lock)
+        run: |
+          set -eu
+          # actions/checkout gives each job a fresh workspace; this workflow
+          # has no cache and rebar.lock is not tracked, so resolution is cold.
+          if [ -e _checkouts ]; then
+            echo '_checkouts must not exist in a cold CI workspace' >&2
+            exit 1
+          fi
+
+      - name: Dependency tree
+        run: |
+          set -eu
+          rebar3 tree -v | tee /tmp/erlando-release-tree.txt
+          ! grep -E '(^|[[:space:]])astranaut[^[:cntrl:]]*master' /tmp/erlando-release-tree.txt
+
+      - name: Compile
+        run: rebar3 compile
+
+      - name: Common Test
+        run: rebar3 as test clean -a && rebar3 ct
