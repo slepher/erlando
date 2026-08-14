@@ -26,7 +26,12 @@ jobs:
       matrix:
         otp: ['29', '28', '27', '26', '25', '24', '23', '22', '21']
     steps:
-      - name: Checkout
+      - name: Checkout (act local copy)
+        if: env.ACT == 'true'
+        uses: actions/checkout@v7
+
+      - name: Checkout (remote ref)
+        if: env.ACT != 'true'
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
