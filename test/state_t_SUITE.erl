@@ -21,7 +21,7 @@
 %% @end
 %%--------------------------------------------------------------------
 suite() ->
-    [{timetrap,{seconds,30}}].
+    [{timetrap, {seconds, 30}}].
 
 %%--------------------------------------------------------------------
 %% @spec init_per_suite(Config0) ->
@@ -109,10 +109,19 @@ groups() ->
 %% Reason = term()
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
-    [test_get, test_put, test_state, test_modify, test_gets,
-     test_left_identity, test_right_identity, test_associativity,
-     test_functor, test_applicative].
+all() ->
+    [
+        test_get,
+        test_put,
+        test_state,
+        test_modify,
+        test_gets,
+        test_left_identity,
+        test_right_identity,
+        test_associativity,
+        test_functor,
+        test_applicative
+    ].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
@@ -128,7 +137,7 @@ all() ->
 %% Comment = term()
 %% @end
 %%--------------------------------------------------------------------
-test_get(_Config) -> 
+test_get(_Config) ->
     M = monad_state:get(),
     ?assertEqual({ok, 5}, error_m:run(reader_t:run(state_t:eval(M, 5), 5))).
 
@@ -137,9 +146,9 @@ test_put(_Config) ->
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M, 5), 5))).
 
 test_state(_Config) ->
-    M = monad_state:state(fun(S) -> {S + 1, S} end), 
+    M = monad_state:state(fun(S) -> {S + 1, S} end),
     ?assertEqual({6, 5}, identity:run(state_t:run(M, 5))).
-    
+
 test_modify(_Config) ->
     M = monad_state:modify(fun(S) -> S + 1 end),
     ?assertEqual({ok, 6}, identity:run(state_t:run(M, 5))).
@@ -154,7 +163,7 @@ test_left_identity(_Config) ->
     MB = ml_test_util:left_identity(10, F),
     ?assertEqual({ok, 10}, state_m:run(MA, undefined)),
     ?assertEqual({ok, 10}, state_m:run(MB, undefined)).
-    
+
 test_right_identity(_Config) ->
     MA = state_m:get(),
     MB = ml_test_util:right_identity(MA),
@@ -163,22 +172,24 @@ test_right_identity(_Config) ->
 
 test_associativity(_Config) ->
     M = state_m:get(),
-    F = fun(A) -> do([state_m ||
-                         monad_state:modify(fun(S) -> S + A end, state_m),
-                         state_m:get()
-                     ])
-        end,
+    F = fun(A) ->
+        do([
+            state_m
+         || monad_state:modify(fun(S) -> S + A end, state_m),
+            state_m:get()
+        ])
+    end,
     G = fun(A) ->
-                state_m:put(A + 10)
-        end,
+        state_m:put(A + 10)
+    end,
     MA = ml_test_util:associativity1(M, F, G),
     MB = ml_test_util:associativity2(M, F, G),
     MC = ml_test_util:associativity3(M, F, G),
-    
+
     ?assertEqual(50, state_m:exec(MA, 20)),
     ?assertEqual(50, state_m:exec(MB, 20)),
     ?assertEqual(50, state_m:exec(MC, 20)).
-    
+
 test_functor(_Config) ->
     MA = functor:fmap(fun(A) -> A + 3 end, state_m:get()),
     ?assertEqual({6, 3}, state_m:run(MA, 3)).

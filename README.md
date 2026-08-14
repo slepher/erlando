@@ -1,3 +1,7 @@
+[![CI](https://github.com/slepher/erlando/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/slepher/erlando/actions/workflows/ci.yml?query=branch%3Amaster)
+
+[![CI](https://github.com/slepher/erlando/actions/workflows/release.yml/badge.svg?branch=2.11.9&event=push)](https://github.com/slepher/erlando/actions/workflows/release.yml?query=branch%3A2.11.9)
+
 # Erlando
 
 [中文](README.zh.md)

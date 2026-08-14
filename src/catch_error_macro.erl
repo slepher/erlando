@@ -48,9 +48,12 @@ format_error(Error, #{}, AstString) ->
 do_cat_error(Ast, Opts) ->
     Opts1 = astranaut_lib:abstract_form(Opts),
     String = astranaut_lib:abstract_form(list_to_binary(astranaut_lib:ast_to_string(Ast))),
-    quote(monad_error:catch_error(
+    quote(
+        monad_error:catch_error(
             unquote(Ast),
             fun(Error) ->
-                    Error1 = catch_error_macro:format_error(Error, unquote(Opts1), unquote(String)),
-                    monad_error:throw_error(Error1)
-            end)).
+                Error1 = catch_error_macro:format_error(Error, unquote(Opts1), unquote(String)),
+                monad_error:throw_error(Error1)
+            end
+        )
+    ).

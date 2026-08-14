@@ -18,7 +18,7 @@
 %% TEST SERVER CALLBACK FUNCTIONS
 %%--------------------------------------------------------------------
 suite() ->
-    [{timetrap,{seconds,10}}].
+    [{timetrap, {seconds, 10}}].
 
 %%--------------------------------------------------------------------
 %%
@@ -123,10 +123,14 @@ end_per_testcase(_TestCase, _Config) ->
 %% @spec all(Clause) -> TestCases
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
-    [test_left_identity, test_right_identity, test_associativity,
-     test_monad_fail, test_monad_lift].
-
+all() ->
+    [
+        test_left_identity,
+        test_right_identity,
+        test_associativity,
+        test_monad_fail,
+        test_monad_lift
+    ].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -155,17 +159,19 @@ all() ->
 test_left_identity(_Config) ->
     Monad = reader_t:new(either),
 
-    F = fun(A) -> do([Monad || 
-                         Value <- reader_t:ask(),
-                         return(Value + 3 + A)
-                     ])
-        end,
+    F = fun(A) ->
+        do([
+            Monad
+         || Value <- reader_t:ask(),
+            return(Value + 3 + A)
+        ])
+    end,
 
-    M1 = F(2), 
+    M1 = F(2),
     M2 = ml_test_util:left_identity(2, F),
     ?assertEqual({right, 9}, either:run(reader_t:run(M1, 4))),
     ?assertEqual({right, 9}, either:run(reader_t:run(M2, 4))).
-    
+
 test_right_identity(_Config) ->
     Monad = reader_t:new(either),
 
@@ -178,41 +184,47 @@ test_associativity(_Config) ->
     Monad = reader_t:new(either),
 
     M = reader_t:ask(Monad),
-    F = fun(A) -> do([Monad || 
-                         Value <- reader_t:ask(),
-                         return(Value + 3 + A)
-                     ])
-        end,
+    F = fun(A) ->
+        do([
+            Monad
+         || Value <- reader_t:ask(),
+            return(Value + 3 + A)
+        ])
+    end,
 
-    G = fun(A) -> do([ Monad ||
-                         Value <- reader_t:ask(),
-                         return(Value * 7 + A)
-                     ])
-        end,
-    
+    G = fun(A) ->
+        do([
+            Monad
+         || Value <- reader_t:ask(),
+            return(Value * 7 + A)
+        ])
+    end,
+
     M1 = ml_test_util:associativity1(M, F, G),
     M2 = ml_test_util:associativity2(M, F, G),
     M3 = ml_test_util:associativity3(M, F, G),
-    
+
     ?assertEqual({right, 93}, either:run(reader_t:run(M1, 10))),
     ?assertEqual({right, 93}, either:run(reader_t:run(M2, 10))),
     ?assertEqual({right, 93}, either:run(reader_t:run(M3, 10))).
 
 test_monad_fail(_Config) ->
     Monad = reader_t:new(either),
-    M0 = do([Monad ||
-                Value <- reader_t:ask(),
-                fail(Value + 3)
-            ]),
-    
+    M0 = do([
+        Monad
+     || Value <- reader_t:ask(),
+        fail(Value + 3)
+    ]),
+
     ?assertEqual({left, 13}, either:run(reader_t:run(M0, 10))).
 
 test_monad_lift(_Config) ->
     Monad = reader_t:new(either),
-    M0 = do([Monad ||
-                X <- reader_t:ask(),
-                Y <- reader_t:lift(either:return(10)),
-                return(X * Y)
-            ]),
-    
+    M0 = do([
+        Monad
+     || X <- reader_t:ask(),
+        Y <- reader_t:lift(either:return(10)),
+        return(X * Y)
+    ]),
+
     ?assertEqual({right, 60}, either:run(reader_t:run(M0, 6))).

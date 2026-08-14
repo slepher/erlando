@@ -7,14 +7,16 @@
 -include_lib("eunit/include/eunit.hrl").
 
 all() ->
-    [test_cont_t_callcc,
-     test_reader_t_callcc,
-     test_state_t_callcc,
-     test_maybe_t_callcc,
-     test_error_t_callcc,
-     test_except_t_callcc,
-     test_writer_t_callcc,
-     test_list_t_callcc].
+    [
+        test_cont_t_callcc,
+        test_reader_t_callcc,
+        test_state_t_callcc,
+        test_maybe_t_callcc,
+        test_error_t_callcc,
+        test_except_t_callcc,
+        test_writer_t_callcc,
+        test_list_t_callcc
+    ].
 
 test_cont_t_callcc(_Config) ->
     Monad = cont_t:new(identity),
@@ -59,11 +61,12 @@ test_except_t_callcc(_Config) ->
 test_writer_t_callcc(_Config) ->
     ContT = cont_t:new(identity),
     Monad = writer_t:new(ContT),
-    M = do([Monad ||
-               Value <- monad_cont:callCC(fun(K) -> K(value) end, Monad),
-               monad_writer:tell([after_callcc]),
-               return(Value)
-           ]),
+    M = do([
+        Monad
+     || Value <- monad_cont:callCC(fun(K) -> K(value) end, Monad),
+        monad_writer:tell([after_callcc]),
+        return(Value)
+    ]),
     Cont = writer_t:run(M, Monad),
     ?assertEqual({value, [after_callcc]}, identity:run(cont_t:eval(Cont, ContT))).
 

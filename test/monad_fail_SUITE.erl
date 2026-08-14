@@ -123,11 +123,19 @@ end_per_testcase(_TestCase, _Config) ->
 %% @spec all(Clause) -> TestCases
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
-    [test_error_m_fail, test_maybe_fail, test_either_fail, test_error_t_fail,
-     test_except_t_fail,
-     test_maybe_t_fail, test_reader_t_fail, test_writer_t_fail, test_state_t_fail, test_cont_t_fail].
-
+all() ->
+    [
+        test_error_m_fail,
+        test_maybe_fail,
+        test_either_fail,
+        test_error_t_fail,
+        test_except_t_fail,
+        test_maybe_t_fail,
+        test_reader_t_fail,
+        test_writer_t_fail,
+        test_state_t_fail,
+        test_cont_t_fail
+    ].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -154,19 +162,31 @@ all() ->
 %% @end
 %%--------------------------------------------------------------------
 test_error_m_fail(_Config) ->
-    F = fun(M) -> {error, E} = error_m:run(M), E end,
+    F = fun(M) ->
+        {error, E} = error_m:run(M),
+        E
+    end,
     fail(F).
 
 test_maybe_fail(_Config) ->
-    F = fun(M) -> nothing = monad_maybe:run(M), error end,
+    F = fun(M) ->
+        nothing = monad_maybe:run(M),
+        error
+    end,
     fail(F).
 
 test_either_fail(_Config) ->
-    F = fun(M) -> {left, E} = either:run(M), E end,
+    F = fun(M) ->
+        {left, E} = either:run(M),
+        E
+    end,
     fail(F).
 
 test_error_t_fail(_Config) ->
-    F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
+    F = fun(E) ->
+        {left, L} = identity:run(error_t:run(E)),
+        L
+    end,
     fail(F).
 
 test_except_t_fail(_Config) ->
@@ -175,23 +195,38 @@ test_except_t_fail(_Config) ->
     ?assertEqual({error, error}, error_m:run(except_t:run(M, ExceptT))).
 
 test_maybe_t_fail(_Config) ->
-    F = fun(E) -> nothing = identity:run(maybe_t:run(E)), error end,
+    F = fun(E) ->
+        nothing = identity:run(maybe_t:run(E)),
+        error
+    end,
     fail(F).
 
 test_reader_t_fail(_Config) ->
-    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(reader_t:run(E, undefined)),
+        L
+    end,
     fail(F).
 
 test_writer_t_fail(_Config) ->
-    F = fun(E) -> {left, L} = either:run(writer_t:eval(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(writer_t:eval(E)),
+        L
+    end,
     fail(F).
 
 test_state_t_fail(_Config) ->
-    F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(state_t:eval(E, undefined)),
+        L
+    end,
     fail(F).
 
 test_cont_t_fail(_Config) ->
-    F = fun(E) -> {left, L} = either:run(cont_t:eval(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(cont_t:eval(E)),
+        L
+    end,
     fail(F).
 
 fail(F) ->

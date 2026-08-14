@@ -28,53 +28,67 @@ parse_transform(Forms, _Options) ->
 
 import_as({attribute, Line, import_as, {Module, Aliases}}, Acc) ->
     import_as({attribute, Line, import_as, [{Module, Aliases}]}, Acc);
-import_as({attribute, Line, import_as, List}, {Funs, Acc})
-  when is_list(List) ->
+import_as({attribute, Line, import_as, List}, {Funs, Acc}) when
+    is_list(List)
+->
     Funs1 =
         lists:foldl(
-          fun ({Module, Aliases}, Acc1) when is_list(Aliases) ->
-                  [alias_fun(Module, Line, Alias) || Alias <- Aliases] ++ Acc1;
-              (WrongThing, Acc1) ->
-                  [general_error_fun(Line, WrongThing) | Acc1]
-          end, Funs, List),
+            fun
+                ({Module, Aliases}, Acc1) when is_list(Aliases) ->
+                    [alias_fun(Module, Line, Alias) || Alias <- Aliases] ++ Acc1;
+                (WrongThing, Acc1) ->
+                    [general_error_fun(Line, WrongThing) | Acc1]
+            end,
+            Funs,
+            List
+        ),
     {Funs1, Acc};
 import_as({attribute, Line, import_as, WrongThing}, {Funs, Acc}) ->
     {Funs, [general_error(Line, WrongThing) | Acc]};
 import_as({eof, Line}, {Funs, Acc}) ->
     {Acc1, Line1} =
         lists:foldl(
-          fun (Fun, {AccN, LineN}) -> {[Fun(LineN) | AccN], LineN + 1} end,
-          {Acc, Line}, Funs),
+            fun(Fun, {AccN, LineN}) -> {[Fun(LineN) | AccN], LineN + 1} end,
+            {Acc, Line},
+            Funs
+        ),
     {[], [{eof, Line1} | Acc1]};
 import_as(Other, {Funs, Acc}) ->
     {Funs, [Other | Acc]}.
 
-alias_fun(Module, _AttLine, {{Dest, Arity}, Alias}) when is_atom(Module) andalso
-                                                         is_atom(Dest) andalso
-                                                         is_atom(Alias) andalso
-                                                         is_integer(Arity) ->
-    fun (Line) ->
-            Vars = [{var, Line, list_to_atom("Var_" ++ integer_to_list(N))} ||
-                       N <- lists:seq(1, Arity)],
-            Body = {call, Line,
-                    {remote, Line, {atom, Line, Module}, {atom, Line, Dest}},
-                    Vars},
-            {function, Line, Alias, Arity, [{clause, Line, Vars, [], [Body]}]}
+alias_fun(Module, _AttLine, {{Dest, Arity}, Alias}) when
+    is_atom(Module) andalso
+        is_atom(Dest) andalso
+        is_atom(Alias) andalso
+        is_integer(Arity)
+->
+    fun(Line) ->
+        Vars = [
+            {var, Line, list_to_atom("Var_" ++ integer_to_list(N))}
+         || N <- lists:seq(1, Arity)
+        ],
+        Body = {call, Line, {remote, Line, {atom, Line, Module}, {atom, Line, Dest}}, Vars},
+        {function, Line, Alias, Arity, [{clause, Line, Vars, [], [Body]}]}
     end;
-alias_fun(Module, AttLine, {Dest, Arity}) when is_atom(Module) andalso 
-                                               is_atom(Dest) andalso
-                                               is_integer(Arity) ->
+alias_fun(Module, AttLine, {Dest, Arity}) when
+    is_atom(Module) andalso
+        is_atom(Dest) andalso
+        is_integer(Arity)
+->
     alias_fun(Module, AttLine, {{Dest, Arity}, Dest});
 alias_fun(_Module, AttLine, WrongThing) ->
-    fun (_Line) ->
-            Str = io_lib:format("~p", [WrongThing]),
-            {error, {AttLine, erl_parse,
-                     ["-import_as: Expected a pair of "
-                      "{target_fun/arity, alias} or target_fun/arity, not: ", Str]}}
+    fun(_Line) ->
+        Str = io_lib:format("~p", [WrongThing]),
+        {error,
+            {AttLine, erl_parse, [
+                "-import_as: Expected a pair of "
+                "{target_fun/arity, alias} or target_fun/arity, not: ",
+                Str
+            ]}}
     end.
 
 general_error_fun(AttLine, WrongThing) ->
-    fun (_Line) -> general_error(AttLine, WrongThing) end.
+    fun(_Line) -> general_error(AttLine, WrongThing) end.
 
 general_error(AttLine, WrongThing) ->
     Str = io_lib:format("~p", [WrongThing]),

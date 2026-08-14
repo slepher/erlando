@@ -125,24 +125,36 @@ end_per_testcase(_TestCase, _Config) ->
 all(doc) ->
     ["Describe the main purpose of this suite"].
 
-all() -> 
-    [test_writer_error_t, test_writer_except_t, test_writer_maybe_t,
-     test_writer_reader_t, test_writer_state_t,
-     test_writer_writer_t,
+all() ->
+    [
+        test_writer_error_t,
+        test_writer_except_t,
+        test_writer_maybe_t,
+        test_writer_reader_t,
+        test_writer_state_t,
+        test_writer_writer_t,
 
-     test_tell_error_t, test_tell_except_t, test_tell_maybe_t,
-     test_tell_reader_t, test_tell_state_t,
-     test_tell_writer_t,
+        test_tell_error_t,
+        test_tell_except_t,
+        test_tell_maybe_t,
+        test_tell_reader_t,
+        test_tell_state_t,
+        test_tell_writer_t,
 
-     test_listen_error_t, test_listen_except_t, test_listen_maybe_t,
-     test_listen_reader_t, test_listen_state_t,
-     test_listen_writer_t,
+        test_listen_error_t,
+        test_listen_except_t,
+        test_listen_maybe_t,
+        test_listen_reader_t,
+        test_listen_state_t,
+        test_listen_writer_t,
 
-     test_pass_error_t, test_pass_except_t, test_pass_maybe_t,
-     test_pass_reader_t, test_pass_state_t,
-     test_pass_writer_t
+        test_pass_error_t,
+        test_pass_except_t,
+        test_pass_maybe_t,
+        test_pass_reader_t,
+        test_pass_state_t,
+        test_pass_writer_t
     ].
-
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -176,7 +188,7 @@ test_writer_except_t(_Config) ->
     writer(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_writer_maybe_t(_Config) ->
-    writer(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
+    writer(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
 test_writer_reader_t(_Config) ->
     writer(fun(T) -> reader_t:run(T, undefined) end).
@@ -194,7 +206,7 @@ test_tell_except_t(_Config) ->
     tell(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_tell_maybe_t(_Config) ->
-    tell(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
+    tell(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
 test_tell_reader_t(_Config) ->
     tell(fun(T) -> reader_t:run(T, undefined) end).
@@ -212,7 +224,7 @@ test_listen_except_t(_Config) ->
     listen(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_listen_maybe_t(_Config) ->
-    listen(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
+    listen(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
 test_listen_reader_t(_Config) ->
     listen(fun(T) -> reader_t:run(T, undefined) end).
@@ -230,7 +242,7 @@ test_pass_except_t(_Config) ->
     pass(fun(M) -> functor:fmap(fun({right, V}) -> V end, except_t:run(M)) end).
 
 test_pass_maybe_t(_Config) ->
-    pass(fun(T) -> functor:fmap(fun({just, V}) -> V end,maybe_t:run(T)) end).
+    pass(fun(T) -> functor:fmap(fun({just, V}) -> V end, maybe_t:run(T)) end).
 
 test_pass_reader_t(_Config) ->
     pass(fun(T) -> reader_t:run(T, undefined) end).
@@ -246,35 +258,43 @@ writer(F) ->
     M1 = F(M),
     Result = {ok, {ok, [hello, world]}},
     ?assertEqual(Result, error_m:run(reader_t:run(writer_t:run(M1), 5))).
-  
+
 tell(F) ->
-    MT = do([monad || 
-               monad_writer:tell([hello]),
-               monad_writer:tell([world]),
-               return(ok)
-           ]),
+    MT = do([
+        monad
+     || monad_writer:tell([hello]),
+        monad_writer:tell([world]),
+        return(ok)
+    ]),
     MA = F(MT),
     Result = {ok, [hello, world]},
     ?assertEqual(Result, identity:run(reader_t:run(writer_t:run(MA), 5))).
 
 listen(F) ->
-    M = do([monad || 
-               monad_writer:tell([hello]),
-               monad_writer:tell([world]),
-               return(10)
-           ]),
+    M = do([
+        monad
+     || monad_writer:tell([hello]),
+        monad_writer:tell([world]),
+        return(10)
+    ]),
     M0 = monad_writer:listen(M),
     M1 = F(M0),
     Result = {ok, {{10, [hello, world]}, [hello, world]}},
-    ?assertEqual(Result, error_m:run(reader_t:run(writer_t:run(M1), 5))).    
+    ?assertEqual(Result, error_m:run(reader_t:run(writer_t:run(M1), 5))).
 
 pass(F) ->
-    M = do([monad || 
-               monad_writer:tell([hello]),
-               monad_writer:tell([world]),
-               return({10, fun(W) -> string:join(
-                                      lists:map(fun(A) -> atom_to_list(A) end, W), ",") end})
-           ]),
+    M = do([
+        monad
+     || monad_writer:tell([hello]),
+        monad_writer:tell([world]),
+        return(
+            {10, fun(W) ->
+                string:join(
+                    lists:map(fun(A) -> atom_to_list(A) end, W), ","
+                )
+            end}
+        )
+    ]),
     M0 = monad_writer:pass(M),
     M1 = F(M0),
     Result = {ok, {10, "hello,world"}},

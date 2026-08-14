@@ -6,9 +6,11 @@
 -include_lib("eunit/include/eunit.hrl").
 
 all() ->
-    [test_monad_laws_over_identity,
-     test_applicative_laws_over_identity,
-     test_monad_trans_laws].
+    [
+        test_monad_laws_over_identity,
+        test_applicative_laws_over_identity,
+        test_monad_trans_laws
+    ].
 
 test_monad_laws_over_identity(_Config) ->
     lists:foreach(fun assert_monad_laws/1, transformers()).
@@ -18,12 +20,14 @@ test_applicative_laws_over_identity(_Config) ->
 
 test_monad_trans_laws(_Config) ->
     lists:foreach(
-      fun(Transformer) ->
-              lists:foreach(
+        fun(Transformer) ->
+            lists:foreach(
                 fun(Base) -> assert_monad_trans_laws(Transformer, Base) end,
-                [identity, state_m, error_m])
-      end,
-      transformers()).
+                [identity, state_m, error_m]
+            )
+        end,
+        transformers()
+    ).
 
 assert_monad_laws(Transformer) ->
     T = Transformer:new(identity),
@@ -32,21 +36,28 @@ assert_monad_laws(Transformer) ->
     M = monad:return(4, T),
 
     LeftIdentity = monad:'>>='(monad:return(4, T), F, T),
-    ?assertEqual(observe(Transformer, identity, F(4)),
-                 observe(Transformer, identity, LeftIdentity)),
+    ?assertEqual(
+        observe(Transformer, identity, F(4)),
+        observe(Transformer, identity, LeftIdentity)
+    ),
 
     RightIdentity = monad:'>>='(M, fun(A) -> monad:return(A, T) end, T),
-    ?assertEqual(observe(Transformer, identity, M),
-                 observe(Transformer, identity, RightIdentity)),
+    ?assertEqual(
+        observe(Transformer, identity, M),
+        observe(Transformer, identity, RightIdentity)
+    ),
 
     LeftAssociative = monad:'>>='(monad:'>>='(M, F, T), G, T),
     RightAssociative =
         monad:'>>='(
-          M,
-          fun(A) -> monad:'>>='(F(A), G, T) end,
-          T),
-    ?assertEqual(observe(Transformer, identity, LeftAssociative),
-                 observe(Transformer, identity, RightAssociative)).
+            M,
+            fun(A) -> monad:'>>='(F(A), G, T) end,
+            T
+        ),
+    ?assertEqual(
+        observe(Transformer, identity, LeftAssociative),
+        observe(Transformer, identity, RightAssociative)
+    ).
 
 assert_applicative_laws(Transformer) ->
     T = Transformer:new(identity),
@@ -56,60 +67,76 @@ assert_applicative_laws(Transformer) ->
     V = applicative:pure(4, T),
 
     Identity = applicative:'<*>'(applicative:pure(Id, T), V, T),
-    ?assertEqual(observe(Transformer, identity, V),
-                 observe(Transformer, identity, Identity)),
+    ?assertEqual(
+        observe(Transformer, identity, V),
+        observe(Transformer, identity, Identity)
+    ),
 
     HomomorphismLeft =
         applicative:'<*>'(applicative:pure(F, T), applicative:pure(4, T), T),
     HomomorphismRight = applicative:pure(F(4), T),
-    ?assertEqual(observe(Transformer, identity, HomomorphismRight),
-                 observe(Transformer, identity, HomomorphismLeft)),
+    ?assertEqual(
+        observe(Transformer, identity, HomomorphismRight),
+        observe(Transformer, identity, HomomorphismLeft)
+    ),
 
     InterchangeLeft = applicative:'<*>'(U, applicative:pure(4, T), T),
     InterchangeRight =
         applicative:'<*>'(
-          applicative:pure(fun(Apply) -> Apply(4) end, T),
-          U,
-          T),
-    ?assertEqual(observe(Transformer, identity, InterchangeRight),
-                 observe(Transformer, identity, InterchangeLeft)),
+            applicative:pure(fun(Apply) -> Apply(4) end, T),
+            U,
+            T
+        ),
+    ?assertEqual(
+        observe(Transformer, identity, InterchangeRight),
+        observe(Transformer, identity, InterchangeLeft)
+    ),
 
     Compose = fun(Outer) ->
-                      fun(Inner) ->
-                              fun(A) -> Outer(Inner(A)) end
-                      end
-              end,
+        fun(Inner) ->
+            fun(A) -> Outer(Inner(A)) end
+        end
+    end,
     Double = applicative:pure(fun(A) -> A * 2 end, T),
     CompositionLeft =
         applicative:'<*>'(
-          applicative:'<*>'(
-            applicative:'<*>'(applicative:pure(Compose, T), U, T),
-            Double,
-            T),
-          V,
-          T),
+            applicative:'<*>'(
+                applicative:'<*>'(applicative:pure(Compose, T), U, T),
+                Double,
+                T
+            ),
+            V,
+            T
+        ),
     CompositionRight = applicative:'<*>'(U, applicative:'<*>'(Double, V, T), T),
-    ?assertEqual(observe(Transformer, identity, CompositionRight),
-                 observe(Transformer, identity, CompositionLeft)).
+    ?assertEqual(
+        observe(Transformer, identity, CompositionRight),
+        observe(Transformer, identity, CompositionLeft)
+    ).
 
 assert_monad_trans_laws(Transformer, Base) ->
     T = Transformer:new(Base),
 
     LiftReturn = monad_trans:lift(monad:return(4, Base), T),
     TransformerReturn = monad:return(4, T),
-    ?assertEqual(observe(Transformer, Base, TransformerReturn),
-                 observe(Transformer, Base, LiftReturn)),
+    ?assertEqual(
+        observe(Transformer, Base, TransformerReturn),
+        observe(Transformer, Base, LiftReturn)
+    ),
 
     M = base_action(Base),
     F = fun(A) -> base_continuation(Base, A) end,
     LiftBind = monad_trans:lift(monad:'>>='(M, F, Base), T),
     BindLift =
         monad:'>>='(
-          monad_trans:lift(M, T),
-          fun(A) -> monad_trans:lift(F(A), T) end,
-          T),
-    ?assertEqual(observe(Transformer, Base, BindLift),
-                 observe(Transformer, Base, LiftBind)).
+            monad_trans:lift(M, T),
+            fun(A) -> monad_trans:lift(F(A), T) end,
+            T
+        ),
+    ?assertEqual(
+        observe(Transformer, Base, BindLift),
+        observe(Transformer, Base, LiftBind)
+    ).
 
 base_action(identity) ->
     identity:return(4);
@@ -122,9 +149,10 @@ base_continuation(identity, A) ->
     identity:return(A + 3);
 base_continuation(state_m, A) ->
     monad:'>>'(
-      monad_state:put(A + 1, state_m),
-      monad:return(A * 2, state_m),
-      state_m);
+        monad_state:put(A + 1, state_m),
+        monad:return(A * 2, state_m),
+        state_m
+    );
 base_continuation(error_m, A) ->
     error_m:return(A + 3).
 

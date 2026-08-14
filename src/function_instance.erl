@@ -18,12 +18,19 @@
 -include("op.hrl").
 
 -erlando_instance(
-   #{type => {?TYPE, [function_instance/0]},
-     adapters =>
-         [#{mode => target,
-            patterns => [?TYPE],
-            capabilities => [functor, applicative, monad, monad_reader]}],
-     manual => [monad_runner]}).
+    #{
+        type => {?TYPE, [function_instance/0]},
+        adapters =>
+            [
+                #{
+                    mode => target,
+                    patterns => [?TYPE],
+                    capabilities => [functor, applicative, monad, monad_reader]
+                }
+            ],
+        manual => [monad_runner]
+    }
+).
 
 %% API
 -export([fmap/2, '<$'/2]).
@@ -68,8 +75,8 @@ lift_a2(F, RTA, RTB) ->
 -spec '<*'(fun((R) -> A), fun((R) -> _B)) -> fun((R) -> A).
 '<*'(RTA, RTB) ->
     applicative:'default_<*'(RTA, RTB, ?TYPE).
-           
--spec '>>='(fun((R) -> A), fun((A) -> fun((R) -> B))) -> fun((R) -> B).  
+
+-spec '>>='(fun((R) -> A), fun((A) -> fun((R) -> B))) -> fun((R) -> B).
 '>>='(FA, KFB) ->
     fun(X) -> (KFB(FA(X)))(X) end.
 

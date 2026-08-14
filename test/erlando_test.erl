@@ -19,12 +19,20 @@
 -export([all_test_/0]).
 
 all_test_() ->
-    Modules = [test_cut,
-               test_do,
-               test_import_as],
-    [{Mod,Fun} || Mod <- Modules,
-                  Fun <- extract_tests(Mod)].
+    Modules = [
+        test_cut,
+        test_do,
+        test_import_as
+    ],
+    [
+        {Mod, Fun}
+     || Mod <- Modules,
+        Fun <- extract_tests(Mod)
+    ].
 
 extract_tests(Mod) ->
-    [Fun || {Fun, 0} <- Mod:module_info(exports),
-            lists:prefix("test_", atom_to_list(Fun))].
+    [
+        Fun
+     || {Fun, 0} <- Mod:module_info(exports),
+        lists:prefix("test_", atom_to_list(Fun))
+    ].

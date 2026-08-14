@@ -32,29 +32,38 @@ parse_transform(Forms, _Options) ->
 
 %% forms(Fs) -> lists:map(fun (F) -> form(F) end, Fs).
 
-forms([F0|Fs0]) ->
-    F1 = try form(F0)
-         catch throw:{Error, Line} ->
-                 {error, {Line, ?MODULE, Error}}
-         end,
+forms([F0 | Fs0]) ->
+    F1 =
+        try
+            form(F0)
+        catch
+            throw:{Error, Line} ->
+                {error, {Line, ?MODULE, Error}}
+        end,
     Fs1 = forms(Fs0),
-    [F1|Fs1];
-forms([]) -> [].
+    [F1 | Fs1];
+forms([]) ->
+    [].
 
 %% -type form(Form) -> Form.
 
-form({attribute,Line,Attr,Val}) ->      %The general attribute.
-    {attribute,Line,Attr,Val};
-form({function,Line,Name0,Arity0,Clauses0}) ->
-    {Name,Arity,Clauses} = function(Name0, Arity0, Clauses0),
-    {function,Line,Name,Arity,Clauses};
+%The general attribute.
+form({attribute, Line, Attr, Val}) ->
+    {attribute, Line, Attr, Val};
+form({function, Line, Name0, Arity0, Clauses0}) ->
+    {Name, Arity, Clauses} = function(Name0, Arity0, Clauses0),
+    {function, Line, Name, Arity, Clauses};
 % Mnemosyne, ignore...
-form({rule,Line,Name,Arity,Body}) ->
-    {rule,Line,Name,Arity,Body}; % Dont dig into this
+form({rule, Line, Name, Arity, Body}) ->
+    % Dont dig into this
+    {rule, Line, Name, Arity, Body};
 %% Extra forms from the parser.
-form({error,E}) -> {error,E};
-form({warning,W}) -> {warning,W};
-form({eof,Line}) -> {eof,Line}.
+form({error, E}) ->
+    {error, E};
+form({warning, W}) ->
+    {warning, W};
+form({eof, Line}) ->
+    {eof, Line}.
 
 %% -type function(atom(), integer(), [Clause]) -> {atom(),integer(),[Clause]}.
 
@@ -64,10 +73,11 @@ function(Name, Arity, Clauses0) ->
 
 %% -type clauses([Clause]) -> [Clause].
 
-clauses([C0|Cs]) ->
+clauses([C0 | Cs]) ->
     C1 = clause(C0, []),
-    [C1|clauses(Cs)];
-clauses([]) -> [].
+    [C1 | clauses(Cs)];
+clauses([]) ->
+    [].
 
 %% -type clause(Clause) -> Clause.
 
@@ -77,24 +87,31 @@ clause({clause, Line, Head, Guard, Body}, MonadStack) ->
 %% -type pattern(Pattern) -> Pattern.
 %%  N.B. Only valid patterns are included here.
 
-pattern({var,Line,V}) -> {var,Line,V};
-pattern({match,Line,L0,R0}) ->
+pattern({var, Line, V}) ->
+    {var, Line, V};
+pattern({match, Line, L0, R0}) ->
     L1 = pattern(L0),
     R1 = pattern(R0),
-    {match,Line,L1,R1};
-pattern({integer,Line,I}) -> {integer,Line,I};
-pattern({char,Line,C}) -> {char,Line,C};
-pattern({float,Line,F}) -> {float,Line,F};
-pattern({atom,Line,A}) -> {atom,Line,A};
-pattern({string,Line,S}) -> {string,Line,S};
-pattern({nil,Line}) -> {nil,Line};
-pattern({cons,Line,H0,T0}) ->
+    {match, Line, L1, R1};
+pattern({integer, Line, I}) ->
+    {integer, Line, I};
+pattern({char, Line, C}) ->
+    {char, Line, C};
+pattern({float, Line, F}) ->
+    {float, Line, F};
+pattern({atom, Line, A}) ->
+    {atom, Line, A};
+pattern({string, Line, S}) ->
+    {string, Line, S};
+pattern({nil, Line}) ->
+    {nil, Line};
+pattern({cons, Line, H0, T0}) ->
     H1 = pattern(H0),
     T1 = pattern(T0),
-    {cons,Line,H1,T1};
-pattern({tuple,Line,Ps0}) ->
+    {cons, Line, H1, T1};
+pattern({tuple, Line, Ps0}) ->
     Ps1 = pattern_list(Ps0),
-    {tuple,Line,Ps1};
+    {tuple, Line, Ps1};
 %% OTP 17.0: EEP 443: Map pattern
 pattern({map, Line, Fields0}) ->
     Fields1 = map_fields(Fields0, []),
@@ -102,43 +119,45 @@ pattern({map, Line, Fields0}) ->
 %%pattern({struct,Line,Tag,Ps0}) ->
 %%    Ps1 = pattern_list(Ps0),
 %%    {struct,Line,Tag,Ps1};
-pattern({record,Line,Name,Pfs0}) ->
+pattern({record, Line, Name, Pfs0}) ->
     Pfs1 = pattern_fields(Pfs0),
-    {record,Line,Name,Pfs1};
-pattern({record_index,Line,Name,Field0}) ->
+    {record, Line, Name, Pfs1};
+pattern({record_index, Line, Name, Field0}) ->
     Field1 = pattern(Field0),
-    {record_index,Line,Name,Field1};
+    {record_index, Line, Name, Field1};
 %% record_field occurs in query expressions
-pattern({record_field,Line,Rec0,Name,Field0}) ->
+pattern({record_field, Line, Rec0, Name, Field0}) ->
     Rec1 = expr(Rec0, []),
     Field1 = expr(Field0, []),
-    {record_field,Line,Rec1,Name,Field1};
-pattern({record_field,Line,Rec0,Field0}) ->
+    {record_field, Line, Rec1, Name, Field1};
+pattern({record_field, Line, Rec0, Field0}) ->
     Rec1 = expr(Rec0, []),
     Field1 = expr(Field0, []),
-    {record_field,Line,Rec1,Field1};
-pattern({bin,Line,Fs}) ->
+    {record_field, Line, Rec1, Field1};
+pattern({bin, Line, Fs}) ->
     Fs2 = pattern_grp(Fs),
-    {bin,Line,Fs2};
-pattern({op,Line,Op,A}) ->
-    {op,Line,Op,A};
-pattern({op,Line,Op,L,R}) ->
-    {op,Line,Op,L,R}.
+    {bin, Line, Fs2};
+pattern({op, Line, Op, A}) ->
+    {op, Line, Op, A};
+pattern({op, Line, Op, L, R}) ->
+    {op, Line, Op, L, R}.
 
-pattern_grp([{bin_element,L1,E1,S1,T1} | Fs]) ->
-    S2 = case S1 of
-             default ->
-                 default;
-             _ ->
-                 expr(S1, [])
-         end,
-    T2 = case T1 of
-             default ->
-                 default;
-             _ ->
-                 bit_types(T1)
-         end,
-    [{bin_element,L1,expr(E1, []),S2,T2} | pattern_grp(Fs)];
+pattern_grp([{bin_element, L1, E1, S1, T1} | Fs]) ->
+    S2 =
+        case S1 of
+            default ->
+                default;
+            _ ->
+                expr(S1, [])
+        end,
+    T2 =
+        case T1 of
+            default ->
+                default;
+            _ ->
+                bit_types(T1)
+        end,
+    [{bin_element, L1, expr(E1, []), S2, T2} | pattern_grp(Fs)];
 pattern_grp([]) ->
     [].
 
@@ -146,53 +165,64 @@ bit_types([]) ->
     [];
 bit_types([Atom | Rest]) when is_atom(Atom) ->
     [Atom | bit_types(Rest)];
-bit_types([{Atom, Integer} | Rest])
-  when is_atom(Atom) andalso is_integer(Integer) ->
+bit_types([{Atom, Integer} | Rest]) when
+    is_atom(Atom) andalso is_integer(Integer)
+->
     [{Atom, Integer} | bit_types(Rest)].
-
 
 %% -type pattern_list([Pattern]) -> [Pattern].
 %%  These patterns are processed "in parallel" for purposes of variable
 %%  definition etc.
 
-pattern_list([P0|Ps]) ->
+pattern_list([P0 | Ps]) ->
     P1 = pattern(P0),
-    [P1|pattern_list(Ps)];
-pattern_list([]) -> [].
+    [P1 | pattern_list(Ps)];
+pattern_list([]) ->
+    [].
 
 %% -type pattern_fields([Field]) -> [Field].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-pattern_fields([{record_field,Lf,{atom,La,F},P0}|Pfs]) ->
+pattern_fields([{record_field, Lf, {atom, La, F}, P0} | Pfs]) ->
     P1 = pattern(P0),
-    [{record_field,Lf,{atom,La,F},P1}|pattern_fields(Pfs)];
-pattern_fields([{record_field,Lf,{var,La,'_'},P0}|Pfs]) ->
+    [{record_field, Lf, {atom, La, F}, P1} | pattern_fields(Pfs)];
+pattern_fields([{record_field, Lf, {var, La, '_'}, P0} | Pfs]) ->
     P1 = pattern(P0),
-    [{record_field,Lf,{var,La,'_'},P1}|pattern_fields(Pfs)];
-pattern_fields([]) -> [].
+    [{record_field, Lf, {var, La, '_'}, P1} | pattern_fields(Pfs)];
+pattern_fields([]) ->
+    [].
 
 %% -type exprs([Expression]) -> [Expression].
 %%  These expressions are processed "sequentially" for purposes of variable
 %%  definition etc.
 
-exprs([E0|Es], MonadStack) ->
+exprs([E0 | Es], MonadStack) ->
     E1 = expr(E0, MonadStack),
-    [E1|exprs(Es, MonadStack)];
-exprs([], _MonadStack) -> [].
+    [E1 | exprs(Es, MonadStack)];
+exprs([], _MonadStack) ->
+    [].
 
 %% -type expr(Expression) -> Expression.
 
-expr({var, Line, V}, _MonadStack)     -> {var, Line, V};
-expr({integer, Line, I}, _MonadStack) -> {integer, Line, I};
-expr({float, Line, F}, _MonadStack)   -> {float, Line, F};
-expr({atom, Line, A}, _MonadStack)    -> {atom, Line, A};
-expr({string, Line, S}, _MonadStack)  -> {string, Line, S};
-expr({char, Line, C}, _MonadStack)    -> {char, Line, C};
-expr({nil, Line}, _MonadStack)        -> {nil, Line};
+expr({var, Line, V}, _MonadStack) ->
+    {var, Line, V};
+expr({integer, Line, I}, _MonadStack) ->
+    {integer, Line, I};
+expr({float, Line, F}, _MonadStack) ->
+    {float, Line, F};
+expr({atom, Line, A}, _MonadStack) ->
+    {atom, Line, A};
+expr({string, Line, S}, _MonadStack) ->
+    {string, Line, S};
+expr({char, Line, C}, _MonadStack) ->
+    {char, Line, C};
+expr({nil, Line}, _MonadStack) ->
+    {nil, Line};
 expr({cons, Line, H0, T0}, MonadStack) ->
     H1 = expr(H0, MonadStack),
-    T1 = expr(T0, MonadStack), %% They see the same variables
+    %% They see the same variables
+    T1 = expr(T0, MonadStack),
     {cons, Line, H1, T1};
 expr({lc, Line, E0, Qs0}, MonadStack) ->
     Qs1 = lc_bc_quals(Qs0, MonadStack),
@@ -264,7 +294,8 @@ expr({'fun', Line, Body}, MonadStack) ->
             {'fun', Line, {clauses, Cs1}};
         {function, F, A} ->
             {'fun', Line, {function, F, A}};
-        {function, M, F, A} -> %% R10B-6: fun M:F/A.
+        %% R10B-6: fun M:F/A.
+        {function, M, F, A} ->
             {'fun', Line, {function, M, F, A}}
     end;
 %% OTP 17.0: EEP 37: Funs with names
@@ -272,20 +303,23 @@ expr({named_fun, Line, Name, Cs0}, MonadStack) ->
     Cs1 = fun_clauses(Cs0, MonadStack),
     {named_fun, Line, Name, Cs1};
 %%  do syntax detection:
-expr({call, Line, {atom, _Line1, do},
-      [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]},
-     MonadStack) when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
+expr(
+    {call, Line, {atom, _Line1, do}, [{lc, _Line2, {AtomOrVar, _Line3, _MonadModule} = Monad, Qs}]},
+    MonadStack
+) when AtomOrVar =:= atom orelse AtomOrVar =:= var orelse AtomOrVar =:= tuple ->
     %% 'do' calls of a particular form:
     %%  do([ MonadMod || Qualifiers ])
     {call, Line,
-     {'fun', Line,
-      {clauses,
-       [{clause, Line, [], [], do_syntax(Qs, [Monad | MonadStack])}]}}, []};
-
+        {'fun', Line, {clauses, [{clause, Line, [], [], do_syntax(Qs, [Monad | MonadStack])}]}},
+        []};
 %%  'return' and 'fail' syntax detection and transformation:
-expr({call, Line, {atom, Line1, ReturnOrFail}, As0},
-     [Monad|_Monads] = MonadStack) when ReturnOrFail =:= return orelse
-                                        ReturnOrFail =:= fail->
+expr(
+    {call, Line, {atom, Line1, ReturnOrFail}, As0},
+    [Monad | _Monads] = MonadStack
+) when
+    ReturnOrFail =:= return orelse
+        ReturnOrFail =:= fail
+->
     %% 'return' calls of a particular form:
     %%  return(Arguments), and
     %% 'fail' calls of a particular form:
@@ -304,10 +338,10 @@ expr({'catch', Line, E0}, MonadStack) ->
     %% No new variables added.
     E1 = expr(E0, MonadStack),
     {'catch', Line, E1};
-expr({'query',  Line,  E0}, MonadStack) ->
+expr({'query', Line, E0}, MonadStack) ->
     %% lc expression
     E = expr(E0, MonadStack),
-    {'query',  Line,  E};
+    {'query', Line, E};
 expr({match, Line, P0, E0}, MonadStack) ->
     E1 = expr(E0, MonadStack),
     P1 = pattern(P0),
@@ -320,7 +354,8 @@ expr({op, Line, Op, A0}, MonadStack) ->
     {op, Line, Op, A1};
 expr({op, Line, Op, L0, R0}, MonadStack) ->
     L1 = expr(L0, MonadStack),
-    R1 = expr(R0, MonadStack), %% They see the same variables
+    %% They see the same variables
+    R1 = expr(R0, MonadStack),
     {op, Line, Op, L1, R1};
 %% The following are not allowed to occur anywhere!
 expr({remote, Line, M0, F0}, MonadStack) ->
@@ -332,114 +367,139 @@ expr({remote, Line, M0, F0}, MonadStack) ->
 %%  These expressions are processed "in parallel" for purposes of variable
 %%  definition etc.
 
-expr_list([E0|Es], MonadStack) ->
+expr_list([E0 | Es], MonadStack) ->
     E1 = expr(E0, MonadStack),
-    [E1|expr_list(Es, MonadStack)];
-expr_list([], _MonadStack) -> [].
+    [E1 | expr_list(Es, MonadStack)];
+expr_list([], _MonadStack) ->
+    [].
 
 %% -type map_fields([MapField]) -> [MapField].
-map_fields([{map_field_assoc, Line, ExpK0, ExpV0}|Fs], MonadStack) ->
+map_fields([{map_field_assoc, Line, ExpK0, ExpV0} | Fs], MonadStack) ->
     ExpK1 = expr(ExpK0, MonadStack),
     ExpV1 = expr(ExpV0, MonadStack),
-    [{map_field_assoc, Line, ExpK1, ExpV1}|map_fields(Fs, MonadStack)];
-map_fields([{map_field_exact, Line, ExpK0, ExpV0}|Fs], MonadStack) ->
+    [{map_field_assoc, Line, ExpK1, ExpV1} | map_fields(Fs, MonadStack)];
+map_fields([{map_field_exact, Line, ExpK0, ExpV0} | Fs], MonadStack) ->
     ExpK1 = expr(ExpK0, MonadStack),
     ExpV1 = expr(ExpV0, MonadStack),
-    [{map_field_exact, Line, ExpK1, ExpV1}|map_fields(Fs, MonadStack)];
-map_fields([], _MoandStack) -> [].
+    [{map_field_exact, Line, ExpK1, ExpV1} | map_fields(Fs, MonadStack)];
+map_fields([], _MoandStack) ->
+    [].
 
 %% -type record_inits([RecordInit]) -> [RecordInit].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-record_inits([{record_field, Lf, {atom, La, F}, Val0}|Is], MonadStack) ->
+record_inits([{record_field, Lf, {atom, La, F}, Val0} | Is], MonadStack) ->
     Val1 = expr(Val0, MonadStack),
-    [{record_field, Lf, {atom, La, F}, Val1}|record_inits(Is, MonadStack)];
-record_inits([{record_field, Lf, {var, La, '_'}, Val0}|Is], MonadStack) ->
+    [{record_field, Lf, {atom, La, F}, Val1} | record_inits(Is, MonadStack)];
+record_inits([{record_field, Lf, {var, La, '_'}, Val0} | Is], MonadStack) ->
     Val1 = expr(Val0, MonadStack),
-    [{record_field, Lf, {var, La, '_'}, Val1}|record_inits(Is, MonadStack)];
-record_inits([], _MonadStack) -> [].
+    [{record_field, Lf, {var, La, '_'}, Val1} | record_inits(Is, MonadStack)];
+record_inits([], _MonadStack) ->
+    [].
 
 %% -type record_updates([RecordUpd]) -> [RecordUpd].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-record_updates([{record_field, Lf, {atom, La, F}, Val0}|Us], MonadStack) ->
+record_updates([{record_field, Lf, {atom, La, F}, Val0} | Us], MonadStack) ->
     Val1 = expr(Val0, MonadStack),
-    [{record_field, Lf, {atom, La, F}, Val1}|record_updates(Us, MonadStack)];
-record_updates([], _MonadStack) -> [].
+    [{record_field, Lf, {atom, La, F}, Val1} | record_updates(Us, MonadStack)];
+record_updates([], _MonadStack) ->
+    [].
 
 %% -type icr_clauses([Clause]) -> [Clause].
 
-icr_clauses([C0|Cs], MonadStack) ->
+icr_clauses([C0 | Cs], MonadStack) ->
     C1 = clause(C0, MonadStack),
-    [C1|icr_clauses(Cs, MonadStack)];
-icr_clauses([], _MonadStack) -> [].
+    [C1 | icr_clauses(Cs, MonadStack)];
+icr_clauses([], _MonadStack) ->
+    [].
 
 %% -type lc_bc_quals([Qualifier]) -> [Qualifier].
 %%  Allow filters to be both guard tests and general expressions.
 
-lc_bc_quals([{generate, Line, P0, E0}|Qs], MonadStack) ->
+lc_bc_quals([{generate, Line, P0, E0} | Qs], MonadStack) ->
     E1 = expr(E0, MonadStack),
     P1 = pattern(P0),
-    [{generate, Line, P1, E1}|lc_bc_quals(Qs, MonadStack)];
-lc_bc_quals([{b_generate, Line, P0, E0}|Qs], MonadStack) ->
+    [{generate, Line, P1, E1} | lc_bc_quals(Qs, MonadStack)];
+lc_bc_quals([{b_generate, Line, P0, E0} | Qs], MonadStack) ->
     E1 = expr(E0, MonadStack),
     P1 = pattern(P0),
-    [{b_generate, Line, P1, E1}|lc_bc_quals(Qs, MonadStack)];
-lc_bc_quals([E0|Qs], MonadStack) ->
+    [{b_generate, Line, P1, E1} | lc_bc_quals(Qs, MonadStack)];
+lc_bc_quals([E0 | Qs], MonadStack) ->
     E1 = expr(E0, MonadStack),
-    [E1|lc_bc_quals(Qs, MonadStack)];
-lc_bc_quals([], _MonadStack) -> [].
+    [E1 | lc_bc_quals(Qs, MonadStack)];
+lc_bc_quals([], _MonadStack) ->
+    [].
 
 %% -type fun_clauses([Clause]) -> [Clause].
 
-fun_clauses([C0|Cs], MonadStack) ->
+fun_clauses([C0 | Cs], MonadStack) ->
     C1 = clause(C0, MonadStack),
-    [C1|fun_clauses(Cs, MonadStack)];
-fun_clauses([], _MonadStack) -> [].
+    [C1 | fun_clauses(Cs, MonadStack)];
+fun_clauses([], _MonadStack) ->
+    [].
 
 %%  'do' syntax transformation:
 do_syntax([], [{_AtomOrVar, MLine, _MonadModule} | _MonadStack]) ->
     transform_error("A 'do' construct cannot be empty", MLine);
-do_syntax([{GenerateOrMatch, Line, _Pattern, _Expr}], _MonadStack)
-  when GenerateOrMatch =:= generate orelse GenerateOrMatch =:= match ->
+do_syntax([{GenerateOrMatch, Line, _Pattern, _Expr}], _MonadStack) when
+    GenerateOrMatch =:= generate orelse GenerateOrMatch =:= match
+->
     transform_error("The last statement in a 'do' construct must be an expression", Line);
-do_syntax([{generate, Line,  Pattern, Expr} | Exprs],
-          [Monad | _Monads] = MonadStack) ->
+do_syntax(
+    [{generate, Line, Pattern, Expr} | Exprs],
+    [Monad | _Monads] = MonadStack
+) ->
     %% "Pattern <- Expr, Tail" where Pattern is a simple variable
     %% is transformed to
     %% "Monad:'>>='(Expr, fun (Pattern) -> Tail')"
     %% without a fail to match clause
-    Args = [expr(Expr, MonadStack), {'fun', Line, {clauses, pattern_syntax(Line, Pattern, Exprs, MonadStack)}}],
+    Args = [
+        expr(Expr, MonadStack),
+        {'fun', Line, {clauses, pattern_syntax(Line, Pattern, Exprs, MonadStack)}}
+    ],
     [monad_call_expr(Line, Line, Monad, '>>=', Args)];
 do_syntax([Expr], MonadStack) ->
-    [expr(Expr, MonadStack)]; %% Don't do '>>' chaining on the last elem
-do_syntax([{match, _Line, _Pattern, _Expr} = Expr | Exprs],
-          MonadStack) ->
+    %% Don't do '>>' chaining on the last elem
+    [expr(Expr, MonadStack)];
+do_syntax(
+    [{match, _Line, _Pattern, _Expr} = Expr | Exprs],
+    MonadStack
+) ->
     %% Handles 'let binding' in do expression a-la Haskell
     [expr(Expr, MonadStack) | do_syntax(Exprs, MonadStack)];
 do_syntax([Expr | Exprs], [Monad | _Monads] = MonadStack) ->
     %% "Expr, Tail" is transformed to "Monad:'>>='(Expr, fun (_) -> Tail')"
     %% Line is always the 2nd element of Expr
     Line = element(2, Expr),
-    Args = [expr(Expr, MonadStack),
-            {'fun', Line,
-             {clauses,
-              [{clause, Line,
-                [{var, Line, '_'}], [], do_syntax(Exprs, MonadStack)}]}}],
+    Args = [
+        expr(Expr, MonadStack),
+        {'fun', Line,
+            {clauses, [{clause, Line, [{var, Line, '_'}], [], do_syntax(Exprs, MonadStack)}]}}
+    ],
     [monad_call_expr(Line, Line, Monad, '>>=', Args)].
 
 pattern_syntax(Line, {var, _Line, _Var} = Pattern, Exprs, MonadStack) ->
     [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)}];
 pattern_syntax(Line, Pattern, Exprs, [Monad | _Monads] = MonadStack) ->
     %% with a fail clause if the function does not match
-    [{clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)},
-     {clause, Line, [{var, Line, '_'}], [],
-      [monad_call_expr(Line, Line, Monad, 'fail', [{atom, Line, 'monad_badmatch'}])]}].
+    [
+        {clause, Line, [Pattern], [], do_syntax(Exprs, MonadStack)},
+        {clause, Line, [{var, Line, '_'}], [], [
+            monad_call_expr(Line, Line, Monad, 'fail', [{atom, Line, 'monad_badmatch'}])
+        ]}
+    ].
 
-monad_call_expr(Line, Line1, {tuple, _Line2, [{atom, _Line3, _MonadModule} = Module|_T]} = Monad, Function, Args) ->
-    %% if Monad is a tuple which is a monad transformer 
+monad_call_expr(
+    Line,
+    Line1,
+    {tuple, _Line2, [{atom, _Line3, _MonadModule} = Module | _T]} = Monad,
+    Function,
+    Args
+) ->
+    %% if Monad is a tuple which is a monad transformer
     %% call of {Monad, Function, Args} is transformed to {Module, Function, Args ++ [Monad]}
     {call, Line, {remote, Line1, Module, {atom, Line1, Function}}, Args ++ [Monad]};
 monad_call_expr(Line, Line1, Monad, Function, Args) ->
@@ -456,5 +516,5 @@ transform_error(Message, Line) ->
 format_error(Message) ->
     case io_lib:deep_char_list(Message) of
         true -> Message;
-        _    -> io_lib:write(Message)
+        _ -> io_lib:write(Message)
     end.

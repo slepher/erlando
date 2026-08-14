@@ -121,9 +121,8 @@ end_per_testcase(_TestCase, _Config) ->
 %% @spec all(Clause) -> TestCases
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
+all() ->
     [test_get, test_put, test_state, test_except_t_state].
-
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -149,7 +148,7 @@ all() ->
 %% @spec TestCase(Arg) -> Descr | Spec | ok | exit() | {skip,Reason}
 %% @end
 %%--------------------------------------------------------------------
-test_get(_Config) -> 
+test_get(_Config) ->
     M = monad_state:get(),
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
@@ -166,9 +165,9 @@ test_put(_Config) ->
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M1, 5), 5))),
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M2, 5), 5))),
     ?assertEqual({ok, 10}, error_m:run(reader_t:run(state_t:exec(M3, 5), 5))).
-           
+
 test_state(_Config) ->
-    M = monad_state:state(fun(S) -> {S + 1, S} end), 
+    M = monad_state:state(fun(S) -> {S + 1, S} end),
     M1 = cont_t:eval(M),
     M2 = reader_t:run(M, undefined),
     M3 = writer_t:eval(M),

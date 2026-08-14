@@ -36,26 +36,32 @@ parse_transform(Forms, _Options) ->
 
 %% forms(Fs) -> lists:map(fun (F) -> form(F) end, Fs).
 
-forms([F0|Fs0]) ->
+forms([F0 | Fs0]) ->
     F1 = form(F0),
     Fs1 = forms(Fs0),
-    [F1|Fs1];
-forms([]) -> [].
+    [F1 | Fs1];
+forms([]) ->
+    [].
 
 %% -type form(Form) -> Form.
 
-form({attribute,Line,Attr,Val}) ->      %The general attribute.
-    {attribute,Line,Attr,Val};
-form({function,Line,Name0,Arity0,Clauses0}) ->
-    {Name,Arity,Clauses} = function(Name0, Arity0, Clauses0),
-    {function,Line,Name,Arity,Clauses};
+%The general attribute.
+form({attribute, Line, Attr, Val}) ->
+    {attribute, Line, Attr, Val};
+form({function, Line, Name0, Arity0, Clauses0}) ->
+    {Name, Arity, Clauses} = function(Name0, Arity0, Clauses0),
+    {function, Line, Name, Arity, Clauses};
 % Mnemosyne, ignore...
-form({rule,Line,Name,Arity,Body}) ->
-    {rule,Line,Name,Arity,Body}; % Dont dig into this
+form({rule, Line, Name, Arity, Body}) ->
+    % Dont dig into this
+    {rule, Line, Name, Arity, Body};
 %% Extra forms from the parser.
-form({error,E}) -> {error,E};
-form({warning,W}) -> {warning,W};
-form({eof,Line}) -> {eof,Line}.
+form({error, E}) ->
+    {error, E};
+form({warning, W}) ->
+    {warning, W};
+form({eof, Line}) ->
+    {eof, Line}.
 
 %% -type function(atom(), integer(), [Clause]) -> {atom(),integer(),[Clause]}.
 
@@ -65,10 +71,11 @@ function(Name, Arity, Clauses0) ->
 
 %% -type clauses([Clause]) -> [Clause].
 
-clauses([C0|Cs]) ->
+clauses([C0 | Cs]) ->
     C1 = clause(C0),
-    [C1|clauses(Cs)];
-clauses([]) -> [].
+    [C1 | clauses(Cs)];
+clauses([]) ->
+    [].
 
 %% -type clause(Clause) -> Clause.
 
@@ -78,24 +85,31 @@ clause({clause, Line, Head, Guard, Body}) ->
 %% -type pattern(Pattern) -> Pattern.
 %%  N.B. Only valid patterns are included here.
 
-pattern({var,Line,V}) -> {var,Line,V};
-pattern({match,Line,L0,R0}) ->
+pattern({var, Line, V}) ->
+    {var, Line, V};
+pattern({match, Line, L0, R0}) ->
     L1 = pattern(L0),
     R1 = pattern(R0),
-    {match,Line,L1,R1};
-pattern({integer,Line,I}) -> {integer,Line,I};
-pattern({char,Line,C}) -> {char,Line,C};
-pattern({float,Line,F}) -> {float,Line,F};
-pattern({atom,Line,A}) -> {atom,Line,A};
-pattern({string,Line,S}) -> {string,Line,S};
-pattern({nil,Line}) -> {nil,Line};
-pattern({cons,Line,H0,T0}) ->
+    {match, Line, L1, R1};
+pattern({integer, Line, I}) ->
+    {integer, Line, I};
+pattern({char, Line, C}) ->
+    {char, Line, C};
+pattern({float, Line, F}) ->
+    {float, Line, F};
+pattern({atom, Line, A}) ->
+    {atom, Line, A};
+pattern({string, Line, S}) ->
+    {string, Line, S};
+pattern({nil, Line}) ->
+    {nil, Line};
+pattern({cons, Line, H0, T0}) ->
     H1 = pattern(H0),
     T1 = pattern(T0),
-    {cons,Line,H1,T1};
-pattern({tuple,Line,Ps0}) ->
+    {cons, Line, H1, T1};
+pattern({tuple, Line, Ps0}) ->
     Ps1 = pattern_list(Ps0),
-    {tuple,Line,Ps1};
+    {tuple, Line, Ps1};
 %% OTP 17.0: EEP 443: Map pattern
 pattern({map, Line, Fields0}) ->
     Fields1 = map_fields(Fields0),
@@ -103,43 +117,45 @@ pattern({map, Line, Fields0}) ->
 %%pattern({struct,Line,Tag,Ps0}) ->
 %%    Ps1 = pattern_list(Ps0),
 %%    {struct,Line,Tag,Ps1};
-pattern({record,Line,Name,Pfs0}) ->
+pattern({record, Line, Name, Pfs0}) ->
     Pfs1 = pattern_fields(Pfs0),
-    {record,Line,Name,Pfs1};
-pattern({record_index,Line,Name,Field0}) ->
+    {record, Line, Name, Pfs1};
+pattern({record_index, Line, Name, Field0}) ->
     Field1 = pattern(Field0),
-    {record_index,Line,Name,Field1};
+    {record_index, Line, Name, Field1};
 %% record_field occurs in query expressions
-pattern({record_field,Line,Rec0,Name,Field0}) ->
+pattern({record_field, Line, Rec0, Name, Field0}) ->
     Rec1 = expr(Rec0),
     Field1 = expr(Field0),
-    {record_field,Line,Rec1,Name,Field1};
-pattern({record_field,Line,Rec0,Field0}) ->
+    {record_field, Line, Rec1, Name, Field1};
+pattern({record_field, Line, Rec0, Field0}) ->
     Rec1 = expr(Rec0),
     Field1 = expr(Field0),
-    {record_field,Line,Rec1,Field1};
-pattern({bin,Line,Fs}) ->
+    {record_field, Line, Rec1, Field1};
+pattern({bin, Line, Fs}) ->
     Fs2 = pattern_grp(Fs),
-    {bin,Line,Fs2};
-pattern({op,Line,Op,A}) ->
-    {op,Line,Op,A};
-pattern({op,Line,Op,L,R}) ->
-    {op,Line,Op,L,R}.
+    {bin, Line, Fs2};
+pattern({op, Line, Op, A}) ->
+    {op, Line, Op, A};
+pattern({op, Line, Op, L, R}) ->
+    {op, Line, Op, L, R}.
 
-pattern_grp([{bin_element,L1,E1,S1,T1} | Fs]) ->
-    S2 = case S1 of
-             default ->
-                 default;
-             _ ->
-                 expr(S1)
-         end,
-    T2 = case T1 of
-             default ->
-                 default;
-             _ ->
-                 bit_types(T1)
-         end,
-    [{bin_element,L1,expr(E1),S2,T2} | pattern_grp(Fs)];
+pattern_grp([{bin_element, L1, E1, S1, T1} | Fs]) ->
+    S2 =
+        case S1 of
+            default ->
+                default;
+            _ ->
+                expr(S1)
+        end,
+    T2 =
+        case T1 of
+            default ->
+                default;
+            _ ->
+                bit_types(T1)
+        end,
+    [{bin_element, L1, expr(E1), S2, T2} | pattern_grp(Fs)];
 pattern_grp([]) ->
     [].
 
@@ -150,58 +166,67 @@ bit_types([Atom | Rest]) when is_atom(Atom) ->
 bit_types([{Atom, Integer} | Rest]) when is_atom(Atom), is_integer(Integer) ->
     [{Atom, Integer} | bit_types(Rest)].
 
-
 %% -type pattern_list([Pattern]) -> [Pattern].
 %%  These patterns are processed "in parallel" for purposes of variable
 %%  definition etc.
 
-pattern_list([P0|Ps]) ->
+pattern_list([P0 | Ps]) ->
     P1 = pattern(P0),
-    [P1|pattern_list(Ps)];
-pattern_list([]) -> [].
+    [P1 | pattern_list(Ps)];
+pattern_list([]) ->
+    [].
 
 %% -type pattern_fields([Field]) -> [Field].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-pattern_fields([{record_field,Lf,{atom,La,F},P0}|Pfs]) ->
+pattern_fields([{record_field, Lf, {atom, La, F}, P0} | Pfs]) ->
     P1 = pattern(P0),
-    [{record_field,Lf,{atom,La,F},P1}|pattern_fields(Pfs)];
-pattern_fields([{record_field,Lf,{var,La,'_'},P0}|Pfs]) ->
+    [{record_field, Lf, {atom, La, F}, P1} | pattern_fields(Pfs)];
+pattern_fields([{record_field, Lf, {var, La, '_'}, P0} | Pfs]) ->
     P1 = pattern(P0),
-    [{record_field,Lf,{var,La,'_'},P1}|pattern_fields(Pfs)];
-pattern_fields([]) -> [].
+    [{record_field, Lf, {var, La, '_'}, P1} | pattern_fields(Pfs)];
+pattern_fields([]) ->
+    [].
 
 %% -type exprs([Expression]) -> [Expression].
 %%  These expressions are processed "sequentially" for purposes of variable
 %%  definition etc.
 
-exprs([E0|Es]) ->
+exprs([E0 | Es]) ->
     E1 = expr(E0),
-    [E1|exprs(Es)];
-exprs([]) -> [].
+    [E1 | exprs(Es)];
+exprs([]) ->
+    [].
 
 %% -type expr(Expression) -> Expression.
 
-expr({var, Line, V})     -> {var, Line, V};
-expr({integer, Line, I}) -> {integer, Line, I};
-expr({float, Line, F})   -> {float, Line, F};
-expr({atom, Line, A})    -> {atom, Line, A};
-expr({string, Line, S})  -> {string, Line, S};
-expr({char, Line, C})    -> {char, Line, C};
-expr({nil, Line})        -> {nil, Line};
+expr({var, Line, V}) ->
+    {var, Line, V};
+expr({integer, Line, I}) ->
+    {integer, Line, I};
+expr({float, Line, F}) ->
+    {float, Line, F};
+expr({atom, Line, A}) ->
+    {atom, Line, A};
+expr({string, Line, S}) ->
+    {string, Line, S};
+expr({char, Line, C}) ->
+    {char, Line, C};
+expr({nil, Line}) ->
+    {nil, Line};
 expr({cons, Line, H0, T0} = Cons) ->
     %% We need to find cut vars in T0 _before_ recursing.
     case find_cons_cut_vars([Cons], T0) of
         {[], _H1T1} ->
             H1 = expr(H0),
-            T1 = expr(T0), %% They see the same variables
+            %% They see the same variables
+            T1 = expr(T0),
             {cons, Line, H1, T1};
         {Pattern, {cons, Line, H1, T1}} ->
             H2 = expr(H1),
             T2 = expr(T1),
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{cons, Line, H2, T2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{cons, Line, H2, T2}]}]}}
     end;
 expr({lc, Line, E0, Qs0}) ->
     %% Note that it is nonsensical to allow a cut on E0, as in all
@@ -214,8 +239,7 @@ expr({lc, Line, E0, Qs0}) ->
         {[], _Qs2} ->
             {lc, Line, E1, Qs1};
         {Pattern, Qs2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{lc, Line, E1, Qs2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{lc, Line, E1, Qs2}]}]}}
     end;
 expr({bc, Line, E0, Qs0}) ->
     %% Notes for {lc,...} above apply here too.
@@ -226,38 +250,35 @@ expr({bc, Line, E0, Qs0}) ->
         {[], _Qs2} ->
             {bc, Line, E1, Qs1};
         {Pattern, Qs2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{bc, Line, E1, Qs2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{bc, Line, E1, Qs2}]}]}}
     end;
 expr({tuple, Line, Es0}) ->
     Es1 = expr_list(Es0),
     case find_cut_vars(Es1) of
-        {[],     _Es2} ->
+        {[], _Es2} ->
             {tuple, Line, Es1};
         {Pattern, Es2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{tuple, Line, Es2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{tuple, Line, Es2}]}]}}
     end;
 %% OTP 17.0: EEP 443: Map construction
 expr({map, Line, Fields0}) ->
     Fields1 = map_fields(Fields0),
     case find_map_cut_vars(Fields1) of
-        {[],     _Fields2} ->
+        {[], _Fields2} ->
             {map, Line, Fields1};
         {Pattern, Fields2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{map, Line, Fields2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{map, Line, Fields2}]}]}}
     end;
 %% OTP 17.0: EEP 443: Map update
 expr({map, Line, Expr0, Fields0}) ->
-    Expr1   = expr(Expr0),
+    Expr1 = expr(Expr0),
     Fields1 = map_fields(Fields0),
     case {find_cut_vars([Expr1]), find_map_cut_vars(Fields1)} of
         {{[], _Expr2}, {[], _Fields2}} ->
             {map, Line, Expr1, Fields1};
         {{Pattern1, [Expr2]}, {Pattern2, Fields2}} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern1++Pattern2, [],
-                                      [{map, Line, Expr2, Fields2}]}]}}
+            {'fun', Line,
+                {clauses, [{clause, Line, Pattern1 ++ Pattern2, [], [{map, Line, Expr2, Fields2}]}]}}
     end;
 %%expr({struct,Line,Tag,Es0}) ->
 %%    Es1 = pattern_list(Es0),
@@ -270,11 +291,10 @@ expr({record_index, Line, Name, Field0}) ->
 expr({record, Line, Name, Inits0}) ->
     Inits1 = record_inits(Inits0),
     case find_record_cut_vars(Inits1) of
-        {[],     _Inits2} ->
+        {[], _Inits2} ->
             {record, Line, Name, Inits1};
         {Pattern, Inits2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{record, Line, Name, Inits2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{record, Line, Name, Inits2}]}]}}
     end;
 expr({record_field, Line, Rec0, Name, Field0}) ->
     Rec1 = expr(Rec0),
@@ -283,9 +303,8 @@ expr({record_field, Line, Rec0, Name, Field0}) ->
         {[], _Rec2} ->
             {record_field, Line, Rec1, Name, Field1};
         {Pattern, [Rec2]} ->
-            {'fun', Line, {clauses,
-                           [{clause, Line, Pattern, [],
-                             [{record_field, Line, Rec2, Name, Field1}]}]}}
+            {'fun', Line,
+                {clauses, [{clause, Line, Pattern, [], [{record_field, Line, Rec2, Name, Field1}]}]}}
     end;
 expr({record, Line, Rec0, Name, Upds0}) ->
     Rec1 = expr(Rec0),
@@ -296,8 +315,10 @@ expr({record, Line, Rec0, Name, Upds0}) ->
         {{[], _Rec2}, {[], _Upds2}} ->
             {record, Line, Rec1, Name, Upds1};
         {{Pattern1, [Rec2]}, {Pattern2, Upds2}} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern1++Pattern2, [],
-                                      [{record, Line, Rec2, Name, Upds2}]}]}}
+            {'fun', Line,
+                {clauses, [
+                    {clause, Line, Pattern1 ++ Pattern2, [], [{record, Line, Rec2, Name, Upds2}]}
+                ]}}
     end;
 expr({record_field, Line, Rec0, Field0}) ->
     %% This only occurs within an mnesia query, let's not cut here
@@ -319,8 +340,7 @@ expr({'case', Line, E0, Cs0}) ->
         {[], _E2} ->
             {'case', Line, E1, Cs1};
         {Pattern, [E2]} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{'case', Line, E2, Cs1}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{'case', Line, E2, Cs1}]}]}}
     end;
 expr({'receive', Line, Cs0}) ->
     Cs1 = icr_clauses(Cs0),
@@ -350,7 +370,8 @@ expr({'fun', Line, Body}) ->
             {'fun', Line, {clauses, Cs1}};
         {function, F, A} ->
             {'fun', Line, {function, F, A}};
-        {function, M, F, A} -> %% R10B-6: fun M:F/A.
+        %% R10B-6: fun M:F/A.
+        {function, M, F, A} ->
             {'fun', Line, {function, M, F, A}}
     end;
 %% OTP 17.0: EEP 37: Funs with names
@@ -373,8 +394,8 @@ expr({call, Line, F0, As0}) ->
         {{[], _F2}, {[], _As2}} ->
             {call, Line, F1, As1};
         {{Pattern1, [F2]}, {Pattern2, As2}} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern1++Pattern2, [],
-                                      [{call, Line, F2, As2}]}]}}
+            {'fun', Line,
+                {clauses, [{clause, Line, Pattern1 ++ Pattern2, [], [{call, Line, F2, As2}]}]}}
     end;
 expr({'catch', Line, E0}) ->
     %% No new variables added.
@@ -395,8 +416,7 @@ expr({bin, Line, Fs}) ->
         {[], _Fs2} ->
             {bin, Line, Fs1};
         {Pattern, Fs2} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{bin, Line, Fs2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{bin, Line, Fs2}]}]}}
     end;
 expr({op, Line, Op, A0}) ->
     A1 = expr(A0),
@@ -404,18 +424,17 @@ expr({op, Line, Op, A0}) ->
         {[], _A2} ->
             {op, Line, Op, A1};
         {Pattern, [A2]} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{op, Line, Op, A2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{op, Line, Op, A2}]}]}}
     end;
 expr({op, Line, Op, L0, R0}) ->
     L1 = expr(L0),
-    R1 = expr(R0), %% They see the same variables
+    %% They see the same variables
+    R1 = expr(R0),
     case find_cut_vars([L1, R1]) of
         {[], _L2R2} ->
             {op, Line, Op, L1, R1};
         {Pattern, [L2, R2]} ->
-            {'fun', Line, {clauses, [{clause, Line, Pattern, [],
-                                      [{op, Line, Op, L2, R2}]}]}}
+            {'fun', Line, {clauses, [{clause, Line, Pattern, [], [{op, Line, Op, L2, R2}]}]}}
     end;
 %% The following are not allowed to occur anywhere!
 expr({remote, Line, M0, F0}) ->
@@ -428,72 +447,79 @@ expr({remote, Line, M0, F0}) ->
 %%  These expressions are processed "in parallel" for purposes of variable
 %%  definition etc.
 
-expr_list([E0|Es]) ->
+expr_list([E0 | Es]) ->
     E1 = expr(E0),
-    [E1|expr_list(Es)];
-expr_list([]) -> [].
+    [E1 | expr_list(Es)];
+expr_list([]) ->
+    [].
 
 %% -type map_fields([MapField]) -> [MapField].
-map_fields([{map_field_assoc, Line, ExpK0, ExpV0}|Fs]) ->
+map_fields([{map_field_assoc, Line, ExpK0, ExpV0} | Fs]) ->
     ExpK1 = expr(ExpK0),
     ExpV1 = expr(ExpV0),
-    [{map_field_assoc, Line, ExpK1, ExpV1}|map_fields(Fs)];
-map_fields([{map_field_exact, Line, ExpK0, ExpV0}|Fs]) ->
+    [{map_field_assoc, Line, ExpK1, ExpV1} | map_fields(Fs)];
+map_fields([{map_field_exact, Line, ExpK0, ExpV0} | Fs]) ->
     ExpK1 = expr(ExpK0),
     ExpV1 = expr(ExpV0),
-    [{map_field_exact, Line, ExpK1, ExpV1}|map_fields(Fs)];
-map_fields([]) -> [].
+    [{map_field_exact, Line, ExpK1, ExpV1} | map_fields(Fs)];
+map_fields([]) ->
+    [].
 
 %% -type record_inits([RecordInit]) -> [RecordInit].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-record_inits([{record_field, Lf, {atom, La, F}, Val0}|Is]) ->
+record_inits([{record_field, Lf, {atom, La, F}, Val0} | Is]) ->
     Val1 = expr(Val0),
-    [{record_field, Lf, {atom, La, F}, Val1}|record_inits(Is)];
-record_inits([{record_field, Lf, {var, La, '_'}, Val0}|Is]) ->
+    [{record_field, Lf, {atom, La, F}, Val1} | record_inits(Is)];
+record_inits([{record_field, Lf, {var, La, '_'}, Val0} | Is]) ->
     Val1 = expr(Val0),
-    [{record_field, Lf, {var, La, '_'}, Val1}|record_inits(Is)];
-record_inits([]) -> [].
+    [{record_field, Lf, {var, La, '_'}, Val1} | record_inits(Is)];
+record_inits([]) ->
+    [].
 
 %% -type record_updates([RecordUpd]) -> [RecordUpd].
 %%  N.B. Field names are full expressions here but only atoms are allowed
 %%  by the *linter*!.
 
-record_updates([{record_field, Lf, {atom, La, F}, Val0}|Us]) ->
+record_updates([{record_field, Lf, {atom, La, F}, Val0} | Us]) ->
     Val1 = expr(Val0),
-    [{record_field, Lf, {atom, La, F}, Val1}|record_updates(Us)];
-record_updates([]) -> [].
+    [{record_field, Lf, {atom, La, F}, Val1} | record_updates(Us)];
+record_updates([]) ->
+    [].
 
 %% -type icr_clauses([Clause]) -> [Clause].
 
-icr_clauses([C0|Cs]) ->
+icr_clauses([C0 | Cs]) ->
     C1 = clause(C0),
-    [C1|icr_clauses(Cs)];
-icr_clauses([]) -> [].
+    [C1 | icr_clauses(Cs)];
+icr_clauses([]) ->
+    [].
 
 %% -type lc_bc_quals([Qualifier]) -> [Qualifier].
 %%  Allow filters to be both guard tests and general expressions.
 
-lc_bc_quals([{generate, Line, P0, E0}|Qs]) ->
+lc_bc_quals([{generate, Line, P0, E0} | Qs]) ->
     E1 = expr(E0),
     P1 = pattern(P0),
-    [{generate, Line, P1, E1}|lc_bc_quals(Qs)];
-lc_bc_quals([{b_generate, Line, P0, E0}|Qs]) ->
+    [{generate, Line, P1, E1} | lc_bc_quals(Qs)];
+lc_bc_quals([{b_generate, Line, P0, E0} | Qs]) ->
     E1 = expr(E0),
     P1 = pattern(P0),
-    [{b_generate, Line, P1, E1}|lc_bc_quals(Qs)];
-lc_bc_quals([E0|Qs]) ->
+    [{b_generate, Line, P1, E1} | lc_bc_quals(Qs)];
+lc_bc_quals([E0 | Qs]) ->
     E1 = expr(E0),
-    [E1|lc_bc_quals(Qs)];
-lc_bc_quals([]) -> [].
+    [E1 | lc_bc_quals(Qs)];
+lc_bc_quals([]) ->
+    [].
 
 %% -type fun_clauses([Clause]) -> [Clause].
 
-fun_clauses([C0|Cs]) ->
+fun_clauses([C0 | Cs]) ->
     C1 = clause(C0),
-    [C1|fun_clauses(Cs)];
-fun_clauses([]) -> [].
+    [C1 | fun_clauses(Cs)];
+fun_clauses([]) ->
+    [].
 
 %% Turns out you can't abstract out binary types:
 %% 1> X = binary, Y = fun (Z) -> <<Z/X>> end.
@@ -503,128 +529,180 @@ fun_clauses([]) -> [].
 %% point.
 find_binary_cut_vars(BinFields) ->
     cut_vars(
-      fun ({bin_element, _Line, Var, Size, Type}) ->
-              [V || V = {var, _Line1, '_'} <- [Var, Size, Type]];
-          (_) ->
-              []
-      end,
-      fun ({bin_element, Line, Var, Size, Type}, Vars) ->
-              {[Var1, Size1, Type1], []} =
-                  lists:foldr(
-                    fun ({var, _Line, '_'}, {Res, [V|Vs]}) -> {[V|Res], Vs};
-                        (V,                 {Res, Vs})     -> {[V|Res], Vs}
-                    end, {[], Vars}, [Var, Size, Type]),
-              {bin_element, Line, Var1, Size1, Type1}
-      end,
-      BinFields).
+        fun
+            ({bin_element, _Line, Var, Size, Type}) ->
+                [V || V = {var, _Line1, '_'} <- [Var, Size, Type]];
+            (_) ->
+                []
+        end,
+        fun({bin_element, Line, Var, Size, Type}, Vars) ->
+            {[Var1, Size1, Type1], []} =
+                lists:foldr(
+                    fun
+                        ({var, _Line, '_'}, {Res, [V | Vs]}) -> {[V | Res], Vs};
+                        (V, {Res, Vs}) -> {[V | Res], Vs}
+                    end,
+                    {[], Vars},
+                    [Var, Size, Type]
+                ),
+            {bin_element, Line, Var1, Size1, Type1}
+        end,
+        BinFields
+    ).
 
 find_map_cut_vars(MapFields) ->
     cut_vars(
-      fun ({map_field_assoc, _Line, {var, _Line1, '_'} = ExpK, {var, _Line2, '_'} = ExpV}) -> [ExpK, ExpV];
-          ({map_field_assoc, _Line, {var, _Line1, '_'} = ExpK,                     _ExpV}) -> [ExpK];
-          ({map_field_assoc, _Line,                     _ExpK, {var, _Line1, '_'} = ExpV}) -> [ExpV];
-          ({map_field_assoc, _Line,                     _ExpK,                     _ExpV}) -> [];
-          ({map_field_exact, _Line, {var, _Line1, '_'} = ExpK, {var, _Line2, '_'} = ExpV}) -> [ExpK, ExpV];
-          ({map_field_exact, _Line, {var, _Line1, '_'} = ExpK,                     _ExpV}) -> [ExpK];
-          ({map_field_exact, _Line,                     _ExpK, {var, _Line1, '_'} = ExpV}) -> [ExpV];
-          ({map_field_exact, _Line,                     _ExpK,                     _ExpV}) -> [];
-          (_)                                                                              -> []
-      end,
-      fun ({map_field_assoc, Line, _ExpK             , _ExpV             }, [ExpK, ExpV]) -> {map_field_assoc, Line, ExpK, ExpV};
-          ({map_field_assoc, Line, {var, _Line1, '_'},  ExpV             }, [ExpK]      ) -> {map_field_assoc, Line, ExpK, ExpV};
-          ({map_field_assoc, Line, ExpK              , {var, _Line2, '_'}}, [ExpV]      ) -> {map_field_assoc, Line, ExpK, ExpV};
-          ({map_field_exact, Line, _ExpK             , _ExpV             }, [ExpK, ExpV]) -> {map_field_assoc, Line, ExpK, ExpV};
-          ({map_field_exact, Line, {var, _Line1, '_'},  ExpV             }, [ExpK]      ) -> {map_field_assoc, Line, ExpK, ExpV};
-          ({map_field_exact, Line, ExpK              , {var, _Line2, '_'}}, [ExpV]      ) -> {map_field_assoc, Line, ExpK, ExpV}
-      end,
-      MapFields).
+        fun
+            ({map_field_assoc, _Line, {var, _Line1, '_'} = ExpK, {var, _Line2, '_'} = ExpV}) ->
+                [ExpK, ExpV];
+            ({map_field_assoc, _Line, {var, _Line1, '_'} = ExpK, _ExpV}) ->
+                [ExpK];
+            ({map_field_assoc, _Line, _ExpK, {var, _Line1, '_'} = ExpV}) ->
+                [ExpV];
+            ({map_field_assoc, _Line, _ExpK, _ExpV}) ->
+                [];
+            ({map_field_exact, _Line, {var, _Line1, '_'} = ExpK, {var, _Line2, '_'} = ExpV}) ->
+                [ExpK, ExpV];
+            ({map_field_exact, _Line, {var, _Line1, '_'} = ExpK, _ExpV}) ->
+                [ExpK];
+            ({map_field_exact, _Line, _ExpK, {var, _Line1, '_'} = ExpV}) ->
+                [ExpV];
+            ({map_field_exact, _Line, _ExpK, _ExpV}) ->
+                [];
+            (_) ->
+                []
+        end,
+        fun
+            ({map_field_assoc, Line, _ExpK, _ExpV}, [ExpK, ExpV]) ->
+                {map_field_assoc, Line, ExpK, ExpV};
+            ({map_field_assoc, Line, {var, _Line1, '_'}, ExpV}, [ExpK]) ->
+                {map_field_assoc, Line, ExpK, ExpV};
+            ({map_field_assoc, Line, ExpK, {var, _Line2, '_'}}, [ExpV]) ->
+                {map_field_assoc, Line, ExpK, ExpV};
+            ({map_field_exact, Line, _ExpK, _ExpV}, [ExpK, ExpV]) ->
+                {map_field_assoc, Line, ExpK, ExpV};
+            ({map_field_exact, Line, {var, _Line1, '_'}, ExpV}, [ExpK]) ->
+                {map_field_assoc, Line, ExpK, ExpV};
+            ({map_field_exact, Line, ExpK, {var, _Line2, '_'}}, [ExpV]) ->
+                {map_field_assoc, Line, ExpK, ExpV}
+        end,
+        MapFields
+    ).
 
 find_record_cut_vars(RecFields) ->
     cut_vars(
-      fun ({record_field, _Line, _FName, {var, _Line1, '_'} = Var}) -> [Var];
-          (_)                                                       -> []
-      end,
-      fun ({record_field, Line, FName, _Var}, [Var]) ->
-              {record_field, Line, FName, Var}
-      end,
-      RecFields).
+        fun
+            ({record_field, _Line, _FName, {var, _Line1, '_'} = Var}) -> [Var];
+            (_) -> []
+        end,
+        fun({record_field, Line, FName, _Var}, [Var]) ->
+            {record_field, Line, FName, Var}
+        end,
+        RecFields
+    ).
 
 find_comprehension_cut_vars(Qs) ->
     cut_vars(
-      fun ({generate,   _Line, _P0, {var, _Line1, '_'} = Var}) -> [Var];
-          ({generate,   _Line, _P0, _E0})                      -> [];
-          ({b_generate, _Line, _P0, {var, _Line1, '_'} = Var}) -> [Var];
-          ({b_generate, _Line, _P0, _E0})                      -> [];
-          (_)                                                  -> []
-      end,
-      fun ({generate,   Line, P0, _Var}, [Var]) -> {generate, Line, P0, Var};
-          ({b_generate, Line, P0, _Var}, [Var]) -> {b_generate, Line, P0, Var}
-      end,
-      Qs).
+        fun
+            ({generate, _Line, _P0, {var, _Line1, '_'} = Var}) -> [Var];
+            ({generate, _Line, _P0, _E0}) -> [];
+            ({b_generate, _Line, _P0, {var, _Line1, '_'} = Var}) -> [Var];
+            ({b_generate, _Line, _P0, _E0}) -> [];
+            (_) -> []
+        end,
+        fun
+            ({generate, Line, P0, _Var}, [Var]) -> {generate, Line, P0, Var};
+            ({b_generate, Line, P0, _Var}, [Var]) -> {b_generate, Line, P0, Var}
+        end,
+        Qs
+    ).
 
 find_call_cut_vars(F) ->
     cut_vars(
-      fun ({remote, _Line, M0, F0}) -> [V || V = {var, _Line1, '_'} <- [M0,F0]];
-          ({var, _Line, '_'} = Var) -> [Var];
-          (_)                       -> []
-      end,
-      fun ({remote, Line, M0, F0}, Vars) ->
-              {[M1, F1], []} =
-                  lists:foldr(
-                    fun ({var, _Line, '_'}, {Res, [V|Vs]}) -> {[V|Res], Vs};
-                        (V,                 {Res, Vs})     -> {[V|Res], Vs}
-                    end, {[], Vars}, [M0, F0]),
-              {remote, Line, M1, F1};
-          ({var, _Line, _Var}, [Var]) -> Var
-      end,
-      [F]).
+        fun
+            ({remote, _Line, M0, F0}) -> [V || V = {var, _Line1, '_'} <- [M0, F0]];
+            ({var, _Line, '_'} = Var) -> [Var];
+            (_) -> []
+        end,
+        fun
+            ({remote, Line, M0, F0}, Vars) ->
+                {[M1, F1], []} =
+                    lists:foldr(
+                        fun
+                            ({var, _Line, '_'}, {Res, [V | Vs]}) -> {[V | Res], Vs};
+                            (V, {Res, Vs}) -> {[V | Res], Vs}
+                        end,
+                        {[], Vars},
+                        [M0, F0]
+                    ),
+                {remote, Line, M1, F1};
+            ({var, _Line, _Var}, [Var]) ->
+                Var
+        end,
+        [F]
+    ).
 
 find_cons_cut_vars(HeadsRev, {cons, _Line, _Head, Tail} = Cons) ->
     find_cons_cut_vars([Cons | HeadsRev], Tail);
 find_cons_cut_vars(HeadsRev, Other) ->
-    Heads = lists:reverse([Other|HeadsRev]),
+    Heads = lists:reverse([Other | HeadsRev]),
     {Pattern, Heads1} =
         cut_vars(
-          fun ({cons, _Line, {var, _Line1, '_'} = Var, _Tail}) -> [Var];
-              ({var, _Line, '_'} = Var)                        -> [Var];
-              (_)                                              -> []
-          end,
-          fun ({cons, Line, {var, _Line1, '_'}, Tail}, [Var]) ->
-                  {cons, Line, Var, Tail};
-              ({var, _Line, '_'}, [Var]) ->
-                  Var
-          end,
-          Heads),
+            fun
+                ({cons, _Line, {var, _Line1, '_'} = Var, _Tail}) -> [Var];
+                ({var, _Line, '_'} = Var) -> [Var];
+                (_) -> []
+            end,
+            fun
+                ({cons, Line, {var, _Line1, '_'}, Tail}, [Var]) ->
+                    {cons, Line, Var, Tail};
+                ({var, _Line, '_'}, [Var]) ->
+                    Var
+            end,
+            Heads
+        ),
     {Pattern,
-     lists:foldr(
-       fun ({cons, Line, Head, _Tail}, Tail) -> {cons, Line, Head, Tail};
-           (Tail, undefined)                 -> Tail
-       end, undefined, Heads1)}.
+        lists:foldr(
+            fun
+                ({cons, Line, Head, _Tail}, Tail) -> {cons, Line, Head, Tail};
+                (Tail, undefined) -> Tail
+            end,
+            undefined,
+            Heads1
+        )}.
 
 find_cut_vars(As) ->
-    cut_vars(fun ({var, _Line, '_'} = Var) -> [Var];
-                 (_)                       -> []
-             end,
-             fun (_, [{var, _Line, _Var} = Var]) -> Var end,
-             As).
+    cut_vars(
+        fun
+            ({var, _Line, '_'} = Var) -> [Var];
+            (_) -> []
+        end,
+        fun(_, [{var, _Line, _Var} = Var]) -> Var end,
+        As
+    ).
 
 cut_vars(TestFun, CombFun, AstFrag) ->
     cut_vars(TestFun, CombFun, AstFrag, [], []).
 
 cut_vars(_TestFun, _CombFun, [], Pattern, AstAcc) ->
     {lists:reverse(Pattern), lists:reverse(AstAcc)};
-cut_vars(TestFun, CombFun, [Frag|AstFrags], Pattern, AstAcc) ->
+cut_vars(TestFun, CombFun, [Frag | AstFrags], Pattern, AstAcc) ->
     case TestFun(Frag) of
         [] ->
-            cut_vars(TestFun, CombFun, AstFrags, Pattern, [Frag|AstAcc]);
+            cut_vars(TestFun, CombFun, AstFrags, Pattern, [Frag | AstAcc]);
         Vars ->
             Vars1 = [{var, Line, make_var_name()} || {var, Line, _} <- Vars],
             Frag1 = CombFun(Frag, Vars1),
-            cut_vars(TestFun, CombFun, AstFrags,
-                     Vars1 ++ Pattern, [Frag1|AstAcc])
+            cut_vars(
+                TestFun,
+                CombFun,
+                AstFrags,
+                Vars1 ++ Pattern,
+                [Frag1 | AstAcc]
+            )
     end.
 
 make_var_name() ->
     VarCount = get(var_count),
-    put(var_count, VarCount+1),
+    put(var_count, VarCount + 1),
     list_to_atom("__cut_" ++ integer_to_list(VarCount)).

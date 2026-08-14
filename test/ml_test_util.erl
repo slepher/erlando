@@ -19,42 +19,48 @@
 %%%===================================================================
 
 left_identity(X, F) ->
-    do([monad ||
-           A <- F(X),
-           return(A)
-       ]).
+    do([
+        monad
+     || A <- F(X),
+        return(A)
+    ]).
 
 right_identity(M) ->
-    do([monad ||
-           A <- M,               
-           return(A)
-       ]).
+    do([
+        monad
+     || A <- M,
+        return(A)
+    ]).
 
 associativity1(M, F, G) ->
-    do([monad ||
-           A <- M,
-           do([monad ||
-                  B <- F(A),
-                  G(B)
-              ])
-       ]).
+    do([
+        monad
+     || A <- M,
+        do([
+            monad
+         || B <- F(A),
+            G(B)
+        ])
+    ]).
 
 associativity2(M, F, G) ->
-    do([monad ||
-           B <- do([monad ||
-                       A <- M,
-                       F(A)
-                   ]),
-           G(B)
-       ]).
+    do([
+        monad
+     || B <- do([
+            monad
+         || A <- M,
+            F(A)
+        ]),
+        G(B)
+    ]).
 
 associativity3(M, F, G) ->
-    do([monad || 
-           A <- M,
-           B <- F(A),
-           G(B)
-       ]).
-
+    do([
+        monad
+     || A <- M,
+        B <- F(A),
+        G(B)
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc

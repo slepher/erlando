@@ -44,7 +44,7 @@ generate_forms(Opts, #{module := Module, pos := Line, erlando_type := ErlandoTyp
     ExtraCall = maps:get(extra_call, Opts, undefined),
     {Functions, DefaultArityMode} = get_functions_and_arity_mode(Opts),
     ArityMode = maps:get(am, Opts, DefaultArityMode),
-    {PatternsGroup, NExtraArgs} = 
+    {PatternsGroup, NExtraArgs} =
         case maps:find(inner_type, Opts) of
             {ok, InnerType} ->
                 case Type of
@@ -61,28 +61,39 @@ generate_forms(Opts, #{module := Module, pos := Line, erlando_type := ErlandoTyp
         case ArityMode of
             target ->
                 lists:foldl(
-                  fun(Patterns, Acc) ->
-                          ArityDiff = length(NNExtraArgs) - length(Patterns),
-                          UFunctions = 
-                              lists:map(
+                    fun(Patterns, Acc) ->
+                        ArityDiff = length(NNExtraArgs) - length(Patterns),
+                        UFunctions =
+                            lists:map(
                                 fun({FName, Arity}) ->
-                                        {FName, Arity + ArityDiff}
-                                end, Functions),
-                          UFunctions ++ Acc
-                  end, [], PatternsGroup);
+                                    {FName, Arity + ArityDiff}
+                                end,
+                                Functions
+                            ),
+                        UFunctions ++ Acc
+                    end,
+                    [],
+                    PatternsGroup
+                );
             source ->
                 Functions
         end,
     GeneratedForms = lists:foldl(
-      fun(Pattrens, Acc) ->
-              Forms = 
-                  lists:map(
+        fun(Pattrens, Acc) ->
+            Forms =
+                lists:map(
                     fun({FName, Arity}) ->
-                            gen_function(
-                              Module, Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall)
-                    end, NFunctions),
-              Forms ++ Acc
-      end, [], PatternsGroup),
+                        gen_function(
+                            Module, Remote, FName, Arity, Line, Pattrens, NNExtraArgs, ExtraCall
+                        )
+                    end,
+                    NFunctions
+                ),
+            Forms ++ Acc
+        end,
+        [],
+        PatternsGroup
+    ),
     [{attribute, Line, gen_fun_meta, {1, Opts}} | GeneratedForms].
 
 get_functions_and_arity_mode(Opts) ->
@@ -110,10 +121,13 @@ get_functions_and_arity_mode(Opts) ->
 
 behaviour_functions(Behaviours) ->
     lists:foldl(
-      fun(Behaviour, Acc0) ->
-              Callbacks = Behaviour:behaviour_info(callbacks),
-              Callbacks ++ Acc0
-      end, [], Behaviours).
+        fun(Behaviour, Acc0) ->
+            Callbacks = Behaviour:behaviour_info(callbacks),
+            Callbacks ++ Acc0
+        end,
+        [],
+        Behaviours
+    ).
 
 update_args(_Remote, Args) when is_list(Args) ->
     Args;
@@ -121,39 +135,45 @@ update_args(Remote, Arg) ->
     [{Remote, Arg}].
 
 gen_function(Module, Remote, FName, Arity, Line, ExtraPatterns, ExtraArgs, ExtraCall) ->
-    NArity = Arity - length(ExtraArgs), 
+    NArity = Arity - length(ExtraArgs),
     UArity = NArity + length(ExtraPatterns),
-    Patterns = 
+    Patterns =
         lists:map(
-          fun(N) ->
-                  {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
-          end, lists:seq(1, NArity)),
-    BPatterns = 
+            fun(N) ->
+                {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
+            end,
+            lists:seq(1, NArity)
+        ),
+    BPatterns =
         lists:map(
-          fun(BehaviourPattern) ->
-                  astranaut_lib:abstract_form(BehaviourPattern, Line)
-          end, ExtraPatterns),
+            fun(BehaviourPattern) ->
+                astranaut_lib:abstract_form(BehaviourPattern, Line)
+            end,
+            ExtraPatterns
+        ),
     GPatterns = Patterns ++ BPatterns,
     LenCurrent = length(GPatterns),
     LenRemote = length(ExtraArgs) + NArity,
-    FName1 = 
-        case Remote of 
+    FName1 =
+        case Remote of
             Remote when Remote == Module ->
-                if LenCurrent == LenRemote ->
+                if
+                    LenCurrent == LenRemote ->
                         '__original__';
-                   true ->
+                    true ->
                         FName
                 end;
             _ ->
                 FName
         end,
     GCall = [gen_call(Module, Remote, FName, NArity, Line, ExtraArgs, ExtraCall)],
-    FName1 = 
-        case Remote of 
+    FName1 =
+        case Remote of
             Remote when Remote == Module ->
-                if LenCurrent == LenRemote ->
+                if
+                    LenCurrent == LenRemote ->
                         '__original__';
-                   true ->
+                    true ->
                         FName
                 end;
             _ ->
@@ -161,43 +181,53 @@ gen_function(Module, Remote, FName, Arity, Line, ExtraPatterns, ExtraArgs, Extra
         end,
     case FName1 of
         '__original__' ->
-            UPatterns = 
+            UPatterns =
                 lists:map(
-                  fun(N) ->
-                          {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
-                  end, lists:seq(1, UArity)),
+                    fun(N) ->
+                        {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
+                    end,
+                    lists:seq(1, UArity)
+                ),
             GCall1 = [gen_call(Module, Remote, FName1, UArity, Line, [], undefined)],
-            [{attribute, Line, export, [{FName, UArity}]}, 
-             {function, Line, FName, UArity, 
-              [{clause, Line, GPatterns, [], GCall}, {clause, Line, UPatterns, [], GCall1}]}];
+            [
+                {attribute, Line, export, [{FName, UArity}]},
+                {function, Line, FName, UArity, [
+                    {clause, Line, GPatterns, [], GCall}, {clause, Line, UPatterns, [], GCall1}
+                ]}
+            ];
         _ ->
-            [{attribute, Line, export, [{FName, UArity}]}, 
-             {function, Line, FName, UArity, 
-              [{clause, Line, GPatterns, [], GCall}]}]
+            [
+                {attribute, Line, export, [{FName, UArity}]},
+                {function, Line, FName, UArity, [{clause, Line, GPatterns, [], GCall}]}
+            ]
     end.
 
 gen_call(Module, Remote, FName, Arity, Line, ExtraArgs, {RemoteF, Function}) ->
-    {call, Line, {remote, Line, {atom, Line, RemoteF}, {atom, Line, Function}},
-     [gen_call(Module, Remote, FName, Arity, Line, ExtraArgs, undefined)]};
+    {call, Line, {remote, Line, {atom, Line, RemoteF}, {atom, Line, Function}}, [
+        gen_call(Module, Remote, FName, Arity, Line, ExtraArgs, undefined)
+    ]};
 gen_call(Module, Remote, FName, Arity, Line, ExtraArgs, undefined) ->
-    Call = 
+    Call =
         case Remote of
             Module ->
                 {atom, Line, FName};
             Remote ->
                 {remote, Line, {atom, Line, Remote}, {atom, Line, FName}}
         end,
-    Args = 
+    Args =
         lists:map(
-          fun(ExtraArg) ->
-                 astranaut_lib:abstract_form(ExtraArg, Line)
-          end, ExtraArgs),
+            fun(ExtraArg) ->
+                astranaut_lib:abstract_form(ExtraArg, Line)
+            end,
+            ExtraArgs
+        ),
     {call, Line, Call,
-     lists:map(
-       fun(N) ->
-               {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
-       end, lists:seq(1, Arity)) ++ Args
-    }.
+        lists:map(
+            fun(N) ->
+                {var, Line, list_to_atom("Args" ++ integer_to_list(N))}
+            end,
+            lists:seq(1, Arity)
+        ) ++ Args}.
 
 type(ErlandoTypes) ->
     case ErlandoTypes of

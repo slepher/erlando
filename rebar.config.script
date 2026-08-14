@@ -8,22 +8,22 @@ case os:getenv("DEPS_MODE") of
         CONFIG;
     "master" ->
         ConfigWithDeps = lists:keyreplace(
-          deps,
-          1,
-          CONFIG,
-          {deps, [
-              {'astranaut', {git, "https://github.com/slepher/astranaut.git",
-                             {branch, "master"}}}
-          ]}),
+            deps,
+            1,
+            CONFIG,
+            {deps, [
+                {'astranaut', {git, "https://github.com/slepher/astranaut.git", {branch, "master"}}}
+            ]}
+        ),
         lists:keyreplace(
-          plugins,
-          1,
-          ConfigWithDeps,
-          {plugins, [
-              {rebar3_erlando,
-               {git, "https://github.com/slepher/rebar3_erlando.git",
-                {branch, "master"}}}
-          ]});
+            plugins,
+            1,
+            ConfigWithDeps,
+            {plugins, [
+                {rebar3_erlando,
+                    {git, "https://github.com/slepher/rebar3_erlando.git", {branch, "master"}}}
+            ]}
+        );
     Mode ->
         erlang:error({invalid_deps_mode, Mode})
 end.

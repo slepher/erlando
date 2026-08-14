@@ -20,8 +20,7 @@
 %%--------------------------------------------------------------------
 
 suite() ->
-    [{timetrap,{seconds,10}}].
-
+    [{timetrap, {seconds, 10}}].
 
 %%--------------------------------------------------------------------
 %%
@@ -129,18 +128,20 @@ end_per_testcase(_TestCase, _Config) ->
 all(doc) ->
     ["Describe the main purpose of this suite"].
 
-all() -> 
-    [test_t, test_cont_t_lift,
-     test_cont_t_callCC, 
-     test_cont_t_local,
-     test_cont_t_monad_runner,
-     test_cont_t_shift_reset1, 
-     test_cont_t_shift_reset2, 
-     test_cont_t_shift_reset3, 
-     test_cont_t_shift_reset4,
-     test_cont_t_shift_reset5,
-     test_cont_t_shift_reset6,
-     test_cont_t_shift_reset7
+all() ->
+    [
+        test_t,
+        test_cont_t_lift,
+        test_cont_t_callCC,
+        test_cont_t_local,
+        test_cont_t_monad_runner,
+        test_cont_t_shift_reset1,
+        test_cont_t_shift_reset2,
+        test_cont_t_shift_reset3,
+        test_cont_t_shift_reset4,
+        test_cont_t_shift_reset5,
+        test_cont_t_shift_reset6,
+        test_cont_t_shift_reset7
     ].
 
 %%--------------------------------------------------------------------
@@ -167,54 +168,63 @@ all() ->
 %% @spec TestCase(Arg) -> Descr | Spec | ok | exit() | {skip,Reason}
 %% @end
 %%--------------------------------------------------------------------
-test_t() ->                 
+test_t() ->
     [{doc, "Test cont_t"}].
 
 test_t(_Config) ->
-    R = do([monad || 
-               R1 <- monad:return(2),
-               R2 <- monad:return(3),
-               return(R1 + R2)]),
+    R = do([
+        monad
+     || R1 <- monad:return(2),
+        R2 <- monad:return(3),
+        return(R1 + R2)
+    ]),
     ?assertEqual({ok, 5}, monad:run(cont_t:eval(R), error_m)),
     ok.
 
 test_cont_t_lift(_Config) ->
     Monad = cont_t:new(state_m),
     M0 = cont_t:lift(state_m:get()),
-    M1 = do([Monad ||
-                Value <- M0,
-                return(Value)
-            ]),    
+    M1 = do([
+        Monad
+     || Value <- M0,
+        return(Value)
+    ]),
     ?assertEqual(4, state_m:eval(cont_t:eval(M1), 4)).
 
 test_cont_t_callCC(_Config) ->
     MonadState = state_t:new(identity),
     Monad = cont_t:new(MonadState),
-    
-    M0 = 
-        do([Monad ||
-               Value <- cont_t:callCC(
-                          fun(K) ->
-                                  do([Monad ||
-                                         Acc <- cont_t:lift(state_m:get()),
-                                         cont_t:lift(state_m:put([K|Acc])),
-                                         return(0)
-                                     ])
-                          end),
-               begin
-                   do([Monad ||
-                          Acc <- cont_t:lift(state_m:get()),
-                          case Acc of
-                              [] ->
-                                  return(1 + Value);
-                              [K|T] ->
-                                  do([Monad ||
-                                         cont_t:lift(state_m:put(T)),
-                                         K(3)])
-                          end
-                      ])
-               end
-           ]),
+
+    M0 =
+        do([
+            Monad
+         || Value <- cont_t:callCC(
+                fun(K) ->
+                    do([
+                        Monad
+                     || Acc <- cont_t:lift(state_m:get()),
+                        cont_t:lift(state_m:put([K | Acc])),
+                        return(0)
+                    ])
+                end
+            ),
+            begin
+                do([
+                    Monad
+                 || Acc <- cont_t:lift(state_m:get()),
+                    case Acc of
+                        [] ->
+                            return(1 + Value);
+                        [K | T] ->
+                            do([
+                                Monad
+                             || cont_t:lift(state_m:put(T)),
+                                K(3)
+                            ])
+                    end
+                ])
+            end
+        ]),
     Value = identity:run(state_t:eval(cont_t:run(M0, fun(X) -> state_t:return(X) end), [])),
     ?assertEqual(4, Value).
 
@@ -224,34 +234,39 @@ test_cont_t_local(_Config) ->
 
     RefX = make_ref(),
     RefY = make_ref(),
-    
-    M0 = do([Monad ||
-                Ref0 <- cont_t:lift(reader_t:ask()),
-                return(Ref0)
-            ]),
+
+    M0 = do([
+        Monad
+     || Ref0 <- cont_t:lift(reader_t:ask()),
+        return(Ref0)
+    ]),
 
     ?assertEqual(RefX, identity:run(reader_t:run(cont_t:eval(M0), RefX))),
 
     M1 = test_cont_t_lifted_local(fun(_) -> RefY end, M0),
-    M2 = do([Monad ||
-                Ref0 <- M0,
-                Ref1 <- M1,
-                Ref2 <- cont_t:lift(reader_t:ask()),
-                return({Ref0, Ref1, Ref2})
-            ]),
+    M2 = do([
+        Monad
+     || Ref0 <- M0,
+        Ref1 <- M1,
+        Ref2 <- cont_t:lift(reader_t:ask()),
+        return({Ref0, Ref1, Ref2})
+    ]),
     Reader = cont_t:run(M2, fun(X) -> monad:return(X, MR) end),
-    {R0, R1, R2}= identity:run(reader_t:run(Reader, RefX)),
+    {R0, R1, R2} = identity:run(reader_t:run(Reader, RefX)),
     ?assertEqual(RefX, R0),
     ?assertEqual(RefX, R2),
     ?assertEqual(RefY, R1).
 
 test_cont_t_lifted_local(F, C) ->
     monad_reader_instance:lift_local(
-      fun() -> reader_t:ask() end,
-      fun(IF, X) -> reader_t:local(IF, X) end,
-      F, C, cont_t).
+        fun() -> reader_t:ask() end,
+        fun(IF, X) -> reader_t:local(IF, X) end,
+        F,
+        C,
+        cont_t
+    ).
 
-test_cont_t_monad_runner(_Config) ->          
+test_cont_t_monad_runner(_Config) ->
     MC = cont_t:new(reader_t:new(state_t:new(identity))),
     M = monad:empty(MC),
     Result = monad_runner:run_m(M, [fun(A) -> monad:return(A) end, 10, 0]),
@@ -259,28 +274,36 @@ test_cont_t_monad_runner(_Config) ->
 
 test_cont_t_shift_reset1(_Config) ->
     M = cont_t:reset(
-          do([monad || 
-                 R <- monad_reader:ask(),
-                 S <- monad_state:get(),
-                 monad_state:put(hello),
-                 cont_t:shift(fun(_K) -> monad:return({R, S}) end),
-                 monad_state:put(world)
-             ])),
+        do([
+            monad
+         || R <- monad_reader:ask(),
+            S <- monad_state:get(),
+            monad_state:put(hello),
+            cont_t:shift(fun(_K) -> monad:return({R, S}) end),
+            monad_state:put(world)
+        ])
+    ),
 
     Result1 = identity:run(
-               reader_t:run(
-                 state_t:run(
-                   cont_t:eval(M),
-                   0),
-                 10)),
+        reader_t:run(
+            state_t:run(
+                cont_t:eval(M),
+                0
+            ),
+            10
+        )
+    ),
 
     Result2 = monad:run(
-               state_t:run(
-                 reader_t:run(
-                   cont_t:eval(M),
-                   10),
-                 0),
-                error_m),
+        state_t:run(
+            reader_t:run(
+                cont_t:eval(M),
+                10
+            ),
+            0
+        ),
+        error_m
+    ),
     ?assertEqual({{10, 0}, hello}, Result1),
     ?assertEqual({ok, {{10, 0}, hello}}, Result2).
 
@@ -289,14 +312,16 @@ test_cont_t_shift_reset2(_Config) ->
     MR = reader_t:new(MS),
     MC = cont_t:new(MR),
     M = cont_t:reset(
-          do([monad || 
-                 monad:empty(MC),
-                 R <- cont_t:lift(reader_t:ask()),
-                 S <- cont_t:lift(reader_t:lift(state_t:get())),
-                 cont_t:lift(reader_t:lift(state_t:put(hello))),
-                 cont_t:shift(fun(_K) -> cont_t:return({R, S}) end),
-                 cont_t:lift(reader_t:lift(state_t:put(world)))
-             ])),
+        do([
+            monad
+         || monad:empty(MC),
+            R <- cont_t:lift(reader_t:ask()),
+            S <- cont_t:lift(reader_t:lift(state_t:get())),
+            cont_t:lift(reader_t:lift(state_t:put(hello))),
+            cont_t:shift(fun(_K) -> cont_t:return({R, S}) end),
+            cont_t:lift(reader_t:lift(state_t:put(world)))
+        ])
+    ),
     Result0 = state_m:run(reader_t:run(cont_t:eval(M), 10), 0),
     ?assertEqual({{10, 0}, hello}, Result0),
     Result = monad_runner:run_m(M, [fun(A) -> monad:return(A) end, 10, 0]),
@@ -306,43 +331,56 @@ test_cont_t_shift_reset3(_Config) ->
     MR = reader_t:new(identity),
     MC = cont_t:new(MR),
     M = cont_t:reset(
-          do([MC || 
-                 R <- cont_t:lift(reader_t:ask()),
-                 cont_t:shift(fun(_K) -> cont_t:return(R) end),
-                 cont_t:lift(reader_t:lift(return(0)))
-             ])),
+        do([
+            MC
+         || R <- cont_t:lift(reader_t:ask()),
+            cont_t:shift(fun(_K) -> cont_t:return(R) end),
+            cont_t:lift(reader_t:lift(return(0)))
+        ])
+    ),
 
     Result = identity:run(
-               reader_t:run(
-                 cont_t:run(
-                    M, fun(A) -> reader_t:return(A) end), 0)),
+        reader_t:run(
+            cont_t:run(
+                M, fun(A) -> reader_t:return(A) end
+            ),
+            0
+        )
+    ),
     ?assertEqual(0, Result).
 
 test_cont_t_shift_reset4(_Config) ->
     MS = state_t:new(identity),
     MC = cont_t:new(MS),
     M = cont_t:reset(
-          do([monad || 
-                 S <- monad_state:get(),
-                 monad_state:put(hello),
-                 cont_t:shift(fun(_K) -> monad:return(S) end),
-                 monad_state:put(world)
-             ])),
+        do([
+            monad
+         || S <- monad_state:get(),
+            monad_state:put(hello),
+            cont_t:shift(fun(_K) -> monad:return(S) end),
+            monad_state:put(world)
+        ])
+    ),
     NM = monad:run(M, MC),
     Result = identity:run(
-               state_t:run(
-                 cont_t:run(
-                   NM, fun(A) -> state_t:return(A) end), 10)),
+        state_t:run(
+            cont_t:run(
+                NM, fun(A) -> state_t:return(A) end
+            ),
+            10
+        )
+    ),
     ?assertEqual({10, hello}, Result).
-
 
 test_cont_t_shift_reset5(_Config) ->
     MC = cont_t:new(identity),
     M = cont_t:reset(cont_t:shift(fun(_K) -> cont_t:return(10) end)),
     NM = monad:run(M, MC),
     Result = identity:run(
-                 cont_t:run(
-                   NM, fun(A) -> identity:return(A) end)),
+        cont_t:run(
+            NM, fun(A) -> identity:return(A) end
+        )
+    ),
     ?assertEqual(10, Result).
 
 test_cont_t_shift_reset6(_Config) ->
@@ -350,8 +388,10 @@ test_cont_t_shift_reset6(_Config) ->
     M = cont_t:reset(cont_t:cont_t(fun(_CC) -> monad:return(10) end)),
     NM = monad:run(M, MC),
     Result = identity:run(
-                 cont_t:run(
-                   NM, fun(A) -> identity:return(A) end)),
+        cont_t:run(
+            NM, fun(A) -> identity:return(A) end
+        )
+    ),
     ?assertEqual(10, Result).
 
 test_cont_t_shift_reset7(_Config) ->
@@ -359,15 +399,16 @@ test_cont_t_shift_reset7(_Config) ->
     MS = state_t:new(MR),
     MC = cont_t:new(MS),
     M = cont_t:reset(
-          do([monad || 
-                 monad:empty(MC),
-                 R <- cont_t:lift(state_t:lift(monad_reader:ask())),
-                 S <- cont_t:lift(monad_state:get()),
-                 cont_t:lift(monad_state:put(hello)),
-                 Val <- cont_t:shift(fun(K) -> cont_t:lift(K({R, S})) end),
-                 cont_t:lift(monad_state:put(world)),
-                 return({Val, 1})
-             ])),
+        do([
+            monad
+         || monad:empty(MC),
+            R <- cont_t:lift(state_t:lift(monad_reader:ask())),
+            S <- cont_t:lift(monad_state:get()),
+            cont_t:lift(monad_state:put(hello)),
+            Val <- cont_t:shift(fun(K) -> cont_t:lift(K({R, S})) end),
+            cont_t:lift(monad_state:put(world)),
+            return({Val, 1})
+        ])
+    ),
     Result = monad_runner:run_m(M, [fun(A) -> monad:return(A) end, 0, 10]),
     ?assertEqual({{{10, 0}, 1}, world}, Result).
-

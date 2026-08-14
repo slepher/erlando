@@ -29,15 +29,21 @@ new(F, Typeclass) ->
 
 type(UA, Typeclass) ->
     map0(
-      fun(Type, _MA) ->
-              Type
-      end, UA, Typeclass).
+        fun(Type, _MA) ->
+            Type
+        end,
+        UA,
+        Typeclass
+    ).
 
 run(UA, Typeclass) ->
     map0(
-      fun(_Type, MA) ->
-              MA
-      end, UA, Typeclass).
+        fun(_Type, MA) ->
+            MA
+        end,
+        UA,
+        Typeclass
+    ).
 
 map0(F, #undetermined{inner_function = UF} = UA, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
@@ -53,9 +59,11 @@ map(F, #undetermined{inner_function = UF}, Typeclass) ->
     case typeclass:is_typeclass(Typeclass) of
         true ->
             new(
-              fun(Module) ->
-                      F(Module, UF(Module))
-              end, Typeclass);
+                fun(Module) ->
+                    F(Module, UF(Module))
+                end,
+                Typeclass
+            );
         false ->
             F(Typeclass, UF(Typeclass))
     end;
@@ -74,13 +82,19 @@ map(F, M, Typeclass) ->
 
 map_pair(F, #undetermined{} = UA, UB, Typeclass) ->
     undetermined:map(
-      fun(Module, B) ->
-              A = run(UA, Module),
-              F(Module, A, B)
-      end, UB, Typeclass);
+        fun(Module, B) ->
+            A = run(UA, Module),
+            F(Module, A, B)
+        end,
+        UB,
+        Typeclass
+    );
 map_pair(F, UA, UB, Typeclass) ->
     undetermined:map(
-      fun(Module, A) ->
-              B = run(UB, Module),
-              F(Module, A, B)
-      end, UA, Typeclass).
+        fun(Module, A) ->
+            B = run(UB, Module),
+            F(Module, A, B)
+        end,
+        UA,
+        Typeclass
+    ).

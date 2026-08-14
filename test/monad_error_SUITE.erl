@@ -128,22 +128,33 @@ end_per_testcase(_TestCase, _Config) ->
 %% @spec all(Clause) -> TestCases
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
-    [test_error_m_throw_error, test_error_m_catch_error,
-     test_either_throw_error, test_either_catch_error,
-     test_error_t_throw_error, test_error_t_catch_error,
-     test_except_t_throw_error, test_except_t_catch_error,
-     test_except_t_error_t_conversion,
-     test_catch_error_exposes_handler_function_clause,
-     test_lift_either,
-     test_maybe_t_throw_error, test_maybe_t_catch_error,
-     test_reader_t_throw_error, test_reader_t_catch_error,
-     test_reader_t_trans_error, test_reader_t_lift_error,
-     test_writer_t_throw_error, test_writer_t_catch_error, test_writer_t_catch_error_2,
-     test_state_t_throw_error,  test_state_t_catch_error,
-     test_list_t_throw_error, test_list_t_catch_error
+all() ->
+    [
+        test_error_m_throw_error,
+        test_error_m_catch_error,
+        test_either_throw_error,
+        test_either_catch_error,
+        test_error_t_throw_error,
+        test_error_t_catch_error,
+        test_except_t_throw_error,
+        test_except_t_catch_error,
+        test_except_t_error_t_conversion,
+        test_catch_error_exposes_handler_function_clause,
+        test_lift_either,
+        test_maybe_t_throw_error,
+        test_maybe_t_catch_error,
+        test_reader_t_throw_error,
+        test_reader_t_catch_error,
+        test_reader_t_trans_error,
+        test_reader_t_lift_error,
+        test_writer_t_throw_error,
+        test_writer_t_catch_error,
+        test_writer_t_catch_error_2,
+        test_state_t_throw_error,
+        test_state_t_catch_error,
+        test_list_t_throw_error,
+        test_list_t_catch_error
     ].
-
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -170,27 +181,45 @@ all() ->
 %% @end
 %%--------------------------------------------------------------------
 test_error_m_throw_error(_Config) ->
-    F = fun(M) -> {error, E} = error_m:run(M), E end,
+    F = fun(M) ->
+        {error, E} = error_m:run(M),
+        E
+    end,
     throw_error(F).
 
 test_error_m_catch_error(_Config) ->
-    F = fun(M) -> {error, E} = error_m:run(M), E end,
+    F = fun(M) ->
+        {error, E} = error_m:run(M),
+        E
+    end,
     test_catch_error(F).
 
 test_either_throw_error(_Config) ->
-    F = fun(M) -> {left, E} = either:run(M), E end,
+    F = fun(M) ->
+        {left, E} = either:run(M),
+        E
+    end,
     throw_error(F).
 
 test_either_catch_error(_Config) ->
-    F = fun(M) -> {left, E} = either:run(M), E end,
+    F = fun(M) ->
+        {left, E} = either:run(M),
+        E
+    end,
     test_catch_error(F).
 
 test_error_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
+    F = fun(E) ->
+        {left, L} = identity:run(error_t:run(E)),
+        L
+    end,
     throw_error(F).
 
 test_error_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = identity:run(error_t:run(E)), L end,
+    F = fun(E) ->
+        {left, L} = identity:run(error_t:run(E)),
+        L
+    end,
     test_catch_error(F).
 
 test_except_t_throw_error(_Config) ->
@@ -202,9 +231,11 @@ test_except_t_catch_error(_Config) ->
     ExceptT = except_t:new(identity),
     M0 = monad_error:throw_error(error, ExceptT),
     M1 = monad_error:catch_error(
-           M0, fun(error) -> monad_error:throw_error(error1, ExceptT) end, ExceptT),
+        M0, fun(error) -> monad_error:throw_error(error1, ExceptT) end, ExceptT
+    ),
     M2 = monad_error:catch_error(
-           M1, fun(error1) -> monad_error:throw_error(error2, ExceptT) end, ExceptT),
+        M1, fun(error1) -> monad_error:throw_error(error2, ExceptT) end, ExceptT
+    ),
     ?assertEqual({left, error1}, identity:run(except_t:run(M1, ExceptT))),
     ?assertEqual({left, error2}, identity:run(except_t:run(M2, ExceptT))).
 
@@ -217,82 +248,135 @@ test_except_t_error_t_conversion(_Config) ->
 
 test_catch_error_exposes_handler_function_clause(_Config) ->
     Handler = fun(other_reason) -> monad:return(recovered) end,
-    ?assertError(function_clause,
-                 error_m:catch_error({error, reason}, Handler)),
-    ?assertError(function_clause,
-                 either:catch_error({left, reason}, Handler)),
+    ?assertError(
+        function_clause,
+        error_m:catch_error({error, reason}, Handler)
+    ),
+    ?assertError(
+        function_clause,
+        either:catch_error({left, reason}, Handler)
+    ),
     ErrorT = error_t:throw_error(reason, error_t:new(identity)),
-    ?assertError(function_clause,
-                 identity:run(error_t:run(error_t:catch_error(ErrorT, Handler)))),
+    ?assertError(
+        function_clause,
+        identity:run(error_t:run(error_t:catch_error(ErrorT, Handler)))
+    ),
     ExceptT = except_t:throw_error(reason, except_t:new(identity)),
-    ?assertError(function_clause,
-                 identity:run(except_t:run(except_t:catch_error(ExceptT, Handler)))).
+    ?assertError(
+        function_clause,
+        identity:run(except_t:run(except_t:catch_error(ExceptT, Handler)))
+    ).
 
 test_lift_either(_Config) ->
-    ?assertEqual({left, reason},
-                 either:run(monad_error:lift_either({left, reason}, either))),
-    ?assertEqual({right, value},
-                 either:run(monad_error:lift_either({right, value}, either))).
+    ?assertEqual(
+        {left, reason},
+        either:run(monad_error:lift_either({left, reason}, either))
+    ),
+    ?assertEqual(
+        {right, value},
+        either:run(monad_error:lift_either({right, value}, either))
+    ).
 
 test_maybe_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(maybe_t:run(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(maybe_t:run(E)),
+        L
+    end,
     throw_error(F).
 
 test_maybe_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(maybe_t:run(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(maybe_t:run(E)),
+        L
+    end,
     test_catch_error(F).
 
 test_reader_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(reader_t:run(E, undefined)),
+        L
+    end,
     throw_error(F).
 
 test_reader_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(reader_t:run(E, undefined)),
+        L
+    end,
     test_catch_error(F).
 
 test_reader_t_trans_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(reader_t:run(E, undefined)),
+        L
+    end,
     test_trans_error(F).
 
 test_reader_t_lift_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(reader_t:run(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(reader_t:run(E, undefined)),
+        L
+    end,
     test_lift_error(F).
 
 test_writer_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(writer_t:eval(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(writer_t:eval(E)),
+        L
+    end,
     throw_error(F).
 
 test_writer_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(writer_t:eval(E)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(writer_t:eval(E)),
+        L
+    end,
     test_catch_error(F).
 
 test_writer_t_catch_error_2(_Config) ->
-    M0 = 
+    M0 =
         monad_error:catch_error(
-          do([monad ||
-                 monad_writer:tell([a]),
-                 monad_error:catch_error(monad_error:throw_error(error), fun(error) -> monad_writer:tell([b]) end),
-                 monad_error:throw_error(error2)
-          ]), fun(error2) -> monad_writer:tell([c]) end),
-   Result1 = writer_m:run(error_t:run(M0, error_t:new(writer_m))),
-   Result2 = error_m:run(writer_t:run(M0, writer_t:new(error_m))),
-   ?assertEqual({{right, ok}, [a, b, c]}, Result1),
-   ?assertEqual({ok, {ok, [c]}}, Result2).
+            do([
+                monad
+             || monad_writer:tell([a]),
+                monad_error:catch_error(monad_error:throw_error(error), fun(error) ->
+                    monad_writer:tell([b])
+                end),
+                monad_error:throw_error(error2)
+            ]),
+            fun(error2) -> monad_writer:tell([c]) end
+        ),
+    Result1 = writer_m:run(error_t:run(M0, error_t:new(writer_m))),
+    Result2 = error_m:run(writer_t:run(M0, writer_t:new(error_m))),
+    ?assertEqual({{right, ok}, [a, b, c]}, Result1),
+    ?assertEqual({ok, {ok, [c]}}, Result2).
 
 test_state_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(state_t:eval(E, undefined)),
+        L
+    end,
     throw_error(F).
 
 test_state_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(state_t:eval(E, undefined)), L end,
+    F = fun(E) ->
+        {left, L} = either:run(state_t:eval(E, undefined)),
+        L
+    end,
     test_catch_error(F).
 
 test_list_t_throw_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))), L end,
+    F = fun(E) ->
+        {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))),
+        L
+    end,
     throw_error(F).
 
 test_list_t_catch_error(_Config) ->
-    F = fun(E) -> {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))), L end,
+    F = fun(E) ->
+        {left, L} = either:run(functor:fmap(fun(X) -> lists:nth(1, X) end, list_t:run(E))),
+        L
+    end,
     test_catch_error(F).
 
 test_trans_error(F) ->
@@ -306,10 +390,11 @@ test_trans_error(F) ->
 
 test_lift_error(F) ->
     M1 = monad_error:lift_error({error, 30}),
-    M2 = do([monad ||
-                Val <- monad_error:catch_error(M1, fun(E) -> monad:return(E + 20) end),
-                monad_error:lift_error({error, Val * 2})
-            ]),
+    M2 = do([
+        monad
+     || Val <- monad_error:catch_error(M1, fun(E) -> monad:return(E + 20) end),
+        monad_error:lift_error({error, Val * 2})
+    ]),
     Result = 100,
     ?assertEqual(Result, F(M2)).
 

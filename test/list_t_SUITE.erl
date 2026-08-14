@@ -21,7 +21,7 @@
 %% @end
 %%--------------------------------------------------------------------
 suite() ->
-    [{timetrap,{seconds,30}}].
+    [{timetrap, {seconds, 30}}].
 
 %%--------------------------------------------------------------------
 %% @spec init_per_suite(Config0) ->
@@ -108,17 +108,28 @@ groups() ->
 %% Reason = term()
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
-    [test_fmap, test_ap, test_ap_effect_order, test_bind, test_bind_effect_order,
-     test_append_effect_order, test_run, test_callCC, test_local_all_cells,
-     test_join, test_lift_list, test_catch_error].
+all() ->
+    [
+        test_fmap,
+        test_ap,
+        test_ap_effect_order,
+        test_bind,
+        test_bind_effect_order,
+        test_append_effect_order,
+        test_run,
+        test_callCC,
+        test_local_all_cells,
+        test_join,
+        test_lift_list,
+        test_catch_error
+    ].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
 %% Info = [tuple()]
 %% @end
 %%--------------------------------------------------------------------
-my_test_case() -> 
+my_test_case() ->
     [].
 
 %%--------------------------------------------------------------------
@@ -130,9 +141,9 @@ my_test_case() ->
 %% Comment = term()
 %% @end
 %%--------------------------------------------------------------------
-test_fmap(_Config) -> 
-    ListTA = list_t:from_list([a, b, c]), 
-    F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8)  end,
+test_fmap(_Config) ->
+    ListTA = list_t:from_list([a, b, c]),
+    F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8) end,
     ListTB = functor:fmap(F, ListTA),
     MB = list_t:run(ListTB),
     ?assertEqual([a_a, b_b, c_c], identity:run(MB)),
@@ -152,19 +163,28 @@ test_ap(_Config) ->
 test_ap_effect_order(_Config) ->
     ListT = list_t:new(state_m),
     Functions = list_t:lift_list(
-                  [state_effect(f1, fun(A) -> {f1, A} end),
-                   state_effect(f2, fun(A) -> {f2, A} end)], ListT),
+        [
+            state_effect(f1, fun(A) -> {f1, A} end),
+            state_effect(f2, fun(A) -> {f2, A} end)
+        ],
+        ListT
+    ),
     Values = list_t:lift_list(
-               [state_effect(a1, a), state_effect(a2, b)], ListT),
+        [state_effect(a1, a), state_effect(a2, b)], ListT
+    ),
     Applied = applicative:'<*>'(Functions, Values, ListT),
-    ?assertEqual({[{f1, a}, {f1, b}, {f2, a}, {f2, b}],
-                  [f1, a1, a2, f2, a1, a2]},
-                 run_state_list(Applied, ListT)).
+    ?assertEqual(
+        {[{f1, a}, {f1, b}, {f2, a}, {f2, b}], [f1, a1, a2, f2, a1, a2]},
+        run_state_list(Applied, ListT)
+    ).
 
 test_bind(_Config) ->
-    ListTA = list_t:from_list([a, b, c]), 
-    F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8)  end,
-    ListTB = monad:'>>='(ListTA, fun(A) -> B = F(A), monad_plus:mplus(monad:return(B), monad:return(B)) end),
+    ListTA = list_t:from_list([a, b, c]),
+    F = fun(A) -> binary_to_atom(list_to_binary(io_lib:format("~p_~p", [A, A])), utf8) end,
+    ListTB = monad:'>>='(ListTA, fun(A) ->
+        B = F(A),
+        monad_plus:mplus(monad:return(B), monad:return(B))
+    end),
     MB = list_t:run(ListTB),
     ?assertEqual([a_a, a_a, b_b, b_b, c_c, c_c], identity:run(MB)),
     ?assertEqual([a_a, a_a, b_b, b_b, c_c, c_c], cont_m:eval(MB)),
@@ -173,28 +193,39 @@ test_bind(_Config) ->
 test_bind_effect_order(_Config) ->
     ListT = list_t:new(state_m),
     Outer = list_t:lift_list(
-              [state_effect(a, a), state_effect(b, b)], ListT),
+        [state_effect(a, a), state_effect(b, b)], ListT
+    ),
     Bound = monad:'>>='(
-              Outer,
-              fun(A) ->
-                      list_t:lift_list(
-                        [state_effect({A, 1}, {A, 1}),
-                         state_effect({A, 2}, {A, 2})], ListT)
-              end,
-              ListT),
-    ?assertEqual({[{a, 1}, {a, 2}, {b, 1}, {b, 2}],
-                  [a, {a, 1}, {a, 2}, b, {b, 1}, {b, 2}]},
-                 run_state_list(Bound, ListT)).
+        Outer,
+        fun(A) ->
+            list_t:lift_list(
+                [
+                    state_effect({A, 1}, {A, 1}),
+                    state_effect({A, 2}, {A, 2})
+                ],
+                ListT
+            )
+        end,
+        ListT
+    ),
+    ?assertEqual(
+        {[{a, 1}, {a, 2}, {b, 1}, {b, 2}], [a, {a, 1}, {a, 2}, b, {b, 1}, {b, 2}]},
+        run_state_list(Bound, ListT)
+    ).
 
 test_append_effect_order(_Config) ->
     ListT = list_t:new(state_m),
     Left = list_t:lift_list(
-             [state_effect(a1, a), state_effect(a2, b)], ListT),
+        [state_effect(a1, a), state_effect(a2, b)], ListT
+    ),
     Right = list_t:lift_list(
-              [state_effect(b1, c), state_effect(b2, d)], ListT),
+        [state_effect(b1, c), state_effect(b2, d)], ListT
+    ),
     Appended = monad_plus:mplus(Left, Right, ListT),
-    ?assertEqual({[a, b, c, d], [a1, a2, b1, b2]},
-                 run_state_list(Appended, ListT)).
+    ?assertEqual(
+        {[a, b, c, d], [a1, a2, b1, b2]},
+        run_state_list(Appended, ListT)
+    ).
 
 test_run(_Config) ->
     MA = list_t:new(identity),
@@ -214,21 +245,23 @@ test_lift_list(_Config) ->
     ok.
 
 test_callCC(_Config) ->
-    M = 
-        do([monad ||
-               X <- monad_reader:ask(),
-               Y <- 
-                   monad_cont:callCC(
-                     fun(CC) ->
-                             case X of
-                                 X when is_integer(X) ->
-                                     return(X + 1);
-                                 _Other ->
-                                     CC(expected_integer)
-                             end
-                     end),
-               return(Y)
-           ]),
+    M =
+        do([
+            monad
+         || X <- monad_reader:ask(),
+            Y <-
+                monad_cont:callCC(
+                    fun(CC) ->
+                        case X of
+                            X when is_integer(X) ->
+                                return(X + 1);
+                            _Other ->
+                                CC(expected_integer)
+                        end
+                    end
+                ),
+            return(Y)
+        ]),
     M1 = identity:run(reader_t:run(cont_t:eval(list_t:run(M)), 30)),
     %M2 = identity:run(reader_t:run(cont_t:eval(list_t:run(M)), undefined)),
     ?assertEqual([31], M1),
@@ -247,25 +280,30 @@ test_catch_error(_Config) ->
     M2 = monad_error:throw_error(error, Monad),
     M3 = monad_plus:mplus(M1, M2, Monad),
     Recovered = monad_error:catch_error(
-           M3,
-           fun(error) ->
-                   monad:return(2, Monad)
-           end,
-           Monad),
+        M3,
+        fun(error) ->
+            monad:return(2, Monad)
+        end,
+        Monad
+    ),
     Rethrown = monad_error:catch_error(
-                 M3,
-                 fun(error) -> monad_error:throw_error(error1, Monad) end,
-                 Monad),
+        M3,
+        fun(error) -> monad_error:throw_error(error1, Monad) end,
+        Monad
+    ),
     ?assertEqual({right, [1, 2]}, run_error_list(Recovered, Monad)),
     ?assertEqual({left, error1}, run_error_list(Rethrown, Monad)),
     ok.
-    
 
 test_join(_Config) ->
     ListT = list_t:new(identity),
     Nested = list_t:from_list(
-               [list_t:from_list([1, 2], ListT),
-                list_t:from_list([3, 4], ListT)], ListT),
+        [
+            list_t:from_list([1, 2], ListT),
+            list_t:from_list([3, 4], ListT)
+        ],
+        ListT
+    ),
     Joined = monad:join(Nested, ListT),
     ?assertEqual([1, 2, 3, 4], identity:run(list_t:run(Joined, ListT))).
 

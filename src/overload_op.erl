@@ -19,7 +19,9 @@
 %%%===================================================================
 parse_transform(Forms, _Opts) ->
     ParseOps = parse_ops(Forms),
-    astranaut_return:to_compiler(astranaut:map(fun(Node, Attr) -> walk(Node, Attr, ParseOps) end, Forms, #{traverse => pre})).
+    astranaut_return:to_compiler(
+        astranaut:map(fun(Node, Attr) -> walk(Node, Attr, ParseOps) end, Forms, #{traverse => pre})
+    ).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -33,24 +35,34 @@ parse_transform(Forms, _Opts) ->
 parse_ops(Forms) ->
     Overloads = astranaut_lib:analyze_forms_attributes(overloads, Forms),
     lists:foldl(
-      fun(Overload, Acc0) ->
-              lists:foldl(
-                fun({Module, Ops}, Acc1) ->
+        fun(Overload, Acc0) ->
+            lists:foldl(
+                fun
+                    ({Module, Ops}, Acc1) ->
                         add_op(Module, Ops, Acc1);
-                   (Ops, Acc1) ->
+                    (Ops, Acc1) ->
                         add_op(undefined, Ops, Acc1)
-                end, Acc0, Overload)
-      end, maps:new(), Overloads).
+                end,
+                Acc0,
+                Overload
+            )
+        end,
+        maps:new(),
+        Overloads
+    ).
 
 add_op(Module, Ops, Map) when is_list(Ops) ->
     lists:foldl(
-      fun(Op, Acc) ->
-              maps:put(Op, Module, Acc)
-      end, Map, Ops);
+        fun(Op, Acc) ->
+            maps:put(Op, Module, Acc)
+        end,
+        Map,
+        Ops
+    );
 add_op(Module, Op, Map) when is_atom(Op) ->
     add_op(Module, [Op], Map).
 
-walk({op, Line ,'/', {op, _Line1, '/', A , {atom, _Line2, Op} = OpFun}, B} = Node, _Attr, Ops) ->
+walk({op, Line, '/', {op, _Line1, '/', A, {atom, _Line2, Op} = OpFun}, B} = Node, _Attr, Ops) ->
     case maps:find(Op, Ops) of
         {ok, undefined} ->
             quote(_@OpFun(unquote(A), unquote(B)), Line);

@@ -21,28 +21,31 @@
 %%%===================================================================
 run_m(UA, Args) ->
     undetermined:map(
-      fun(Module, MA) ->
-              N = Module:run_nargs(),
-              IsTransformer = lists:member({lift,1}, Module:module_info(exports)),
-              case N =< length(Args) of
-                  true ->
-                      {H, T} = lists:split(N, Args),
-                      Inner = Module:run_m(MA, H),
-                      case IsTransformer of
-                          true ->
-                              run_m(Inner, T);
-                          false ->
-                              Inner
-                      end;
-                  false ->
-                      case Args of
-                          [] ->
-                              MA;
-                          _ ->
-                              exit({invalid_run_nargs, {Module, N}})
-                      end
-              end
-      end, UA, ?MODULE).
+        fun(Module, MA) ->
+            N = Module:run_nargs(),
+            IsTransformer = lists:member({lift, 1}, Module:module_info(exports)),
+            case N =< length(Args) of
+                true ->
+                    {H, T} = lists:split(N, Args),
+                    Inner = Module:run_m(MA, H),
+                    case IsTransformer of
+                        true ->
+                            run_m(Inner, T);
+                        false ->
+                            Inner
+                    end;
+                false ->
+                    case Args of
+                        [] ->
+                            MA;
+                        _ ->
+                            exit({invalid_run_nargs, {Module, N}})
+                    end
+            end
+        end,
+        UA,
+        ?MODULE
+    ).
 
 %%--------------------------------------------------------------------
 %% @doc
