@@ -1,7 +1,7 @@
 %% -*- erlang -*-
 %% Keep rebar.config as the release source of truth. Integration CI can
 %% explicitly opt into moving master branches without changing project plugins.
-case os:getenv("ERLANDO_DEPENDENCY_MODE") of
+case os:getenv("DEPS_MODE") of
     false ->
         CONFIG;
     "" ->
@@ -25,5 +25,5 @@ case os:getenv("ERLANDO_DEPENDENCY_MODE") of
                 {branch, "master"}}}
           ]});
     Mode ->
-        erlang:error({invalid_erlando_dependency_mode, Mode})
+        erlang:error({invalid_deps_mode, Mode})
 end.

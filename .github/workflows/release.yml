@@ -50,7 +50,7 @@ jobs:
       - name: Assert release dependency configuration
         run: |
           set -eu
-          test -z "${ERLANDO_DEPENDENCY_MODE:-}"
+          test -z "${DEPS_MODE:-}"
           erl -noshell -eval '
             {ok, Config} = file:consult("rebar.config"),
             {deps, Deps} = lists:keyfind(deps, 1, Config),

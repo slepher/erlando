@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     container: erlang:${{ matrix.otp }}
     env:
-      ERLANDO_DEPENDENCY_MODE: master
+      DEPS_MODE: master
     strategy:
       fail-fast: false
       matrix:
